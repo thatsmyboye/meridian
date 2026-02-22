@@ -38,14 +38,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type { SupabaseClient };
 
 /**
- * Creates a Supabase client for use in browser / React Native contexts.
- * Uses the anon key and reads config from environment variables.
+ * Creates a Supabase client for React Native / Expo contexts.
+ * Sessions are stored in localStorage (via the default @supabase/supabase-js
+ * storage adapter), which is fine for native apps but incompatible with SSR.
  *
- * Usage:
- *   import { createBrowserClient } from "@meridian/api";
- *   const supabase = createBrowserClient();
+ * **Do NOT use in Next.js / SSR apps.** In SSR apps sessions must be persisted
+ * in cookies so that Server Components can access them. Use the cookie-aware
+ * `createBrowserClient` from `@supabase/ssr` (or the wrapper in
+ * `apps/web/lib/supabase/client.ts`) instead.
+ *
+ * Usage (React Native / Expo only):
+ *   import { createNativeClient } from "@meridian/api";
+ *   const supabase = createNativeClient();
  */
-export function createBrowserClient(): SupabaseClient {
+export function createNativeClient(): SupabaseClient {
   const { url, anonKey } = getSupabaseConfig();
   return createClient(url, anonKey);
 }
