@@ -164,6 +164,14 @@ create policy "content_items: owner insert"
     creator_id in (
       select id from creators where auth_user_id = auth.uid()
     )
+    and (
+      platform_id is null
+      or exists (
+        select 1 from connected_platforms cp
+        where cp.id = platform_id
+        and cp.creator_id = creator_id
+      )
+    )
   );
 
 create policy "content_items: owner update"
@@ -171,6 +179,19 @@ create policy "content_items: owner update"
   using (
     creator_id in (
       select id from creators where auth_user_id = auth.uid()
+    )
+  )
+  with check (
+    creator_id in (
+      select id from creators where auth_user_id = auth.uid()
+    )
+    and (
+      platform_id is null
+      or exists (
+        select 1 from connected_platforms cp
+        where cp.id = platform_id
+        and cp.creator_id = creator_id
+      )
     )
   );
 
