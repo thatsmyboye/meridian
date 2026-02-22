@@ -4,11 +4,6 @@
 -- =============================================================
 
 -- ---------------------------------------------------------------------------
--- Extensions
--- ---------------------------------------------------------------------------
-create extension if not exists "uuid-ossp";
-
--- ---------------------------------------------------------------------------
 -- Enums
 -- ---------------------------------------------------------------------------
 create type platform_name as enum (
@@ -34,7 +29,7 @@ create type repurpose_status as enum (
 -- Central profile table, linked 1-to-1 with Supabase auth.users
 -- ===========================================================================
 create table creators (
-  id              uuid primary key default uuid_generate_v4(),
+  id              uuid primary key default gen_random_uuid(),
   auth_user_id    uuid not null unique references auth.users (id) on delete cascade,
   display_name    text not null,
   email           text not null,
@@ -69,7 +64,7 @@ create policy "creators: owner delete"
 -- OAuth / API credentials for each social platform a creator connects
 -- ===========================================================================
 create table connected_platforms (
-  id                  uuid primary key default uuid_generate_v4(),
+  id                  uuid primary key default gen_random_uuid(),
   creator_id          uuid not null references creators (id) on delete cascade,
   platform            platform_name not null,
   handle              text,                         -- @username / channel name
@@ -126,7 +121,7 @@ create policy "connected_platforms: owner delete"
 -- Individual pieces of content ingested from connected platforms
 -- ===========================================================================
 create table content_items (
-  id              uuid primary key default uuid_generate_v4(),
+  id              uuid primary key default gen_random_uuid(),
   creator_id      uuid not null references creators (id) on delete cascade,
   platform_id     uuid references connected_platforms (id) on delete set null,
   external_id     text,                             -- platform-native content ID
@@ -208,7 +203,7 @@ create policy "content_items: owner delete"
 -- Point-in-time metrics for a content item
 -- ===========================================================================
 create table performance_snapshots (
-  id              uuid primary key default uuid_generate_v4(),
+  id              uuid primary key default gen_random_uuid(),
   content_item_id uuid not null references content_items (id) on delete cascade,
   creator_id      uuid not null references creators (id) on delete cascade,
   snapshot_at     timestamptz not null default now(),
@@ -282,7 +277,7 @@ create policy "performance_snapshots: owner delete"
 -- AI-generated insights derived from a creator's content patterns
 -- ===========================================================================
 create table pattern_insights (
-  id              uuid primary key default uuid_generate_v4(),
+  id              uuid primary key default gen_random_uuid(),
   creator_id      uuid not null references creators (id) on delete cascade,
   generated_at    timestamptz not null default now(),
   insight_type    text not null,                    -- e.g. 'top_format', 'best_time', 'engagement_driver'
@@ -338,7 +333,7 @@ create policy "pattern_insights: owner delete"
 -- Tracks a request to repurpose one content item for another platform
 -- ===========================================================================
 create table repurpose_jobs (
-  id                uuid primary key default uuid_generate_v4(),
+  id                uuid primary key default gen_random_uuid(),
   creator_id        uuid not null references creators (id) on delete cascade,
   source_item_id    uuid not null references content_items (id) on delete cascade,
   target_platform   platform_name not null,
