@@ -34,7 +34,10 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refresh session — do not remove this await.
-  await supabase.auth.getUser();
+  // getClaims() reads JWT claims locally and only makes a network call when
+  // the token actually needs refreshing, unlike getUser() which always
+  // round-trips to Supabase auth servers.
+  await supabase.auth.getClaims();
 
   return supabaseResponse;
 }
