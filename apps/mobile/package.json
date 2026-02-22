@@ -1,0 +1,32 @@
+{
+  "name": "@meridian/mobile",
+  "version": "0.0.1",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@meridian/api": "workspace:*",
+    "@meridian/types": "workspace:*",
+    "@meridian/ui": "workspace:*",
+    "expo": "~53.0.0",
+    "expo-router": "~5.1.11",
+    "expo-status-bar": "~3.0.9",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-native": "0.79.6",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.0",
+    "@types/react": "^19.0.14",
+    "typescript": "^5.8.3"
+  }
+}

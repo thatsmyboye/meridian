@@ -1,0 +1,18 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@meridian/api": ["../../packages/api/src/index.ts"],
+      "@meridian/types": ["../../packages/types/src/index.ts"],
+      "@meridian/ui": ["../../packages/ui/src/index.tsx"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.d.ts",
+    "expo-env.d.ts"
+  ]
+}
