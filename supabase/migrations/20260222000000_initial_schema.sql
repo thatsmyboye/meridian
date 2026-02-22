@@ -44,9 +44,6 @@ create table creators (
   updated_at      timestamptz not null default now()
 );
 
--- Index
-create index idx_creators_auth_user_id on creators (auth_user_id);
-
 -- RLS
 alter table creators enable row level security;
 
