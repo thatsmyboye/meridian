@@ -2,11 +2,6 @@
  * @meridian/api — Shared API layer
  *
  * Provides type-safe Supabase client factories and shared fetch utilities.
- * Full Supabase implementation is added in E01-02 and E01-03.
- *
- * Usage pattern (added in E01-02):
- *   import { createBrowserClient } from "@meridian/api";
- *   const supabase = createBrowserClient();
  */
 
 export type { Creator, ConnectedPlatform, ContentItem } from "@meridian/types";
@@ -33,4 +28,24 @@ export function getSupabaseConfig(): SupabaseConfig {
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
     "";
   return { url, anonKey };
+}
+
+// ─── Client factories ─────────────────────────────────────────────────────────
+
+import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+export type { SupabaseClient };
+
+/**
+ * Creates a Supabase client for use in browser / React Native contexts.
+ * Uses the anon key and reads config from environment variables.
+ *
+ * Usage:
+ *   import { createBrowserClient } from "@meridian/api";
+ *   const supabase = createBrowserClient();
+ */
+export function createBrowserClient(): SupabaseClient {
+  const { url, anonKey } = getSupabaseConfig();
+  return createClient(url, anonKey);
 }

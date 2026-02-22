@@ -4,6 +4,7 @@
     "plugins": [{ "name": "next" }],
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./*"],
       "@meridian/api": ["../../packages/api/src/index.ts"],
       "@meridian/inngest": ["../../packages/inngest/src/index.ts"],
       "@meridian/types": ["../../packages/types/src/index.ts"],
