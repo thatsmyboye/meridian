@@ -1,0 +1,27 @@
+{
+  "name": "@meridian/web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@meridian/api": "workspace:*",
+    "@meridian/inngest": "workspace:*",
+    "@meridian/types": "workspace:*",
+    "@meridian/ui": "workspace:*",
+    "next": "15.1.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5.7.3"
+  }
+}
