@@ -236,6 +236,16 @@ create policy "performance_snapshots: owner update"
     creator_id in (
       select id from creators where auth_user_id = auth.uid()
     )
+  )
+  with check (
+    creator_id in (
+      select id from creators where auth_user_id = auth.uid()
+    )
+    and exists (
+      select 1 from content_items ci
+      join creators c on c.id = ci.creator_id and c.auth_user_id = auth.uid()
+      where ci.id = content_item_id
+    )
   );
 
 create policy "performance_snapshots: owner delete"
@@ -352,6 +362,16 @@ create policy "repurpose_jobs: owner update"
   using (
     creator_id in (
       select id from creators where auth_user_id = auth.uid()
+    )
+  )
+  with check (
+    creator_id in (
+      select id from creators where auth_user_id = auth.uid()
+    )
+    and exists (
+      select 1 from content_items ci
+      join creators c on c.id = ci.creator_id and c.auth_user_id = auth.uid()
+      where ci.id = source_item_id
     )
   );
 
