@@ -259,7 +259,8 @@ create table pattern_insights (
   evidence_json   jsonb,                            -- supporting data points
   confidence      numeric(4,3),                     -- 0.000 – 1.000
   is_dismissed    boolean not null default false,
-  created_at      timestamptz not null default now()
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
 );
 
 -- Indexes
@@ -383,6 +384,10 @@ create trigger trg_connected_platforms_updated_at
 
 create trigger trg_content_items_updated_at
   before update on content_items
+  for each row execute procedure set_updated_at();
+
+create trigger trg_pattern_insights_updated_at
+  before update on pattern_insights
   for each row execute procedure set_updated_at();
 
 create trigger trg_repurpose_jobs_updated_at
