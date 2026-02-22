@@ -44,3 +44,4 @@ dist/
 # Supabase
 supabase/.branches
 supabase/.temp
+.mcp.json
