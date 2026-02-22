@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@meridian/types": "workspace:*"
+    "@meridian/types": "workspace:*",
+    "@supabase/supabase-js": "^2.97.0"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

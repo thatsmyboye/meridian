@@ -2,11 +2,6 @@
  * @meridian/api — Shared API layer
  *
  * Provides type-safe Supabase client factories and shared fetch utilities.
- * Full Supabase implementation is added in E01-02 and E01-03.
- *
- * Usage pattern (added in E01-02):
- *   import { createBrowserClient } from "@meridian/api";
- *   const supabase = createBrowserClient();
  */
 
 export type { Creator, ConnectedPlatform, ContentItem } from "@meridian/types";
@@ -33,4 +28,30 @@ export function getSupabaseConfig(): SupabaseConfig {
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
     "";
   return { url, anonKey };
+}
+
+// ─── Client factories ─────────────────────────────────────────────────────────
+
+import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+export type { SupabaseClient };
+
+/**
+ * Creates a Supabase client for React Native / Expo contexts.
+ * Sessions are stored in localStorage (via the default @supabase/supabase-js
+ * storage adapter), which is fine for native apps but incompatible with SSR.
+ *
+ * **Do NOT use in Next.js / SSR apps.** In SSR apps sessions must be persisted
+ * in cookies so that Server Components can access them. Use the cookie-aware
+ * `createBrowserClient` from `@supabase/ssr` (or the wrapper in
+ * `apps/web/lib/supabase/client.ts`) instead.
+ *
+ * Usage (React Native / Expo only):
+ *   import { createNativeClient } from "@meridian/api";
+ *   const supabase = createNativeClient();
+ */
+export function createNativeClient(): SupabaseClient {
+  const { url, anonKey } = getSupabaseConfig();
+  return createClient(url, anonKey);
 }
