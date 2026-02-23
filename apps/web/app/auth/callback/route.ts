@@ -1,3 +1,4 @@
+import { provisionCreator } from "@meridian/api";
 import { createServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -35,34 +36,7 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (user) {
-    // Check whether a creators row already exists for this user.
-    const { data: existingCreator } = await supabase
-      .from("creators")
-      .select("id")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-
-    if (!existingCreator) {
-      // First sign-in: provision the creators profile from Google metadata.
-      const meta = user.user_metadata ?? {};
-      const { error: insertError } = await supabase.from("creators").insert({
-        auth_user_id: user.id,
-        display_name:
-          (meta.full_name as string | undefined) ??
-          (meta.name as string | undefined) ??
-          user.email?.split("@")[0] ??
-          "Creator",
-        email: user.email!,
-        avatar_url:
-          (meta.avatar_url as string | undefined) ??
-          (meta.picture as string | undefined) ??
-          null,
-      });
-
-      if (insertError) {
-        console.error("[auth/callback] creators insert failed:", insertError.message);
-      }
-    }
+    await provisionCreator(supabase, user);
   }
 
   return NextResponse.redirect(`${origin}${next}`);

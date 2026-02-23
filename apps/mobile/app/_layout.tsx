@@ -1,3 +1,4 @@
+import { provisionCreator } from "@meridian/api";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { Stack, router } from "expo-router";
@@ -32,7 +33,7 @@ export default function RootLayout() {
       setSession(session);
 
       if (event === "SIGNED_IN" && session?.user) {
-        await provisionCreatorIfNew(session.user.id, session.user);
+        await provisionCreator(supabase, session.user);
         router.replace("/");
       }
 
@@ -65,40 +66,4 @@ export default function RootLayout() {
       <Stack.Screen name="login" options={{ title: "Sign in", headerShown: false }} />
     </Stack>
   );
-}
-
-/**
- * Inserts a creators row on the user's very first sign-in.
- * Subsequent sign-ins skip the insert (row already exists).
- */
-async function provisionCreatorIfNew(
-  userId: string,
-  user: { email?: string; user_metadata?: Record<string, unknown> }
-) {
-  const { data: existing } = await supabase
-    .from("creators")
-    .select("id")
-    .eq("auth_user_id", userId)
-    .maybeSingle();
-
-  if (existing) return;
-
-  const meta = user.user_metadata ?? {};
-  const { error } = await supabase.from("creators").insert({
-    auth_user_id: userId,
-    display_name:
-      (meta.full_name as string | undefined) ??
-      (meta.name as string | undefined) ??
-      user.email?.split("@")[0] ??
-      "Creator",
-    email: user.email!,
-    avatar_url:
-      (meta.avatar_url as string | undefined) ??
-      (meta.picture as string | undefined) ??
-      null,
-  });
-
-  if (error) {
-    console.error("[auth] creators insert failed:", error.message);
-  }
 }

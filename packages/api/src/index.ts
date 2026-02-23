@@ -33,9 +33,53 @@ export function getSupabaseConfig(): SupabaseConfig {
 // ─── Client factories ─────────────────────────────────────────────────────────
 
 import { createClient } from "@supabase/supabase-js";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 export type { SupabaseClient };
+
+// ─── Creator provisioning ─────────────────────────────────────────────────────
+
+/**
+ * Inserts a creators row on the user's very first sign-in.
+ * Subsequent sign-ins skip the insert (row already exists).
+ *
+ * Uses Google OAuth metadata for display_name and avatar_url with a consistent
+ * fallback chain. Safe to call on every sign-in; idempotent.
+ *
+ * @param supabase - Supabase client (browser, server, or native)
+ * @param user - Authenticated user from Supabase Auth
+ */
+export async function provisionCreator(
+  supabase: SupabaseClient,
+  user: Pick<User, "id" | "email" | "user_metadata">
+): Promise<void> {
+  const { data: existing } = await supabase
+    .from("creators")
+    .select("id")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  if (existing) return;
+
+  const meta = user.user_metadata ?? {};
+  const { error } = await supabase.from("creators").insert({
+    auth_user_id: user.id,
+    display_name:
+      (meta.full_name as string | undefined) ??
+      (meta.name as string | undefined) ??
+      user.email?.split("@")[0] ??
+      "Creator",
+    email: user.email!,
+    avatar_url:
+      (meta.avatar_url as string | undefined) ??
+      (meta.picture as string | undefined) ??
+      null,
+  });
+
+  if (error) {
+    console.error("[provisionCreator] creators insert failed:", error.message);
+  }
+}
 
 /**
  * Creates a Supabase client for React Native / Expo contexts.
