@@ -14,10 +14,22 @@ import { NextResponse } from "next/server";
  * Required Google Cloud Console settings:
  *  - Authorised redirect URI: <SITE_URL>/auth/callback
  */
+function isSafeRedirectPath(path: string): boolean {
+  return (
+    path.startsWith("/") &&
+    !path.startsWith("//") &&
+    !path.startsWith("/\\") &&
+    !path.includes("@")
+  );
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const nextRaw = searchParams.get("next") ?? "/";
+
+  // Prevent open-redirect: only allow relative paths starting with a single "/".
+  const next = isSafeRedirectPath(nextRaw) ? nextRaw : "/";
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
