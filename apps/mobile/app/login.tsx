@@ -18,7 +18,7 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 export default function LoginScreen() {
   async function handleGoogleSignIn() {
     // Build the deep-link redirect URL the device will intercept.
-    const redirectUrl = Linking.createURL("/auth/callback");
+    const redirectUrl = Linking.createURL("auth/callback");
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
