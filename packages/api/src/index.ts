@@ -46,6 +46,9 @@ export type { SupabaseClient };
  * Uses Google OAuth metadata for display_name and avatar_url with a consistent
  * fallback chain. Safe to call on every sign-in; idempotent.
  *
+ * Uses upsert with ON CONFLICT DO NOTHING to avoid race conditions when two
+ * concurrent sign-ins (e.g., mobile and web) both attempt to provision.
+ *
  * @param supabase - Supabase client (browser, server, or native)
  * @param user - Authenticated user from Supabase Auth
  */
@@ -53,31 +56,28 @@ export async function provisionCreator(
   supabase: SupabaseClient,
   user: Pick<User, "id" | "email" | "user_metadata">
 ): Promise<void> {
-  const { data: existing } = await supabase
-    .from("creators")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-
-  if (existing) return;
-
   const meta = user.user_metadata ?? {};
-  const { error } = await supabase.from("creators").insert({
-    auth_user_id: user.id,
-    display_name:
-      (meta.full_name as string | undefined) ??
-      (meta.name as string | undefined) ??
-      user.email?.split("@")[0] ??
-      "Creator",
-    email: user.email!,
-    avatar_url:
-      (meta.avatar_url as string | undefined) ??
-      (meta.picture as string | undefined) ??
-      null,
-  });
+  const { error } = await supabase
+    .from("creators")
+    .upsert(
+      {
+        auth_user_id: user.id,
+        display_name:
+          (meta.full_name as string | undefined) ??
+          (meta.name as string | undefined) ??
+          user.email?.split("@")[0] ??
+          "Creator",
+        email: user.email!,
+        avatar_url:
+          (meta.avatar_url as string | undefined) ??
+          (meta.picture as string | undefined) ??
+          null,
+      },
+      { onConflict: "auth_user_id", ignoreDuplicates: true }
+    );
 
   if (error) {
-    console.error("[provisionCreator] creators insert failed:", error.message);
+    console.error("[provisionCreator] creators upsert failed:", error.message);
   }
 }
 
