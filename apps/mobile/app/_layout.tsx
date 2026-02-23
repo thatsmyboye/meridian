@@ -1,7 +1,7 @@
 import { provisionCreator } from "@meridian/api";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@supabase/supabase-js";
-import { Stack, router } from "expo-router";
+import { Redirect, Stack, router } from "expo-router";
 import { useEffect, useState } from "react";
 
 /**
@@ -53,17 +53,18 @@ export default function RootLayout() {
   }, []);
 
   // Wait until we know whether there is a session before rendering screens.
-  useEffect(() => {
-    if (!initialised) return;
-    if (!session) {
-      router.replace("/login");
-    }
-  }, [initialised, session]);
+  // This prevents a brief flash of authenticated routes before redirecting to /login.
+  if (!initialised) {
+    return null;
+  }
 
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: "Meridian" }} />
-      <Stack.Screen name="login" options={{ title: "Sign in", headerShown: false }} />
-    </Stack>
+    <>
+      {!session && <Redirect href="/login" />}
+      <Stack>
+        <Stack.Screen name="index" options={{ title: "Meridian" }} />
+        <Stack.Screen name="login" options={{ title: "Sign in", headerShown: false }} />
+      </Stack>
+    </>
   );
 }
