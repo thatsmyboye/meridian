@@ -31,21 +31,20 @@ export default function RootLayout() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-
       if (event === "SIGNED_IN" && session?.user) {
         await provisionCreator(supabase, session.user);
+        setSession(session);
         router.replace("/");
+        return;
       }
+
+      setSession(session);
 
       if (event === "SIGNED_OUT") {
         router.replace("/login");
       }
 
       if (event === "TOKEN_REFRESHED") {
-        // The Supabase client has rotated the access + refresh tokens.
-        // The new tokens are already persisted in SecureStore by the client.
-        // No additional action is required; state update above keeps the UI current.
         console.log("[auth] token refreshed for user:", session?.user?.id);
       }
     });
