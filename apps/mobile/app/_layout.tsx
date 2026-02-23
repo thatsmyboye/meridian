@@ -1,7 +1,7 @@
 import { provisionCreator } from "@meridian/api";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@supabase/supabase-js";
-import { Redirect, Stack, router } from "expo-router";
+import { Redirect, Stack, router, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 
 /**
@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
  *    background JWT rotation by the Supabase client.
  */
 export default function RootLayout() {
+  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
   const [initialised, setInitialised] = useState(false);
 
@@ -52,7 +53,6 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Wait until we know whether there is a session before rendering screens.
   // This prevents a brief flash of authenticated routes before redirecting to /login.
   if (!initialised) {
     return null;
@@ -61,6 +61,7 @@ export default function RootLayout() {
   return (
     <>
       {!session && <Redirect href="/login" />}
+      {session && pathname === "/login" && <Redirect href="/" />}
       <Stack>
         <Stack.Screen name="index" options={{ title: "Meridian" }} />
         <Stack.Screen name="login" options={{ title: "Sign in", headerShown: false }} />
