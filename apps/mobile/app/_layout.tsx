@@ -23,10 +23,18 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Restore session from SecureStore on mount.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setInitialised(true);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+      })
+      .catch(() => {
+        // SecureStore read error, corrupted data, etc. — treat as no session.
+        setSession(null);
+      })
+      .finally(() => {
+        setInitialised(true);
+      });
 
     const {
       data: { subscription },
