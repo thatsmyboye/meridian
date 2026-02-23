@@ -49,6 +49,10 @@ export type { SupabaseClient };
  * Uses upsert with ON CONFLICT DO NOTHING to avoid race conditions when two
  * concurrent sign-ins (e.g., mobile and web) both attempt to provision.
  *
+ * When user.email is null (e.g., phone auth, magic link without email), uses a
+ * synthetic placeholder so provisioning still succeeds. Callers can prompt users
+ * to add an email later via profile completion.
+ *
  * @param supabase - Supabase client (browser, server, or native)
  * @param user - Authenticated user from Supabase Auth
  */
@@ -57,6 +61,8 @@ export async function provisionCreator(
   user: Pick<User, "id" | "email" | "user_metadata">
 ): Promise<void> {
   const meta = user.user_metadata ?? {};
+  const email =
+    user.email ?? `auth-${user.id}@meridian.placeholder`;
   const { error } = await supabase
     .from("creators")
     .upsert(
@@ -67,7 +73,7 @@ export async function provisionCreator(
           (meta.name as string | undefined) ??
           user.email?.split("@")[0] ??
           "Creator",
-        email: user.email!,
+        email,
         avatar_url:
           (meta.avatar_url as string | undefined) ??
           (meta.picture as string | undefined) ??
