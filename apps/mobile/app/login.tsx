@@ -10,7 +10,7 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
  *  1. Call signInWithOAuth to get the Google consent URL (skipBrowserRedirect
  *     prevents the SDK from trying to open a URL in a non-existent window).
  *  2. Open the URL with expo-web-browser, which shows the native browser sheet.
- *  3. Google redirects to meridian://auth/callback?code=<pkce_code>.
+ *  3. Google redirects to meridian://auth/callback or exp://.../--/auth/callback (Expo Go).
  *  4. Parse the code from the redirect URL and exchange it for a session.
  *  5. onAuthStateChange in _layout fires SIGNED_IN → provisions creator row →
  *     navigates to the main app.
