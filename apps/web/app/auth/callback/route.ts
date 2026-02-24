@@ -41,7 +41,11 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (user) {
-    await provisionCreator(supabase, user);
+    try {
+      await provisionCreator(supabase, user);
+    } catch (err) {
+      console.error("[auth/callback] provisionCreator failed:", err);
+    }
   }
 
   return NextResponse.redirect(`${origin}${next}`);
