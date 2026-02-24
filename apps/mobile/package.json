@@ -15,7 +15,7 @@
     "@meridian/api": "workspace:*",
     "@meridian/types": "workspace:*",
     "@meridian/ui": "workspace:*",
-    "expo": "~53.0.0",
+    "expo": "~53.0.27",
     "expo-router": "~5.1.11",
     "expo-status-bar": "~3.0.9",
     "react": "^19.0.0",

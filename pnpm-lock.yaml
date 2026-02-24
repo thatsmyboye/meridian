@@ -11,6 +11,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      eas:
+        specifier: ^0.1.0
+        version: 0.1.0
     devDependencies:
       prettier:
         specifier: ^3.4.2
@@ -34,7 +38,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       expo:
-        specifier: ~53.0.0
+        specifier: ~53.0.27
         version: 53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.0.0))(react@19.0.0)
       expo-router:
         specifier: ~5.1.11
@@ -2240,6 +2244,10 @@ packages:
   dotenv@16.4.7:
     resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
     engines: {node: '>=12'}
+
+  eas@0.1.0:
+    resolution: {integrity: sha512-w88fTTTkfDLHwcaVW8wiYjOtnBBToguzc6AyIldD1vOrCRTKxhQEDS8oIE7nWeSJ+kCoIeoHd79Mhwvntydixg==}
+    engines: {node: '>=0.10.0'}
 
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
@@ -6736,6 +6744,8 @@ snapshots:
       dotenv: 16.4.7
 
   dotenv@16.4.7: {}
+
+  eas@0.1.0: {}
 
   eastasianwidth@0.2.0: {}
 
