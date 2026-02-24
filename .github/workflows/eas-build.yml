@@ -1,0 +1,47 @@
+name: EAS Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: EAS Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Expo and EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build preview (pull request)
+        if: github.event_name == 'pull_request'
+        working-directory: apps/mobile
+        run: eas build --profile preview --platform all --non-interactive
+
+      - name: Build development (main branch)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: apps/mobile
+        run: eas build --profile development --platform all --non-interactive
