@@ -37,9 +37,13 @@ jobs:
       - name: Build preview (pull request)
         if: github.event_name == 'pull_request'
         working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --profile preview --platform all --non-interactive
 
       - name: Build development (main branch)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --profile development --platform all --non-interactive
