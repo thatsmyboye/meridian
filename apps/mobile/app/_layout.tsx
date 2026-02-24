@@ -71,7 +71,7 @@ export default function RootLayout() {
 
   return (
     <>
-      {!session && <Redirect href="/login" />}
+      {!session && pathname !== "/login" && <Redirect href="/login" />}
       {session && pathname === "/login" && <Redirect href="/" />}
       <Stack>
         <Stack.Screen name="index" options={{ title: "Meridian" }} />
