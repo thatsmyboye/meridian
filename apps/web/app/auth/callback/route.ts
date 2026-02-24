@@ -1,6 +1,7 @@
 import { provisionCreator } from "@meridian/api";
 import { createServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { isSafeRedirectPath } from "@/lib/auth";
 
 /**
  * OAuth callback handler for Supabase Auth PKCE flow.
@@ -14,14 +15,6 @@ import { NextResponse } from "next/server";
  * Required Google Cloud Console settings:
  *  - Authorised redirect URI: <SITE_URL>/auth/callback
  */
-function isSafeRedirectPath(path: string): boolean {
-  return (
-    path.startsWith("/") &&
-    !path.startsWith("//") &&
-    !path.startsWith("/\\") &&
-    !path.includes("@")
-  );
-}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
