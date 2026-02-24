@@ -22,8 +22,9 @@ export type RepurposeJobStatus =
 
 export interface Creator {
   id: string;
+  auth_user_id: string;
+  display_name: string;
   email: string;
-  full_name: string | null;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;

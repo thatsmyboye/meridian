@@ -33,9 +33,59 @@ export function getSupabaseConfig(): SupabaseConfig {
 // ─── Client factories ─────────────────────────────────────────────────────────
 
 import { createClient } from "@supabase/supabase-js";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 export type { SupabaseClient };
+
+// ─── Creator provisioning ─────────────────────────────────────────────────────
+
+/**
+ * Inserts a creators row on the user's very first sign-in.
+ * Subsequent sign-ins skip the insert (row already exists).
+ *
+ * Uses Google OAuth metadata for display_name and avatar_url with a consistent
+ * fallback chain. Safe to call on every sign-in; idempotent.
+ *
+ * Uses upsert with ON CONFLICT DO NOTHING to avoid race conditions when two
+ * concurrent sign-ins (e.g., mobile and web) both attempt to provision.
+ *
+ * When user.email is null (e.g., phone auth, magic link without email), uses a
+ * synthetic placeholder so provisioning still succeeds. Callers can prompt users
+ * to add an email later via profile completion.
+ *
+ * @param supabase - Supabase client (browser, server, or native)
+ * @param user - Authenticated user from Supabase Auth
+ */
+export async function provisionCreator(
+  supabase: SupabaseClient,
+  user: Pick<User, "id" | "email" | "user_metadata">
+): Promise<void> {
+  const meta = user.user_metadata ?? {};
+  const email =
+    user.email ?? `auth-${user.id}@meridian.placeholder`;
+  const { error } = await supabase
+    .from("creators")
+    .upsert(
+      {
+        auth_user_id: user.id,
+        display_name:
+          (meta.full_name as string | undefined) ??
+          (meta.name as string | undefined) ??
+          user.email?.split("@")[0] ??
+          "Creator",
+        email,
+        avatar_url:
+          (meta.avatar_url as string | undefined) ??
+          (meta.picture as string | undefined) ??
+          null,
+      },
+      { onConflict: "auth_user_id", ignoreDuplicates: true }
+    );
+
+  if (error) {
+    console.error("[provisionCreator] creators upsert failed:", error.message);
+  }
+}
 
 /**
  * Creates a Supabase client for React Native / Expo contexts.
