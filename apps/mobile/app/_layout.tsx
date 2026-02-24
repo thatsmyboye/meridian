@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
  * Root layout — owns the auth session lifecycle for the entire app.
  *
  * Responsibilities:
- *  - Initialise from a persisted SecureStore session on mount.
+ *  - Initialise from a persisted (encrypted) session on mount.
  *  - Navigate to /login when the user is not authenticated.
  *  - Navigate to / (index) after a successful sign-in.
  *  - On first sign-in (SIGNED_IN + no existing creators row), provision the
@@ -22,14 +22,14 @@ export default function RootLayout() {
   const [initialised, setInitialised] = useState(false);
 
   useEffect(() => {
-    // Restore session from SecureStore on mount.
+    // Restore session from storage on mount.
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
         setSession(session);
       })
       .catch(() => {
-        // SecureStore read error, corrupted data, etc. — treat as no session.
+        // Storage read error, corrupted data, etc. — treat as no session.
         setSession(null);
       })
       .finally(() => {
