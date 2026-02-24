@@ -38,15 +38,17 @@ export default function RootLayout() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
         // Update session immediately so we don't overwrite newer state (e.g. SIGNED_OUT
         // from server-side revocation) after a delayed provisionCreator round-trip.
         setSession(session);
+        try {
+          await provisionCreator(supabase, session.user);
+        } catch (err) {
+          console.error("[auth] provisionCreator failed:", err);
+        }
         router.replace("/");
-        provisionCreator(supabase, session.user).catch((err) =>
-          console.error("[auth] provisionCreator failed:", err)
-        );
         return;
       }
 
