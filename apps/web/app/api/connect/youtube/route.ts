@@ -23,20 +23,19 @@ const YOUTUBE_SCOPES = [
 ].join(" ");
 
 export async function GET(request: Request) {
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+
   const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const { origin } = new URL(request.url);
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(`${siteUrl}/login`);
   }
 
   const state = randomBytes(16).toString("hex");
-
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
   const params = new URLSearchParams({
     client_id: process.env.YOUTUBE_CLIENT_ID!,
