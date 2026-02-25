@@ -3,6 +3,7 @@
   "compilerOptions": {
     "noEmit": true,
     "paths": {
+      "@meridian/api": ["../api/src/index.ts"],
       "@meridian/types": ["../types/src/index.ts"]
     }
   },
