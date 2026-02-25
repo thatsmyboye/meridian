@@ -119,6 +119,9 @@ importers:
       '@supabase/ssr':
         specifier: ^0.8.0
         version: 0.8.0(@supabase/supabase-js@2.97.0)
+      inngest:
+        specifier: ^3.52.3
+        version: 3.52.3(@opentelemetry/core@2.5.1(@opentelemetry/api@1.9.0))(next@15.3.9(@opentelemetry/api@1.9.0)(react-dom@19.0.3(react@19.0.3))(react@19.0.3))(typescript@5.9.3)(zod@4.3.6)
       next:
         specifier: 15.3.9
         version: 15.3.9(@opentelemetry/api@1.9.0)(react-dom@19.0.3(react@19.0.3))(react@19.0.3)
@@ -163,13 +166,19 @@ importers:
 
   packages/inngest:
     dependencies:
+      '@meridian/api':
+        specifier: workspace:*
+        version: link:../api
       '@meridian/types':
         specifier: workspace:*
         version: link:../types
+      '@supabase/supabase-js':
+        specifier: ^2.0.0
+        version: 2.97.0
+    devDependencies:
       inngest:
         specifier: ^3.0.0
         version: 3.52.3(@opentelemetry/core@2.5.1(@opentelemetry/api@1.9.0))(next@15.3.9(@opentelemetry/api@1.9.0)(react-dom@19.0.3(react@19.0.3))(react@19.0.3))(typescript@5.9.3)(zod@4.3.6)
-    devDependencies:
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

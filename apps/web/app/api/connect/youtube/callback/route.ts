@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { encryptToken } from "@meridian/api";
+import { inngest } from "@meridian/inngest";
 import { createServerClient } from "@/lib/supabase/server";
 
 /**
@@ -145,7 +146,7 @@ export async function GET(request: NextRequest) {
     Date.now() + tokens.expires_in * 1000
   ).toISOString();
 
-  const { error: upsertErr } = await supabase
+  const { data: platformData, error: upsertErr } = await supabase
     .from("connected_platforms")
     .upsert(
       {
@@ -160,22 +161,29 @@ export async function GET(request: NextRequest) {
         status: "active",
       },
       { onConflict: "creator_id,platform" }
-    );
+    )
+    .select("id")
+    .single();
 
-  if (upsertErr) {
+  if (upsertErr || !platformData) {
     console.error(
       "[youtube/callback] connected_platforms upsert failed:",
-      upsertErr.message
+      upsertErr?.message
     );
     return NextResponse.redirect(`${siteUrl}/connect?error=save_failed`);
   }
 
-  // ── 7. Clear state cookie and redirect to success ────────────────────────
-  // TODO: Fire platform/connected Inngest event once Inngest is wired up:
-  //   await inngest.send({ name: "platform/connected", data: {
-  //     creator_id: creator.id, platform: "youtube", connected_platform_id: ...
-  //   }});
+  // ── 7. Fire platform/connected event to kick off content sync ────────────
+  await inngest.send({
+    name: "platform/connected",
+    data: {
+      creator_id: creator.id,
+      platform: "youtube",
+      connected_platform_id: platformData.id,
+    },
+  });
 
+  // ── 8. Clear state cookie and redirect to success ────────────────────────
   const response = NextResponse.redirect(`${siteUrl}/connect?success=youtube`);
   response.cookies.delete("youtube_oauth_state");
   return response;

@@ -1,9 +1,13 @@
 /**
  * @meridian/inngest — Shared Inngest configuration
  *
- * Exports the Inngest app ID, typed event schemas, and (in E02) the
- * Inngest client instance used by all background job handlers.
+ * Exports the Inngest client, typed event schemas, and all background
+ * function handlers used by the Meridian platform.
  */
 
-export { INNGEST_APP_ID } from "./client";
+export { INNGEST_APP_ID, inngest } from "./client";
 export type { MeridianEvents } from "./events";
+
+// ─── Background function handlers ────────────────────────────────────────────
+export { syncYoutubeMetadata } from "./functions/youtube-sync";
+export { handlePlatformConnected } from "./functions/platform-connected";
