@@ -2,6 +2,7 @@
   "expo": {
     "name": "Meridian",
     "slug": "meridian",
+    "owner": "thatsmyboye",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -31,6 +32,11 @@
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1916c841-542c-4ef5-b3c1-8de20525be07"
+      }
     }
   }
 }
