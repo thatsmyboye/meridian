@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { decryptToken } from "@meridian/api";
 import { inngest } from "../client";
+import { ensureValidYouTubeToken } from "../lib/refreshYouTubeToken";
 
 // ─── YouTube API response types ───────────────────────────────────────────────
 
@@ -104,7 +104,9 @@ export const syncYoutubeMetadata = inngest.createFunction(
       const supabase = getSupabaseAdmin();
       const { data, error } = await supabase
         .from("connected_platforms")
-        .select("id, access_token_enc, platform_user_id")
+        .select(
+          "id, access_token_enc, refresh_token_enc, token_expires_at, platform_user_id"
+        )
         .eq("id", connected_platform_id)
         .single();
 
@@ -116,15 +118,35 @@ export const syncYoutubeMetadata = inngest.createFunction(
       return data as {
         id: string;
         access_token_enc: string;
+        refresh_token_enc: string | null;
+        token_expires_at: string | null;
         platform_user_id: string;
       };
     });
+
+    // ── Step 1b: ensure a valid access token before making API calls ─────────
+    // Checks expiry (5-minute buffer) and refreshes via Google if needed.
+    // On refresh failure, marks the platform as reauth_required and returns
+    // early — we do NOT throw so Inngest skips retries that would burn quota.
+    const tokenResult = await step.run("ensure-valid-token", async () => {
+      return ensureValidYouTubeToken(platformRow, getSupabaseAdmin());
+    });
+
+    if (!tokenResult.ok) {
+      return {
+        creator_id,
+        connected_platform_id,
+        skipped: true,
+        reason: tokenResult.reason,
+      };
+    }
+
+    const accessToken = tokenResult.accessToken;
 
     // ── Step 2: resolve the channel's uploads playlist ID ───────────────────
     const uploadsPlaylistId = await step.run(
       "fetch-uploads-playlist",
       async () => {
-        const accessToken = decryptToken(platformRow.access_token_enc);
         const url = new URL(
           "https://www.googleapis.com/youtube/v3/channels"
         );
@@ -162,7 +184,6 @@ export const syncYoutubeMetadata = inngest.createFunction(
       const stepId = `sync-page-${pageToken ?? "initial"}`;
 
       const result = await step.run(stepId, async () => {
-        const accessToken = decryptToken(platformRow.access_token_enc);
         const supabase = getSupabaseAdmin();
 
         // 3a. List video IDs from the uploads playlist

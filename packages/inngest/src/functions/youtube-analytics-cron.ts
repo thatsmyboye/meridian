@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { decryptToken, encryptToken } from "@meridian/api";
 import { inngest } from "../client";
+import { ensureValidYouTubeToken } from "../lib/refreshYouTubeToken";
 
 // ─── YouTube Analytics API response type ─────────────────────────────────────
 
@@ -280,64 +280,23 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
     );
 
     // ── Step 2: obtain a valid access token ───────────────────────────────────
-    const accessToken = await step.run("ensure-valid-token", async () => {
-      const expiresAt = platformRow.token_expires_at
-        ? new Date(platformRow.token_expires_at)
-        : null;
-      // Treat the token as expired if it expires within the next 5 minutes.
-      const threshold = new Date(Date.now() + 5 * 60 * 1000);
-      const tokenIsValid = expiresAt !== null && expiresAt > threshold;
-
-      if (tokenIsValid) {
-        return decryptToken(platformRow.access_token_enc);
-      }
-
-      // Token is expired — use the refresh token to get a new one.
-      if (!platformRow.refresh_token_enc) {
-        throw new Error(
-          "Access token has expired and no refresh token is stored. " +
-            "The creator must reconnect their YouTube account."
-        );
-      }
-
-      const refreshToken = decryptToken(platformRow.refresh_token_enc);
-
-      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          client_id: process.env.YOUTUBE_CLIENT_ID!,
-          client_secret: process.env.YOUTUBE_CLIENT_SECRET!,
-          refresh_token: refreshToken,
-          grant_type: "refresh_token",
-        }),
-      });
-
-      if (!tokenRes.ok) {
-        throw new Error(
-          `OAuth token refresh failed (${tokenRes.status}): ${await tokenRes.text()}`
-        );
-      }
-
-      const tokens: { access_token: string; expires_in: number } =
-        await tokenRes.json();
-
-      // Persist the refreshed token so future runs don't hit the token endpoint.
-      const newExpiry = new Date(
-        Date.now() + tokens.expires_in * 1000
-      ).toISOString();
-
-      const supabase = getSupabaseAdmin();
-      await supabase
-        .from("connected_platforms")
-        .update({
-          access_token_enc: encryptToken(tokens.access_token),
-          token_expires_at: newExpiry,
-        })
-        .eq("id", platformRow.id);
-
-      return tokens.access_token;
+    // Checks expiry (5-minute buffer) and refreshes via Google if needed.
+    // On refresh failure, marks the platform as reauth_required and returns
+    // early — we do NOT throw so Inngest skips retries that would burn quota.
+    const tokenResult = await step.run("ensure-valid-token", async () => {
+      return ensureValidYouTubeToken(platformRow, getSupabaseAdmin());
     });
+
+    if (!tokenResult.ok) {
+      return {
+        content_item_id,
+        day_mark: day_mark ?? null,
+        skipped: true,
+        reason: tokenResult.reason,
+      };
+    }
+
+    const accessToken = tokenResult.accessToken;
 
     // ── Step 3: call YouTube Analytics API ────────────────────────────────────
     const metrics = await step.run("fetch-youtube-analytics", async () => {
