@@ -8,20 +8,24 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
-      "credentialsSource": "local",
       "ios": {
-        "buildConfiguration": "Debug"
+        "buildConfiguration": "Debug",
+        "credentialsSource": "remote"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "credentialsSource": "local"
       }
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "credentialsSource": "local",
+      "ios": {
+        "credentialsSource": "remote"
+      },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "credentialsSource": "local"
       }
     }
   },
