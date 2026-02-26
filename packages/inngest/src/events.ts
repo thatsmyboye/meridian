@@ -31,6 +31,11 @@ export type MeridianEvents = {
       creator_id: string;
       content_item_id: string;
       platform: Platform;
+      /**
+       * Lifecycle day mark for this snapshot (1, 7, or 30 days after
+       * publication). Omit for ad-hoc snapshots.
+       */
+      day_mark?: 1 | 7 | 30 | null;
     };
   };
 

@@ -3,6 +3,8 @@ import {
   inngest,
   syncYoutubeMetadata,
   handlePlatformConnected,
+  youtubeAnalyticsCron,
+  fetchYoutubeAnalyticsSnapshot,
 } from "@meridian/inngest";
 
 /**
@@ -20,5 +22,10 @@ import {
  */
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [syncYoutubeMetadata, handlePlatformConnected],
+  functions: [
+    syncYoutubeMetadata,
+    handlePlatformConnected,
+    youtubeAnalyticsCron,
+    fetchYoutubeAnalyticsSnapshot,
+  ],
 });
