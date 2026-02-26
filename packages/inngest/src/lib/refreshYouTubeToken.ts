@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { decryptToken, encryptToken } from "@meridian/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ export type TokenRefreshResult =
  */
 export async function ensureValidYouTubeToken(
   platformRow: PlatformTokenRow,
-  supabase: ReturnType<typeof createClient>
+  supabase: SupabaseClient<any>
 ): Promise<TokenRefreshResult> {
   // ── 1. Check whether the current access token is still valid ───────────────
   const expiresAt = platformRow.token_expires_at
@@ -114,7 +114,7 @@ export async function ensureValidYouTubeToken(
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
 async function markReauthRequired(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient<any>,
   platformId: string
 ): Promise<void> {
   const { error } = await supabase
