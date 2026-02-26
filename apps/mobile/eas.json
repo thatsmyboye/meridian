@@ -21,7 +21,7 @@
       "distribution": "internal",
       "channel": "preview",
       "ios": {
-        "credentialsSource": "remote"
+        "simulator": true
       },
       "android": {
         "buildType": "apk",
