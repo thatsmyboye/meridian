@@ -11,3 +11,7 @@ export type { MeridianEvents } from "./events";
 // ─── Background function handlers ────────────────────────────────────────────
 export { syncYoutubeMetadata } from "./functions/youtube-sync";
 export { handlePlatformConnected } from "./functions/platform-connected";
+export {
+  youtubeAnalyticsCron,
+  fetchYoutubeAnalyticsSnapshot,
+} from "./functions/youtube-analytics-cron";
