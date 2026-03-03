@@ -65,9 +65,9 @@ export async function ensureValidInstagramToken(
   }
 
   // ── 2. Token is expired or close to expiry — attempt a refresh ─────────────
-  // Meta's ig_refresh_token grant extends the token by another 60 days.
-  // It requires the current long-lived token to still be valid (not expired).
-  if (!expiresAt || expiresAt <= new Date()) {
+  // When expiry is unknown (null), try fb_exchange_token first; it may succeed.
+  // Only when we know the token is past its expiry do we skip the attempt.
+  if (expiresAt !== null && expiresAt <= new Date()) {
     // Token is already fully expired; the creator must reconnect.
     await markReauthRequired(supabase, platformRow.id);
     return {

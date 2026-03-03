@@ -27,20 +27,16 @@ const SNAPSHOT_DAY_MARKS = [1, 7, 30] as const;
 type DayMark = (typeof SNAPSHOT_DAY_MARKS)[number];
 
 /**
- * Metrics available for IMAGE and CAROUSEL_ALBUM posts.
- * likes and comments come from the media object directly.
+ * Insights metrics requested for all Instagram media types (IMAGE,
+ * CAROUSEL_ALBUM, VIDEO, REEL).
  *
- * Note: `impressions` was deprecated by Meta on April 21, 2025 for media
- * created after July 1, 2024. `views` is the direct replacement.
+ * Since Meta deprecated both `impressions` and `plays` on April 21, 2025,
+ * `views` is the unified replacement across all media types — for images it
+ * counts impressions, for videos/Reels it counts plays. The remaining metrics
+ * (reach, saved, shares) are identical for all types. likes and comments are
+ * fetched from the media object directly (like_count / comments_count).
  */
-const IMAGE_METRICS = "views,reach,saved,shares";
-
-/**
- * Metrics available for VIDEO and REEL posts.
- * `views` replaces both the deprecated `impressions` and `plays` metrics
- * (deprecated April 21, 2025). For Reels/Video, `views` counts video plays.
- */
-const VIDEO_METRICS = "views,reach,saved,shares";
+const MEDIA_METRICS = "views,reach,saved,shares";
 
 // ─── Cron: daily scheduler ────────────────────────────────────────────────────
 
@@ -305,17 +301,11 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
     const metrics = await step.run("fetch-instagram-insights", async () => {
       const mediaType = contentItem.raw_data?.media_type ?? "IMAGE";
 
-      // Choose metric set based on media type.
-      const metricString =
-        mediaType === "VIDEO" || mediaType === "REEL"
-          ? VIDEO_METRICS
-          : IMAGE_METRICS;
-
       // Fetch insights (views, reach, saved, shares)
       const insightsUrl = new URL(
         `https://graph.facebook.com/v21.0/${contentItem.external_id}/insights`
       );
-      insightsUrl.searchParams.set("metric", metricString);
+      insightsUrl.searchParams.set("metric", MEDIA_METRICS);
       insightsUrl.searchParams.set("access_token", accessToken);
 
       const insightsRes = await fetch(insightsUrl.toString());
