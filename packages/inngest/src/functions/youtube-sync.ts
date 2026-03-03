@@ -91,7 +91,7 @@ export const syncYoutubeMetadata = inngest.createFunction(
     name: "Sync YouTube Video Metadata",
     retries: 3,
   },
-  { event: "content/sync.requested" },
+  { event: "content/sync.requested", if: "event.data.platform == 'youtube'" },
   async ({ event, step }) => {
     const { creator_id, connected_platform_id, platform } = event.data;
 

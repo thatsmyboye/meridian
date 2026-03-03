@@ -108,10 +108,13 @@ export async function ensureValidInstagramToken(
   }
 
   // ── 3. Persist the refreshed token ─────────────────────────────────────────
-  const refreshed: { access_token: string; expires_in: number } =
+  const refreshed: { access_token: string; expires_in?: number } =
     await tokenRes.json();
+  // Meta may omit expires_in; fallback to 60 days (matches callback route)
+  const expiresInSeconds =
+    refreshed.expires_in ?? 60 * 24 * 60 * 60;
   const newExpiry = new Date(
-    Date.now() + refreshed.expires_in * 1000
+    Date.now() + expiresInSeconds * 1000
   ).toISOString();
 
   const { error: updateError } = await supabase

@@ -64,7 +64,7 @@ export const syncInstagramMedia = inngest.createFunction(
     name: "Sync Instagram Media",
     retries: 3,
   },
-  { event: "content/sync.requested" },
+  { event: "content/sync.requested", if: "event.data.platform == 'instagram'" },
   async ({ event, step }) => {
     const { creator_id, connected_platform_id, platform } = event.data;
 

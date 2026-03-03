@@ -216,7 +216,7 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
     // Limit concurrent Meta API calls to respect rate limits.
     concurrency: { limit: 5 },
   },
-  { event: "analytics/snapshot.requested" },
+  { event: "analytics/snapshot.requested", if: "event.data.platform == 'instagram'" },
   async ({ event, step }) => {
     const { creator_id, content_item_id, platform, day_mark } = event.data;
 

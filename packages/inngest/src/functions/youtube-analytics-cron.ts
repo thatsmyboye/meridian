@@ -207,7 +207,7 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
     // Limit concurrent YouTube API calls to respect quota and avoid bursts.
     concurrency: { limit: 5 },
   },
-  { event: "analytics/snapshot.requested" },
+  { event: "analytics/snapshot.requested", if: "event.data.platform == 'youtube'" },
   async ({ event, step }) => {
     const { creator_id, content_item_id, platform, day_mark } = event.data;
 
