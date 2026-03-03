@@ -23,6 +23,13 @@ export const handlePlatformConnected = inngest.createFunction(
       });
     }
 
+    if (platform === "instagram") {
+      await step.sendEvent("request-instagram-sync", {
+        name: "content/sync.requested",
+        data: { creator_id, connected_platform_id, platform },
+      });
+    }
+
     return { creator_id, platform };
   }
 );

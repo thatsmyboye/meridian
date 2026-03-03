@@ -1,18 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 import { inngest } from "../client";
-import { ensureValidYouTubeToken } from "../lib/refreshYouTubeToken";
+import { ensureValidInstagramToken } from "../lib/refreshInstagramToken";
 
-// ─── YouTube Analytics API response type ─────────────────────────────────────
+// ─── Instagram Insights API response types ────────────────────────────────────
 
-interface YouTubeAnalyticsReport {
-  kind: string;
-  columnHeaders: Array<{
+interface InstagramInsightsResponse {
+  data: Array<{
     name: string;
-    columnType: string;
-    dataType: string;
+    period: string;
+    values: Array<{ value: number }>;
+    id: string;
   }>;
-  /** Each row: [videoId, views, estimatedMinutesWatched, likes, comments, shares] */
-  rows?: Array<Array<string | number>>;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -28,44 +26,55 @@ function getSupabaseAdmin() {
 const SNAPSHOT_DAY_MARKS = [1, 7, 30] as const;
 type DayMark = (typeof SNAPSHOT_DAY_MARKS)[number];
 
+/**
+ * Insights metrics requested for all Instagram media types (IMAGE,
+ * CAROUSEL_ALBUM, VIDEO, REEL).
+ *
+ * Since Meta deprecated both `impressions` and `plays` on April 21, 2025,
+ * `views` is the unified replacement across all media types — for images it
+ * counts impressions, for videos/Reels it counts plays. The remaining metrics
+ * (reach, saved, shares) are identical for all types. likes and comments are
+ * fetched from the media object directly (like_count / comments_count).
+ */
+const MEDIA_METRICS = "views,reach,saved,shares";
+
 // ─── Cron: daily scheduler ────────────────────────────────────────────────────
 
 /**
- * Runs every day at 03:00 UTC.
+ * Runs every day at 04:00 UTC (1 hour after the YouTube cron to spread load).
  *
- * For each lifecycle day mark (1, 7, 30) it finds YouTube content items whose
- * publication date falls within a ±12-hour window of that mark and that have
- * not yet received a snapshot for that mark. It then fans-out one
- * `analytics/snapshot.requested` event per eligible item so that
- * `fetchYoutubeAnalyticsSnapshot` can process them independently.
+ * For each lifecycle day mark (1, 7, 30) it finds Instagram content items
+ * whose publication date falls within a ±12-hour window of that mark and
+ * that have not yet received a snapshot for that mark. It then fans-out one
+ * `analytics/snapshot.requested` event per eligible item.
  *
  * Steps:
- *  1. load-active-youtube-platforms   – All active YouTube platform IDs.
- *  2. find-unsnapshotted-day-{N}      – Items needing a snapshot at mark N.
- *  3. dispatch-snapshot-events        – Fan-out events to the snapshot handler.
+ *  1. load-active-instagram-platforms   – All active Instagram platform IDs.
+ *  2. find-unsnapshotted-day-{N}        – Items needing a snapshot at mark N.
+ *  3. dispatch-snapshot-events          – Fan-out events to the snapshot handler.
  */
-export const youtubeAnalyticsCron = inngest.createFunction(
+export const instagramAnalyticsCron = inngest.createFunction(
   {
-    id: "youtube-analytics-cron",
-    name: "YouTube Analytics Daily Snapshot Cron",
+    id: "instagram-analytics-cron",
+    name: "Instagram Analytics Daily Snapshot Cron",
     retries: 1,
   },
-  { cron: "0 3 * * *" },
+  { cron: "0 4 * * *" },
   async ({ step }) => {
-    // ── Step 1: resolve all active YouTube connected platform IDs ─────────────
+    // ── Step 1: resolve all active Instagram connected platform IDs ───────────
     const activePlatformIds = await step.run(
-      "load-active-youtube-platforms",
+      "load-active-instagram-platforms",
       async () => {
         const supabase = getSupabaseAdmin();
         const { data, error } = await supabase
           .from("connected_platforms")
           .select("id")
-          .eq("platform", "youtube")
+          .eq("platform", "instagram")
           .eq("status", "active");
 
         if (error) {
           throw new Error(
-            `Failed to load active YouTube platforms: ${error.message}`
+            `Failed to load active Instagram platforms: ${error.message}`
           );
         }
 
@@ -75,7 +84,7 @@ export const youtubeAnalyticsCron = inngest.createFunction(
 
     if (activePlatformIds.length === 0) {
       return {
-        message: "No active YouTube platforms found — nothing to snapshot.",
+        message: "No active Instagram platforms found — nothing to snapshot.",
         snapshotsEnqueued: 0,
       };
     }
@@ -86,7 +95,7 @@ export const youtubeAnalyticsCron = inngest.createFunction(
       data: {
         creator_id: string;
         content_item_id: string;
-        platform: "youtube";
+        platform: "instagram";
         day_mark: DayMark;
       };
     }> = [];
@@ -98,8 +107,7 @@ export const youtubeAnalyticsCron = inngest.createFunction(
           const supabase = getSupabaseAdmin();
           const now = new Date();
 
-          // ±12-hour window around the exact day mark so we catch items even
-          // if the cron runs slightly late or the publish time drifts.
+          // ±12-hour window around the exact day mark
           const lower = new Date(
             now.getTime() - (dayMark + 0.5) * 86_400_000
           ).toISOString();
@@ -110,7 +118,7 @@ export const youtubeAnalyticsCron = inngest.createFunction(
           const { data: candidates, error: candidateError } = await supabase
             .from("content_items")
             .select("id, creator_id")
-            .eq("platform", "youtube")
+            .eq("platform", "instagram")
             .in("platform_id", activePlatformIds)
             .gte("published_at", lower)
             .lte("published_at", upper);
@@ -158,7 +166,7 @@ export const youtubeAnalyticsCron = inngest.createFunction(
           data: {
             creator_id: item.creator_id,
             content_item_id: item.id,
-            platform: "youtube",
+            platform: "instagram",
             day_mark: dayMark,
           },
         });
@@ -180,39 +188,40 @@ export const youtubeAnalyticsCron = inngest.createFunction(
 // ─── Snapshot handler ─────────────────────────────────────────────────────────
 
 /**
- * Fetches YouTube Analytics metrics for a single content item and stores a
+ * Fetches Instagram Insights for a single content item and stores a
  * `performance_snapshots` row.
  *
- * Triggered by: `analytics/snapshot.requested` (platform === "youtube")
+ * Triggered by: `analytics/snapshot.requested` (platform === "instagram")
+ *
+ * The Instagram Insights API returns lifetime metrics (cumulative totals
+ * from the time the media was posted). This matches the lifecycle-day-mark
+ * approach: at day 1, 7, and 30 after posting we capture where the post
+ * stands at that point in time.
+ *
+ * likes and comments are read from the media object (like_count /
+ * comments_count) rather than the insights endpoint, as those fields are
+ * returned directly by the media API.
  *
  * Steps:
- *  1. load-content-and-platform  – Load the content item row and its linked
- *                                   connected_platforms credentials.
- *  2. ensure-valid-token         – Decrypt the stored access token; if it has
- *                                   expired (or expires within 5 minutes),
- *                                   exchange the refresh token for a new one
- *                                   and persist the updated ciphertext.
- *  3. fetch-youtube-analytics    – Call the YouTube Analytics /reports endpoint
- *                                   for cumulative metrics from publish date
- *                                   through today.
+ *  1. load-content-and-platform  – Load the content item and credentials.
+ *  2. ensure-valid-token         – Decrypt/refresh the Instagram access token.
+ *  3. fetch-instagram-insights   – Call the Insights API for the media item.
  *  4. store-snapshot             – Insert a row into performance_snapshots.
- *                                   The day_mark unique partial index ensures
- *                                   idempotent re-runs never duplicate rows.
  */
-export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
+export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
   {
-    id: "fetch-youtube-analytics-snapshot",
-    name: "Fetch YouTube Analytics Snapshot",
+    id: "fetch-instagram-analytics-snapshot",
+    name: "Fetch Instagram Analytics Snapshot",
     retries: 3,
-    // Limit concurrent YouTube API calls to respect quota and avoid bursts.
+    // Limit concurrent Meta API calls to respect rate limits.
     concurrency: { limit: 5 },
   },
-  { event: "analytics/snapshot.requested", if: "event.data.platform == 'youtube'" },
+  { event: "analytics/snapshot.requested", if: "event.data.platform == 'instagram'" },
   async ({ event, step }) => {
     const { creator_id, content_item_id, platform, day_mark } = event.data;
 
-    if (platform !== "youtube") {
-      return { skipped: true, reason: "platform is not youtube" };
+    if (platform !== "instagram") {
+      return { skipped: true, reason: "platform is not instagram" };
     }
 
     // ── Step 1: load content item + connected platform row ────────────────────
@@ -223,7 +232,7 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
 
         const { data: item, error: itemError } = await supabase
           .from("content_items")
-          .select("id, external_id, platform_id, published_at")
+          .select("id, external_id, platform_id, published_at, raw_data")
           .eq("id", content_item_id)
           .single();
 
@@ -237,11 +246,6 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
             `Content item ${content_item_id} is missing external_id`
           );
         }
-        if (!item.published_at) {
-          throw new Error(
-            `Content item ${content_item_id} is missing published_at`
-          );
-        }
         if (!item.platform_id) {
           throw new Error(
             `Content item ${content_item_id} has no linked connected_platform`
@@ -250,9 +254,7 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
 
         const { data: cp, error: cpError } = await supabase
           .from("connected_platforms")
-          .select(
-            "id, access_token_enc, refresh_token_enc, token_expires_at"
-          )
+          .select("id, access_token_enc, token_expires_at")
           .eq("id", item.platform_id)
           .single();
 
@@ -267,12 +269,12 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
             id: string;
             external_id: string;
             platform_id: string;
-            published_at: string;
+            published_at: string | null;
+            raw_data: { media_type?: string } | null;
           },
           platformRow: cp as {
             id: string;
             access_token_enc: string;
-            refresh_token_enc: string | null;
             token_expires_at: string | null;
           },
         };
@@ -280,11 +282,8 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
     );
 
     // ── Step 2: obtain a valid access token ───────────────────────────────────
-    // Checks expiry (5-minute buffer) and refreshes via Google if needed.
-    // On refresh failure, marks the platform as reauth_required and returns
-    // early — we do NOT throw so Inngest skips retries that would burn quota.
     const tokenResult = await step.run("ensure-valid-token", async () => {
-      return ensureValidYouTubeToken(platformRow, getSupabaseAdmin());
+      return ensureValidInstagramToken(platformRow, getSupabaseAdmin());
     });
 
     if (!tokenResult.ok) {
@@ -298,69 +297,74 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
 
     const accessToken = tokenResult.accessToken;
 
-    // ── Step 3: call YouTube Analytics API ────────────────────────────────────
-    const metrics = await step.run("fetch-youtube-analytics", async () => {
-      // Use the video's publish date as startDate so the metrics are cumulative
-      // from the moment the video went live through today.
-      const startDate = contentItem.published_at.split("T")[0]; // YYYY-MM-DD
-      const endDate = new Date().toISOString().split("T")[0];
+    // ── Step 3: fetch Instagram Insights for this media item ──────────────────
+    const metrics = await step.run("fetch-instagram-insights", async () => {
+      const mediaType = contentItem.raw_data?.media_type ?? "IMAGE";
 
-      const url = new URL(
-        "https://youtubeanalytics.googleapis.com/v2/reports"
+      // Fetch insights (views, reach, saved, shares)
+      const insightsUrl = new URL(
+        `https://graph.facebook.com/v21.0/${contentItem.external_id}/insights`
       );
-      url.searchParams.set("ids", "channel==MINE");
-      url.searchParams.set("startDate", startDate);
-      url.searchParams.set("endDate", endDate);
-      // Metrics columns (indices 1-5 in each row):
-      //   views | estimatedMinutesWatched | likes | comments | shares
-      url.searchParams.set(
-        "metrics",
-        "views,estimatedMinutesWatched,likes,comments,shares"
-      );
-      url.searchParams.set("dimensions", "video");
-      url.searchParams.set(
-        "filters",
-        `video==${contentItem.external_id}`
-      );
+      insightsUrl.searchParams.set("metric", MEDIA_METRICS);
+      insightsUrl.searchParams.set("access_token", accessToken);
 
-      const res = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const insightsRes = await fetch(insightsUrl.toString());
 
-      if (!res.ok) {
+      if (!insightsRes.ok) {
         throw new Error(
-          `YouTube Analytics API failed (${res.status}): ${await res.text()}`
+          `Instagram Insights API failed (${insightsRes.status}): ${await insightsRes.text()}`
         );
       }
 
-      const report: YouTubeAnalyticsReport = await res.json();
+      const insightsData: InstagramInsightsResponse = await insightsRes.json();
 
-      // row = [videoId, views, estimatedMinutesWatched, likes, comments, shares]
-      const row = report.rows?.[0];
+      // Build a metric → value map
+      const metricsMap: Record<string, number> = {};
+      for (const metric of insightsData.data) {
+        // Lifetime metrics have a single value in the values array
+        metricsMap[metric.name] = metric.values[0]?.value ?? 0;
+      }
 
-      if (!row) {
-        // The video may be too new, private, or have no data in this window.
-        return null;
+      // Fetch like_count and comments_count directly from the media object
+      // (they are not available via the Insights endpoint)
+      const mediaUrl = new URL(
+        `https://graph.facebook.com/v21.0/${contentItem.external_id}`
+      );
+      mediaUrl.searchParams.set("fields", "like_count,comments_count");
+      mediaUrl.searchParams.set("access_token", accessToken);
+
+      const mediaRes = await fetch(mediaUrl.toString());
+
+      let likesCount = 0;
+      let commentsCount = 0;
+
+      if (mediaRes.ok) {
+        const mediaData: { like_count?: number; comments_count?: number } =
+          await mediaRes.json();
+        likesCount = mediaData.like_count ?? 0;
+        commentsCount = mediaData.comments_count ?? 0;
+      } else {
+        console.warn(
+          `[instagram-snapshot] Could not fetch like/comment counts for` +
+            ` media ${contentItem.external_id}: ${await mediaRes.text()}`
+        );
       }
 
       return {
-        views: Number(row[1]),
-        estimatedMinutesWatched: Number(row[2]),
-        likes: Number(row[3]),
-        comments: Number(row[4]),
-        shares: Number(row[5]),
-        rawReport: report,
+        impressions: metricsMap["views"] ?? 0,
+        reach: metricsMap["reach"] ?? 0,
+        saves: metricsMap["saved"] ?? 0,
+        shares: metricsMap["shares"] ?? 0,
+        // For VIDEO/REEL, `views` is the post-deprecation replacement for `plays`.
+        plays:
+          mediaType === "VIDEO" || mediaType === "REEL"
+            ? (metricsMap["views"] ?? null)
+            : null,
+        likes: likesCount,
+        comments: commentsCount,
+        rawInsights: insightsData,
       };
     });
-
-    if (!metrics) {
-      return {
-        content_item_id,
-        day_mark: day_mark ?? null,
-        skipped: true,
-        reason: "YouTube Analytics returned no rows for this video",
-      };
-    }
 
     // ── Step 4: persist the snapshot ──────────────────────────────────────────
     await step.run("store-snapshot", async () => {
@@ -369,20 +373,22 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
       const { error } = await supabase.from("performance_snapshots").insert({
         content_item_id,
         creator_id,
-        views: metrics.views,
+        views: metrics.impressions, // sourced from Meta `views` metric; stored as views for cross-platform consistency
         likes: metrics.likes,
         comments: metrics.comments,
         shares: metrics.shares,
+        saves: metrics.saves,
+        reach: metrics.reach,
+        impressions: metrics.impressions,
         day_mark: day_mark ?? null,
         raw_data: {
-          estimated_minutes_watched: metrics.estimatedMinutesWatched,
-          api_response: metrics.rawReport,
+          plays: metrics.plays,
+          api_response: metrics.rawInsights,
         },
       });
 
       if (error) {
         // 23505 = unique_violation: a snapshot for this day_mark already exists.
-        // This can happen if the event was delivered twice; treat it as a no-op.
         if (error.code === "23505") {
           return { duplicate: true };
         }
@@ -397,10 +403,12 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
     return {
       content_item_id,
       day_mark: day_mark ?? null,
-      views: metrics.views,
+      impressions: metrics.impressions,
+      reach: metrics.reach,
       likes: metrics.likes,
       comments: metrics.comments,
       shares: metrics.shares,
+      saves: metrics.saves,
     };
   }
 );
