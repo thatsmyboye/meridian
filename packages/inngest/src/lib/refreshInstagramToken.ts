@@ -12,9 +12,9 @@ import { decryptToken, encryptToken } from "@meridian/api";
  * tokens obtained through Instagram Login).
  *
  * Strategy:
- *   - If the stored access token still has more than 5 minutes until expiry,
+ *   - If the stored access token still has more than 7 days until expiry,
  *     decrypt and return it as-is.
- *   - If the token expires within 5 minutes (or expiry is unknown), attempt
+ *   - If the token expires within 7 days (or expiry is unknown), attempt
  *     to extend it via `GET graph.facebook.com/.../oauth/access_token
  *     ?grant_type=fb_exchange_token` (requires client_id + client_secret).
  *   - On success: persist the new encrypted token and updated expiry.
@@ -41,7 +41,7 @@ export type TokenRefreshResult =
 /**
  * Ensures a valid Instagram access token is available for a connected platform.
  *
- * Checks whether the stored long-lived token is still valid (with a 5-minute
+ * Checks whether the stored long-lived token is still valid (with a 7-day
  * proactive buffer). If not, attempts to extend it using Meta's
  * `fb_exchange_token` grant on `graph.facebook.com`, which is the correct
  * refresh mechanism for Facebook User Access Tokens issued via Facebook Login.
@@ -54,7 +54,7 @@ export async function ensureValidInstagramToken(
   const expiresAt = platformRow.token_expires_at
     ? new Date(platformRow.token_expires_at)
     : null;
-  const threshold = new Date(Date.now() + 5 * 60 * 1000); // 5-minute buffer
+  const threshold = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day buffer
   const tokenIsValid = expiresAt !== null && expiresAt > threshold;
 
   if (tokenIsValid) {
