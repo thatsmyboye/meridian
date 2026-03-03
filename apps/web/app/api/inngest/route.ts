@@ -5,6 +5,9 @@ import {
   handlePlatformConnected,
   youtubeAnalyticsCron,
   fetchYoutubeAnalyticsSnapshot,
+  syncInstagramMedia,
+  instagramAnalyticsCron,
+  fetchInstagramAnalyticsSnapshot,
 } from "@meridian/inngest";
 
 /**
@@ -27,5 +30,8 @@ export const { GET, POST, PUT } = serve({
     handlePlatformConnected,
     youtubeAnalyticsCron,
     fetchYoutubeAnalyticsSnapshot,
+    syncInstagramMedia,
+    instagramAnalyticsCron,
+    fetchInstagramAnalyticsSnapshot,
   ],
 });

@@ -15,3 +15,8 @@ export {
   youtubeAnalyticsCron,
   fetchYoutubeAnalyticsSnapshot,
 } from "./functions/youtube-analytics-cron";
+export { syncInstagramMedia } from "./functions/instagram-sync";
+export {
+  instagramAnalyticsCron,
+  fetchInstagramAnalyticsSnapshot,
+} from "./functions/instagram-analytics-cron";
