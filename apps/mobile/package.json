@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eas-build-pre-install": "cd ../../ && pnpm install --frozen-lockfile"
   },
   "dependencies": {
     "@meridian/api": "workspace:*",
@@ -23,6 +24,7 @@
     "expo-router": "~5.1.11",
     "expo-secure-store": "~14.0.0",
     "expo-status-bar": "~3.0.9",
+    "expo-updates": "^55.0.11",
     "expo-web-browser": "~14.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
