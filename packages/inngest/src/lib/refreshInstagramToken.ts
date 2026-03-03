@@ -4,23 +4,22 @@ import { decryptToken, encryptToken } from "@meridian/api";
 /**
  * Instagram / Meta token refresh utilities.
  *
- * Unlike Google OAuth, Meta does not issue separate refresh tokens for
- * Instagram. Instead, it issues long-lived user access tokens (valid for
- * 60 days) that can be extended by calling the `ig_refresh_token` endpoint
- * before they expire.
+ * The OAuth callback uses Facebook Login (`graph.facebook.com`) and the
+ * `fb_exchange_token` grant to obtain a long-lived Facebook User Access Token
+ * (valid for ~60 days). This is NOT an Instagram Login token, so it must be
+ * refreshed via the same `fb_exchange_token` grant on `graph.facebook.com`,
+ * NOT via `ig_refresh_token` on `graph.instagram.com` (which only works for
+ * tokens obtained through Instagram Login).
  *
  * Strategy:
  *   - If the stored access token still has more than 5 minutes until expiry,
  *     decrypt and return it as-is.
  *   - If the token expires within 5 minutes (or expiry is unknown), attempt
- *     to refresh it via `GET /oauth/access_token?grant_type=ig_refresh_token`.
+ *     to extend it via `GET graph.facebook.com/.../oauth/access_token
+ *     ?grant_type=fb_exchange_token` (requires client_id + client_secret).
  *   - On success: persist the new encrypted token and updated expiry.
  *   - On failure: set connected_platforms.status = "reauth_required" so the
  *     dashboard can prompt the creator to reconnect.
- *
- * Note: Meta recommends refreshing long-lived tokens when they have fewer
- * than 5 days remaining. We use a 5-minute threshold here to stay consistent
- * with the YouTube refresh logic, but the cron keeps tokens well refreshed.
  */
 
 const META_GRAPH_VERSION = "v21.0";
@@ -44,7 +43,8 @@ export type TokenRefreshResult =
  *
  * Checks whether the stored long-lived token is still valid (with a 5-minute
  * proactive buffer). If not, attempts to extend it using Meta's
- * `ig_refresh_token` grant.
+ * `fb_exchange_token` grant on `graph.facebook.com`, which is the correct
+ * refresh mechanism for Facebook User Access Tokens issued via Facebook Login.
  */
 export async function ensureValidInstagramToken(
   platformRow: PlatformTokenRow,
@@ -79,11 +79,18 @@ export async function ensureValidInstagramToken(
 
   const currentToken = decryptToken(platformRow.access_token_enc);
 
+  // Facebook User Access Tokens (issued via Facebook Login + fb_exchange_token)
+  // must be refreshed on graph.facebook.com using the same fb_exchange_token
+  // grant, passing client_id and client_secret. The ig_refresh_token endpoint
+  // on graph.instagram.com only works for Instagram Login tokens and will
+  // return an error for these tokens.
   const refreshUrl = new URL(
-    `https://graph.instagram.com/${META_GRAPH_VERSION}/refresh_access_token`
+    `https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token`
   );
-  refreshUrl.searchParams.set("grant_type", "ig_refresh_token");
-  refreshUrl.searchParams.set("access_token", currentToken);
+  refreshUrl.searchParams.set("grant_type", "fb_exchange_token");
+  refreshUrl.searchParams.set("client_id", process.env.META_APP_ID!);
+  refreshUrl.searchParams.set("client_secret", process.env.META_APP_SECRET!);
+  refreshUrl.searchParams.set("fb_exchange_token", currentToken);
 
   const tokenRes = await fetch(refreshUrl.toString());
 

@@ -29,14 +29,18 @@ type DayMark = (typeof SNAPSHOT_DAY_MARKS)[number];
 /**
  * Metrics available for IMAGE and CAROUSEL_ALBUM posts.
  * likes and comments come from the media object directly.
+ *
+ * Note: `impressions` was deprecated by Meta on April 21, 2025 for media
+ * created after July 1, 2024. `views` is the direct replacement.
  */
-const IMAGE_METRICS = "impressions,reach,saved,shares";
+const IMAGE_METRICS = "views,reach,saved,shares";
 
 /**
  * Metrics available for VIDEO and REEL posts.
- * Reels expose plays instead of impressions at the media level.
+ * `views` replaces both the deprecated `impressions` and `plays` metrics
+ * (deprecated April 21, 2025). For Reels/Video, `views` counts video plays.
  */
-const VIDEO_METRICS = "impressions,reach,saved,shares,plays";
+const VIDEO_METRICS = "views,reach,saved,shares";
 
 // ─── Cron: daily scheduler ────────────────────────────────────────────────────
 
@@ -301,13 +305,13 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
     const metrics = await step.run("fetch-instagram-insights", async () => {
       const mediaType = contentItem.raw_data?.media_type ?? "IMAGE";
 
-      // Choose metric set based on media type. REEL and VIDEO support plays.
+      // Choose metric set based on media type.
       const metricString =
         mediaType === "VIDEO" || mediaType === "REEL"
           ? VIDEO_METRICS
           : IMAGE_METRICS;
 
-      // Fetch insights (impressions, reach, saved, shares, plays for video)
+      // Fetch insights (views, reach, saved, shares)
       const insightsUrl = new URL(
         `https://graph.facebook.com/v21.0/${contentItem.external_id}/insights`
       );
@@ -357,11 +361,15 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
       }
 
       return {
-        impressions: metricsMap["impressions"] ?? 0,
+        impressions: metricsMap["views"] ?? 0,
         reach: metricsMap["reach"] ?? 0,
         saves: metricsMap["saved"] ?? 0,
         shares: metricsMap["shares"] ?? 0,
-        plays: metricsMap["plays"] ?? null,
+        // For VIDEO/REEL, `views` is the post-deprecation replacement for `plays`.
+        plays:
+          mediaType === "VIDEO" || mediaType === "REEL"
+            ? (metricsMap["views"] ?? null)
+            : null,
         likes: likesCount,
         comments: commentsCount,
         rawInsights: insightsData,
@@ -375,7 +383,7 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
       const { error } = await supabase.from("performance_snapshots").insert({
         content_item_id,
         creator_id,
-        views: metrics.impressions, // Instagram uses impressions; store as views for cross-platform consistency
+        views: metrics.impressions, // sourced from Meta `views` metric; stored as views for cross-platform consistency
         likes: metrics.likes,
         comments: metrics.comments,
         shares: metrics.shares,
