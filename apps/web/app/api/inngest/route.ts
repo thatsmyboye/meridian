@@ -11,6 +11,8 @@ import {
   syncBeehiivPosts,
   beehiivAnalyticsCron,
   fetchBeehiivAnalyticsSnapshot,
+  weeklyStatsCron,
+  computeCreatorPatterns,
 } from "@meridian/inngest";
 
 /**
@@ -39,5 +41,7 @@ export const { GET, POST, PUT } = serve({
     syncBeehiivPosts,
     beehiivAnalyticsCron,
     fetchBeehiivAnalyticsSnapshot,
+    weeklyStatsCron,
+    computeCreatorPatterns,
   ],
 });
