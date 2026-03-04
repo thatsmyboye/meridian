@@ -59,7 +59,7 @@ function formatNumber(n: number): string {
 }
 
 function formatWatchTime(minutes: number | null): string {
-  if (!minutes) return "—";
+  if (minutes == null) return "—";
   if (minutes < 60) return `${Math.round(minutes)}m`;
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes % 60);

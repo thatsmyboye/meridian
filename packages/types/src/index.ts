@@ -11,11 +11,11 @@ export type Platform = "youtube" | "instagram" | "tiktok" | "beehiiv";
 export type ContentType = "video" | "short" | "newsletter" | "podcast";
 
 /** Maps each content type to the platform identifier(s) that produce it. */
-export const CONTENT_TYPE_PLATFORMS: Record<ContentType, string[]> = {
+export const CONTENT_TYPE_PLATFORMS: Record<ContentType, Platform[]> = {
   video: ["youtube"],
   short: ["instagram", "tiktok"],
   newsletter: ["beehiiv"],
-  podcast: ["podcast"],
+  podcast: ["youtube"],
 };
 
 export type ConnectionStatus = "active" | "reauth_required" | "disconnected";
@@ -46,8 +46,8 @@ export interface ConnectedPlatform {
   platform: Platform;
   platform_user_id: string;
   platform_username: string | null;
-  access_token: string;
-  refresh_token: string | null;
+  access_token_enc: string;
+  refresh_token_enc: string | null;
   token_expires_at: string | null;
   status: ConnectionStatus;
   created_at: string;
@@ -73,14 +73,19 @@ export interface PerformanceSnapshot {
   id: string;
   content_item_id: string;
   creator_id: string;
+  day_mark: string;
   snapshot_date: string;
   views: number | null;
   likes: number | null;
   comments: number | null;
   shares: number | null;
+  saves: number | null;
   watch_time_minutes: number | null;
   reach: number | null;
   impressions: number | null;
+  clicks: number | null;
+  open_rate: number | null;
+  click_rate: number | null;
   engagement_rate: number | null;
   created_at: string;
 }

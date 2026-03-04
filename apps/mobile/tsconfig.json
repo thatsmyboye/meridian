@@ -4,6 +4,7 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./*"],
       "@meridian/api": ["../../packages/api/src/index.ts"],
       "@meridian/types": ["../../packages/types/src/index.ts"],
       "@meridian/ui": ["../../packages/ui/src/index.tsx"]

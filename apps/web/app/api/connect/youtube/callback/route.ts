@@ -174,14 +174,18 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 7. Fire platform/connected event to kick off content sync ────────────
-  await inngest.send({
-    name: "platform/connected",
-    data: {
-      creator_id: creator.id,
-      platform: "youtube",
-      connected_platform_id: platformData.id,
-    },
-  });
+  try {
+    await inngest.send({
+      name: "platform/connected",
+      data: {
+        creator_id: creator.id,
+        platform: "youtube",
+        connected_platform_id: platformData.id,
+      },
+    });
+  } catch (err) {
+    console.error("[youtube/callback] inngest.send failed:", err);
+  }
 
   // ── 8. Clear state cookie and redirect to success ────────────────────────
   const response = NextResponse.redirect(`${siteUrl}/connect?success=youtube`);

@@ -20,8 +20,5 @@
       "react": "19.0.3",
       "react-dom": "19.0.3"
     }
-  },
-  "dependencies": {
-    "eas": "^0.1.0"
   }
 }

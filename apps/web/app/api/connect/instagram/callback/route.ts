@@ -250,14 +250,18 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 8. Fire platform/connected event to kick off content sync ─────────────
-  await inngest.send({
-    name: "platform/connected",
-    data: {
-      creator_id: creator.id,
-      platform: "instagram",
-      connected_platform_id: platformData.id,
-    },
-  });
+  try {
+    await inngest.send({
+      name: "platform/connected",
+      data: {
+        creator_id: creator.id,
+        platform: "instagram",
+        connected_platform_id: platformData.id,
+      },
+    });
+  } catch (err) {
+    console.error("[instagram/callback] inngest.send failed:", err);
+  }
 
   // ── 9. Clear state cookie and redirect to success ────────────────────────
   const response = NextResponse.redirect(

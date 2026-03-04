@@ -24,7 +24,7 @@
   },
   "peerDependenciesMeta": {
     "inngest": {
-      "optional": true
+      "optional": false
     }
   }
 }

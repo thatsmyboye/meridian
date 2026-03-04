@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
 
   if (!apiKey || !publicationId) {
     return NextResponse.redirect(
-      `${siteUrl}/connect/beehiiv?error=missing_params`
+      `${siteUrl}/connect/beehiiv?error=missing_params`,
+      303
     );
   }
 
@@ -58,7 +59,8 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.redirect(
-      `${siteUrl}/connect/beehiiv?error=unauthenticated`
+      `${siteUrl}/connect/beehiiv?error=unauthenticated`,
+      303
     );
   }
 
@@ -82,7 +84,8 @@ export async function POST(request: NextRequest) {
       await validationRes.text()
     );
     return NextResponse.redirect(
-      `${siteUrl}/connect/beehiiv?error=invalid_credentials`
+      `${siteUrl}/connect/beehiiv?error=invalid_credentials`,
+      303
     );
   }
 
@@ -102,7 +105,8 @@ export async function POST(request: NextRequest) {
       creatorErr?.message
     );
     return NextResponse.redirect(
-      `${siteUrl}/connect/beehiiv?error=creator_not_found`
+      `${siteUrl}/connect/beehiiv?error=creator_not_found`,
+      303
     );
   }
 
@@ -136,20 +140,25 @@ export async function POST(request: NextRequest) {
       upsertErr?.message
     );
     return NextResponse.redirect(
-      `${siteUrl}/connect/beehiiv?error=save_failed`
+      `${siteUrl}/connect/beehiiv?error=save_failed`,
+      303
     );
   }
 
   // ── 6. Fire platform/connected to kick off an initial content sync ─────────
-  await inngest.send({
-    name: "platform/connected",
-    data: {
-      creator_id: creator.id,
-      platform: "beehiiv",
-      connected_platform_id: platformData.id,
-    },
-  });
+  try {
+    await inngest.send({
+      name: "platform/connected",
+      data: {
+        creator_id: creator.id,
+        platform: "beehiiv",
+        connected_platform_id: platformData.id,
+      },
+    });
+  } catch (err) {
+    console.error("[beehiiv/connect] inngest.send failed:", err);
+  }
 
   // ── 7. Redirect to success ────────────────────────────────────────────────
-  return NextResponse.redirect(`${siteUrl}/connect?success=beehiiv`);
+  return NextResponse.redirect(`${siteUrl}/connect?success=beehiiv`, 303);
 }
