@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { formatNumber, PLATFORM_COLORS } from "@/lib/formatters";
 import {
   LineChart,
   Line,
@@ -39,13 +40,6 @@ type Window = 1 | 7 | 30;
 
 const DAY_MARKS: Window[] = [1, 7, 30];
 
-const PLATFORM_COLORS: Record<string, string> = {
-  youtube: "#dc2626",
-  instagram: "#7c3aed",
-  beehiiv: "#f97316",
-  tiktok: "#111827",
-};
-
 const FALLBACK_COLORS = [
   "#2563eb",
   "#059669",
@@ -56,12 +50,6 @@ const FALLBACK_COLORS = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
 
 function seriesColor(s: ContentSeries, index: number): string {
   return PLATFORM_COLORS[s.platform] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length];

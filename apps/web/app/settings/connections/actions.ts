@@ -3,11 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 
+const VALID_PLATFORMS = new Set(["youtube", "instagram", "beehiiv", "tiktok"]);
+
 /**
  * Disconnects a platform by clearing its tokens and marking status as
  * 'disconnected'. The row is preserved so re-connection history is retained.
  */
 export async function disconnectPlatform(platform: string) {
+  if (!VALID_PLATFORMS.has(platform)) {
+    throw new Error(`Invalid platform: ${platform}`);
+  }
+
   const supabase = await createServerClient();
 
   const {

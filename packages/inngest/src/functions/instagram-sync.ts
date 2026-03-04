@@ -1,6 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { inngest } from "../client";
 import { ensureValidInstagramToken } from "../lib/refreshInstagramToken";
+import { getSupabaseAdmin } from "../lib/supabaseAdmin";
 
 // ─── Instagram Graph API response types ───────────────────────────────────────
 
@@ -23,13 +23,6 @@ interface InstagramMediaListResponse {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
 
 /**
  * Returns the best available thumbnail URL for an Instagram media item.
@@ -132,12 +125,13 @@ export const syncInstagramMedia = inngest.createFunction(
           "id,caption,media_type,media_url,thumbnail_url,timestamp,permalink,like_count,comments_count"
         );
         url.searchParams.set("limit", "25");
-        url.searchParams.set("access_token", accessToken);
         if (cursor) {
           url.searchParams.set("after", cursor);
         }
 
-        const mediaRes = await fetch(url.toString());
+        const mediaRes = await fetch(url.toString(), {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
 
         if (!mediaRes.ok) {
           throw new Error(

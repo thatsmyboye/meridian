@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
+import { formatNumber, formatDate, PLATFORM_BADGE } from "@/lib/formatters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,30 +19,7 @@ type TreeNode = FlatItem & {
   children: TreeNode[];
 };
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const PLATFORM_BADGE: Record<string, { bg: string; color: string }> = {
-  youtube: { bg: "#fee2e2", color: "#dc2626" },
-  instagram: { bg: "#ede9fe", color: "#7c3aed" },
-  beehiiv: { bg: "#ffedd5", color: "#f97316" },
-  tiktok: { bg: "#f3f4f6", color: "#111827" },
-};
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 /** Recursively sum views across an entire subtree. */
 function sumViews(node: TreeNode): number {
@@ -91,7 +69,7 @@ export default async function ContentLineagePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) notFound();
+  if (!user) redirect("/login");
 
   const { data: creator } = await supabase
     .from("creators")
@@ -102,27 +80,14 @@ export default async function ContentLineagePage({
   if (!creator) notFound();
 
   // ── Step 1: Walk up the parent chain to find the tree root ──
-  // We follow parent_content_item_id links upward, stopping when there's no parent.
-  // A depth cap of 20 guards against any accidental cycles.
-  let rootId = id;
-  let cursor = id;
+  // Uses a single recursive CTE (find_content_root) to traverse the full
+  // ancestor chain in one DB round-trip instead of N sequential queries.
+  const { data: rootData } = await supabase.rpc("find_content_root", {
+    p_item_id: id,
+    p_creator_id: creator.id,
+  });
 
-  for (let depth = 0; depth < 20; depth++) {
-    const { data: current } = await supabase
-      .from("content_items")
-      .select("id, parent_content_item_id")
-      .eq("id", cursor)
-      .eq("creator_id", creator.id)
-      .single();
-
-    if (!current) break;
-    if (!current.parent_content_item_id) {
-      rootId = current.id;
-      break;
-    }
-    cursor = current.parent_content_item_id;
-    rootId = cursor;
-  }
+  const rootId: string = rootData ?? id;
 
   // ── Step 2: BFS downward from root to collect the full descendant tree ──
   const allNodes = new Map<string, FlatItem>();

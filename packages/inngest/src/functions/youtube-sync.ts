@@ -1,6 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { inngest } from "../client";
 import { ensureValidYouTubeToken } from "../lib/refreshYouTubeToken";
+import { getSupabaseAdmin } from "../lib/supabaseAdmin";
 
 // ─── YouTube API response types ───────────────────────────────────────────────
 
@@ -61,13 +61,6 @@ function pickThumbnail(
 ): string | null {
   return (
     thumbnails.high?.url ?? thumbnails.medium?.url ?? thumbnails.default?.url ?? null
-  );
-}
-
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }
 
@@ -179,6 +172,9 @@ export const syncYoutubeMetadata = inngest.createFunction(
     // ── Step 3+: paginate through playlist pages and upsert videos ───────────
     let pageToken: string | undefined;
     let totalUpserted = 0;
+    let pageIndex = 0;
+    // Safety cap: stop after 200 pages (10 000 videos) to avoid runaway syncs.
+    const MAX_PAGES = 200;
 
     do {
       const stepId = `sync-page-${pageToken ?? "initial"}`;
@@ -267,7 +263,8 @@ export const syncYoutubeMetadata = inngest.createFunction(
 
       pageToken = result.nextPageToken;
       totalUpserted += result.upserted;
-    } while (pageToken);
+      pageIndex++;
+    } while (pageToken && pageIndex < MAX_PAGES);
 
     // ── Final step: stamp last_synced_at on the connected_platforms row ───────
     await step.run("mark-synced", async () => {

@@ -1,7 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
 import { decryptToken } from "@meridian/api";
 import { inngest } from "../client";
 import { normalizeMetrics } from "../lib/normalizeMetrics";
+import { getSupabaseAdmin } from "../lib/supabaseAdmin";
+import { SNAPSHOT_DAY_MARKS, type DayMark } from "../lib/snapshotDayMarks";
 
 // ─── Beehiiv API v2 response types ───────────────────────────────────────────
 
@@ -27,17 +28,6 @@ interface BeehiivPostDetailResponse {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
-/** Day marks (days after publication) at which we capture analytics snapshots. */
-const SNAPSHOT_DAY_MARKS = [1, 7, 30] as const;
-type DayMark = (typeof SNAPSHOT_DAY_MARKS)[number];
 
 // ─── Cron: daily scheduler ────────────────────────────────────────────────────
 
@@ -268,8 +258,6 @@ export const fetchBeehiivAnalyticsSnapshot = inngest.createFunction(
           );
         }
 
-        const apiKey = decryptToken(cp.access_token_enc as string);
-
         return {
           contentItem: item as {
             id: string;
@@ -278,12 +266,16 @@ export const fetchBeehiivAnalyticsSnapshot = inngest.createFunction(
           },
           platformRow: {
             id: cp.id as string,
-            apiKey,
+            access_token_enc: cp.access_token_enc as string,
             publicationId: cp.platform_user_id as string,
           },
         };
       }
     );
+
+    // Decrypt outside the step so the plaintext key is never stored in Inngest
+    // step state (which is visible in the Inngest dashboard).
+    const apiKey = decryptToken(platformRow.access_token_enc);
 
     // ── Step 2: fetch post stats from Beehiiv API ─────────────────────────────
     const metrics = await step.run("fetch-beehiiv-stats", async () => {
@@ -296,7 +288,7 @@ export const fetchBeehiivAnalyticsSnapshot = inngest.createFunction(
 
       const res = await fetch(url.toString(), {
         headers: {
-          Authorization: `Bearer ${platformRow.apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
       });

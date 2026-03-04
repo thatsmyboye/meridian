@@ -1,32 +1,19 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
+import { formatNumber, formatDate, PLATFORM_BADGE } from "@/lib/formatters";
 import ContentPerformanceChart from "./ContentPerformanceChart";
 import type { ContentSeries, SnapshotPoint } from "./ContentPerformanceChart";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-const PLATFORM_BADGE: Record<string, { bg: string; color: string }> = {
-  youtube: { bg: "#fee2e2", color: "#dc2626" },
-  instagram: { bg: "#ede9fe", color: "#7c3aed" },
-  beehiiv: { bg: "#ffedd5", color: "#f97316" },
-  tiktok: { bg: "#f3f4f6", color: "#111827" },
-};
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string): string {
+/** Long-form date (e.g. "January 15, 2025") used only on this page. */
+function formatDateLong(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-}
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
 }
 
 // ─── Snapshot builder ─────────────────────────────────────────────────────────
@@ -80,7 +67,7 @@ export default async function ContentDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) notFound();
+  if (!user) redirect("/login");
 
   const { data: creator } = await supabase
     .from("creators")
@@ -231,7 +218,7 @@ export default async function ContentDetailPage({
             {item.platform}
           </span>
           <span style={{ color: "#9ca3af", fontSize: 13 }}>
-            Published {formatDate(item.published_at)}
+            Published {formatDateLong(item.published_at)}
           </span>
         </div>
 

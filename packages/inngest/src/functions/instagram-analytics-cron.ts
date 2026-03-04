@@ -1,7 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
 import { inngest } from "../client";
 import { ensureValidInstagramToken } from "../lib/refreshInstagramToken";
 import { normalizeMetrics } from "../lib/normalizeMetrics";
+import { getSupabaseAdmin } from "../lib/supabaseAdmin";
+import { SNAPSHOT_DAY_MARKS, type DayMark } from "../lib/snapshotDayMarks";
 
 // ─── Instagram Insights API response types ────────────────────────────────────
 
@@ -39,17 +40,6 @@ function extractInsightValue(metric: InstagramInsightsResult): number {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
-/** Day marks (days after publication) at which we capture analytics snapshots. */
-const SNAPSHOT_DAY_MARKS = [1, 7, 30] as const;
-type DayMark = (typeof SNAPSHOT_DAY_MARKS)[number];
 
 /**
  * Insights metrics requested for all Instagram media types (IMAGE,
@@ -330,9 +320,10 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
       );
       insightsUrl.searchParams.set("metric", MEDIA_METRICS);
       insightsUrl.searchParams.set("period", "lifetime");
-      insightsUrl.searchParams.set("access_token", accessToken);
 
-      const insightsRes = await fetch(insightsUrl.toString());
+      const insightsRes = await fetch(insightsUrl.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
       if (!insightsRes.ok) {
         throw new Error(
@@ -355,9 +346,10 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
         `https://graph.facebook.com/v21.0/${contentItem.external_id}`
       );
       mediaUrl.searchParams.set("fields", "like_count,comments_count");
-      mediaUrl.searchParams.set("access_token", accessToken);
 
-      const mediaRes = await fetch(mediaUrl.toString());
+      const mediaRes = await fetch(mediaUrl.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
       let likesCount = 0;
       let commentsCount = 0;

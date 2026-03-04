@@ -90,15 +90,21 @@ export async function ensureValidYouTubeToken(
   const tokens: { access_token: string; expires_in: number } =
     await tokenRes.json();
   const newExpiry = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+  const newTokenEnc = encryptToken(tokens.access_token);
 
-  const { error: updateError } = await supabase
+  // Optimistic concurrency: only update if the stored token hasn't changed.
+  // If concurrent functions refreshed the token first, the WHERE clause on
+  // access_token_enc won't match and we re-read the already-refreshed token.
+  const { count, error: updateError } = await supabase
     .from("connected_platforms")
     .update({
-      access_token_enc: encryptToken(tokens.access_token),
+      access_token_enc: newTokenEnc,
       token_expires_at: newExpiry,
       status: "active",
     })
-    .eq("id", platformRow.id);
+    .eq("id", platformRow.id)
+    .eq("access_token_enc", platformRow.access_token_enc)
+    .select("id", { count: "exact", head: true });
 
   if (updateError) {
     // Log but don't fail — we can still use the fresh token for this run.
@@ -106,6 +112,22 @@ export async function ensureValidYouTubeToken(
       `[ensureValidYouTubeToken] Failed to persist refreshed token for` +
         ` platform ${platformRow.id}: ${updateError.message}`
     );
+    return { ok: true, accessToken: tokens.access_token };
+  }
+
+  if (count === 0) {
+    // Another concurrent run already refreshed the token. Re-read from DB.
+    const { data: fresh, error: readErr } = await supabase
+      .from("connected_platforms")
+      .select("access_token_enc")
+      .eq("id", platformRow.id)
+      .single();
+
+    if (readErr || !fresh) {
+      // Fallback: use the token we just obtained from Google.
+      return { ok: true, accessToken: tokens.access_token };
+    }
+    return { ok: true, accessToken: decryptToken(fresh.access_token_enc) };
   }
 
   return { ok: true, accessToken: tokens.access_token };
