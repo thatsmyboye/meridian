@@ -196,9 +196,9 @@ export default function ContentPerformanceChart({ series }: ContentPerformanceCh
                 width={metric === "views" ? 48 : 44}
               />
               <Tooltip
-                formatter={(value: number | undefined, name: string) => {
+                formatter={(value: number | undefined, name: string | undefined) => {
                   const s = series.find((s) => s.contentId === name);
-                  const label = s ? truncate(s.title, 40) : name;
+                  const label = s ? truncate(s.title, 40) : (name ?? "");
                   const formatted =
                     value == null
                       ? "—"
