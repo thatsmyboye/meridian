@@ -438,7 +438,7 @@ async function runAllTests(): Promise<void> {
   console.log("║                           Test Summary                         ║");
   console.log("╚════════════════════════════════════════════════════════════════╝\n");
 
-  const testSummary = [
+  const testSummary: [string, boolean][] = [
     ["Connectivity", results.connectivity],
     ["Token Refresh", results.tokenRefresh],
     ["Media Endpoint", results.mediaEndpoint],

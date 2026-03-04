@@ -499,7 +499,7 @@ async function runFunctionTests(): Promise<void> {
   console.log("║                           Test Summary                         ║");
   console.log("╚════════════════════════════════════════════════════════════════╝\n");
 
-  const testSummary = [
+  const testSummary: [string, boolean][] = [
     ["Media Response Structure", results.mediaResponse],
     ["Insights Response Structure", results.insightsResponse],
     ["Insight Value Extraction", results.insightValueExtraction],
