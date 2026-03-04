@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { formatNumber, formatDate, PLATFORM_BADGE } from "@/lib/formatters";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -33,13 +34,6 @@ type SortDir = "asc" | "desc";
 
 const VIDEO_PLATFORMS = new Set(["youtube", "tiktok"]);
 
-const PLATFORM_BADGE: Record<string, { bg: string; color: string }> = {
-  youtube: { bg: "#fee2e2", color: "#dc2626" },
-  instagram: { bg: "#ede9fe", color: "#7c3aed" },
-  beehiiv: { bg: "#ffedd5", color: "#f97316" },
-  tiktok: { bg: "#f3f4f6", color: "#111827" },
-};
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function csvEscape(value: string | number | null): string {
@@ -52,26 +46,12 @@ function csvEscape(value: string | number | null): string {
   return str;
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
 function formatWatchTime(minutes: number | null): string {
   if (minutes == null) return "—";
   if (minutes < 60) return `${Math.round(minutes)}m`;
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes % 60);
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────

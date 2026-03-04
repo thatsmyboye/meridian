@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PLATFORM_COLORS } from "@/lib/formatters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,13 +34,6 @@ const LEVEL_COLORS = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
 const LEVEL_LABELS = ["None", "1–2", "3–5", "6–9", "10+"];
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-const PLATFORM_COLORS: Record<string, string> = {
-  youtube: "#dc2626",
-  instagram: "#7c3aed",
-  beehiiv: "#f97316",
-  tiktok: "#111827",
-};
 
 const MONTH_NAMES = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",

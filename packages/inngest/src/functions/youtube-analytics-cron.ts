@@ -1,7 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
 import { inngest } from "../client";
 import { ensureValidYouTubeToken } from "../lib/refreshYouTubeToken";
 import { normalizeMetrics } from "../lib/normalizeMetrics";
+import { getSupabaseAdmin } from "../lib/supabaseAdmin";
+import { SNAPSHOT_DAY_MARKS, type DayMark } from "../lib/snapshotDayMarks";
 
 // ─── YouTube Analytics API response type ─────────────────────────────────────
 
@@ -15,19 +16,6 @@ interface YouTubeAnalyticsReport {
   /** Each row: [videoId, views, estimatedMinutesWatched, likes, comments, shares] */
   rows?: Array<Array<string | number>>;
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
-/** Day marks (days after publication) at which we capture analytics snapshots. */
-const SNAPSHOT_DAY_MARKS = [1, 7, 30] as const;
-type DayMark = (typeof SNAPSHOT_DAY_MARKS)[number];
 
 // ─── Cron: daily scheduler ────────────────────────────────────────────────────
 

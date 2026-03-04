@@ -4,7 +4,12 @@
  * Unlike OAuth-based platforms, Beehiiv uses API key authentication.
  * Creators enter their API key and publication ID; we validate the
  * credentials against the Beehiiv API before saving them.
+ *
+ * The form submits via a server action (connectBeehiiv) which provides
+ * built-in CSRF protection: Next.js validates Origin and signs the action ID.
  */
+
+import { connectBeehiiv } from "./actions";
 
 const ERROR_MESSAGES: Record<string, string> = {
   missing_params: "Please provide both an API key and a publication ID.",
@@ -79,8 +84,7 @@ export default async function BeehiivConnectPage({
       )}
 
       <form
-        method="POST"
-        action="/api/connect/beehiiv"
+        action={connectBeehiiv}
         style={{ display: "flex", flexDirection: "column", gap: 20 }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

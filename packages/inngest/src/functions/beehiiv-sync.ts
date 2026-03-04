@@ -1,6 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { decryptToken } from "@meridian/api";
 import { inngest } from "../client";
+import { getSupabaseAdmin } from "../lib/supabaseAdmin";
 
 // ─── Beehiiv API v2 response types ───────────────────────────────────────────
 
@@ -28,13 +28,6 @@ interface BeehiivPostsResponse {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
 
 /**
  * Converts a Beehiiv Unix timestamp (seconds) to an ISO 8601 string.
@@ -93,21 +86,24 @@ export const syncBeehiivPosts = inngest.createFunction(
         );
       }
 
-      const apiKey = decryptToken(data.access_token_enc as string);
-
       return {
         id: data.id as string,
-        apiKey,
+        access_token_enc: data.access_token_enc as string,
         publicationId: data.platform_user_id as string,
       };
     });
 
-    const { apiKey, publicationId } = platformRow;
+    // Decrypt outside the step so the plaintext key is never stored in Inngest
+    // step state (which is visible in the Inngest dashboard).
+    const apiKey = decryptToken(platformRow.access_token_enc);
+    const { publicationId } = platformRow;
 
     // ── Step 2+: paginate through published posts and upsert into content_items
     let page = 1;
     let totalPages = 1; // updated after the first response
     let totalUpserted = 0;
+    // Safety cap: stop after 100 pages (10 000 posts) to avoid runaway syncs.
+    const MAX_PAGES = 100;
 
     do {
       const currentPage = page;
@@ -171,7 +167,7 @@ export const syncBeehiivPosts = inngest.createFunction(
       totalPages = result.totalPages;
       totalUpserted += result.upserted;
       page++;
-    } while (page <= totalPages);
+    } while (page <= totalPages && page <= MAX_PAGES);
 
     // ── Final step: stamp last_synced_at on the connected_platforms row ───────
     await step.run("mark-synced", async () => {

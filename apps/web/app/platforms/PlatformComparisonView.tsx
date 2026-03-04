@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { formatNumber, PLATFORM_COLORS } from "@/lib/formatters";
 import {
   RadarChart,
   Radar,
@@ -68,13 +69,6 @@ const ENGAGEMENT_BASELINES: Record<Platform, number> = {
   beehiiv: 30.0, // open rate proxy
 };
 
-const PLATFORM_COLORS: Record<string, string> = {
-  youtube: "#dc2626",
-  instagram: "#7c3aed",
-  tiktok: "#111827",
-  beehiiv: "#f97316",
-};
-
 const PLATFORM_LABELS: Record<string, string> = {
   youtube: "YouTube",
   instagram: "Instagram",
@@ -87,12 +81,6 @@ const PLATFORM_LABELS: Record<string, string> = {
 function mean(nums: number[]): number {
   if (nums.length === 0) return 0;
   return nums.reduce((s, n) => s + n, 0) / nums.length;
-}
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return Math.round(n).toLocaleString();
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { formatNumber, PLATFORM_COLORS } from "@/lib/formatters";
 import {
   BarChart,
   Bar,
@@ -39,22 +40,9 @@ type Period = "7d" | "30d" | "90d";
 
 const PERIOD_DAYS: Record<Period, number> = { "7d": 7, "30d": 30, "90d": 90 };
 
-const PLATFORM_COLORS: Record<string, string> = {
-  youtube: "#dc2626",
-  instagram: "#7c3aed",
-  beehiiv: "#f97316",
-  tiktok: "#000000",
-};
-
 const TYPES_PARAM = "types";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
 
 function truncate(s: string, max: number): string {
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
