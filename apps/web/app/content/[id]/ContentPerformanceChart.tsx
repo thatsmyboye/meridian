@@ -196,11 +196,15 @@ export default function ContentPerformanceChart({ series }: ContentPerformanceCh
                 width={metric === "views" ? 48 : 44}
               />
               <Tooltip
-                formatter={(value: number, name: string) => {
+                formatter={(value: number | undefined, name: string) => {
                   const s = series.find((s) => s.contentId === name);
                   const label = s ? truncate(s.title, 40) : name;
                   const formatted =
-                    metric === "views" ? formatNumber(value) : `${value.toFixed(2)}%`;
+                    value == null
+                      ? "—"
+                      : metric === "views"
+                        ? formatNumber(value)
+                        : `${value.toFixed(2)}%`;
                   return [formatted, label];
                 }}
                 contentStyle={{ fontSize: 13, borderRadius: 6, border: "1px solid #e5e7eb" }}
