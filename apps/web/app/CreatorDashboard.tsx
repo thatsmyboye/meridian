@@ -11,6 +11,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import ContentMetricsTable from "./ContentMetricsTable";
+import ConsistencyHeatmap from "./ConsistencyHeatmap";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -129,6 +130,19 @@ export default function CreatorDashboard({ content }: DashboardProps) {
 
   return (
     <div>
+      {/* ── Consistency heatmap ── */}
+      <div
+        style={{
+          border: "1px solid #e5e7eb",
+          borderRadius: 10,
+          padding: "20px 22px",
+          background: "#fff",
+          marginBottom: 36,
+        }}
+      >
+        <ConsistencyHeatmap content={content} />
+      </div>
+
       {/* ── Period filter ── */}
       <div
         style={{

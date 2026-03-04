@@ -40,9 +40,10 @@ export default async function Home() {
 
       reauthPlatforms = (platforms ?? []).map((p) => p.platform as string);
 
-      // Fetch content published in the last 90 days (widest filter window)
+      // Fetch content published in the last 364 days (52 weeks for the heatmap;
+      // the dashboard's 7d/30d/90d filters narrow it down client-side)
       const cutoff = new Date(
-        Date.now() - 90 * 86_400_000,
+        Date.now() - 364 * 86_400_000,
       ).toISOString();
 
       const { data: contentItems } = await supabase
