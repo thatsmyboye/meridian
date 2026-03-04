@@ -60,7 +60,7 @@ export default async function Home() {
         const { data: snapshots } = await supabase
           .from("performance_snapshots")
           .select(
-            "content_item_id, views, engagement_rate, snapshot_date",
+            "content_item_id, views, engagement_rate, watch_time_minutes, snapshot_date",
           )
           .in("content_item_id", contentIds)
           .order("snapshot_date", { ascending: false });
@@ -68,7 +68,7 @@ export default async function Home() {
         // Keep only the latest snapshot per content item
         const latestByContent = new Map<
           string,
-          { views: number; engagementRate: number }
+          { views: number; engagementRate: number; watchTimeMinutes: number | null }
         >();
 
         for (const snap of snapshots ?? []) {
@@ -76,6 +76,7 @@ export default async function Home() {
             latestByContent.set(snap.content_item_id, {
               views: snap.views ?? 0,
               engagementRate: snap.engagement_rate ?? 0,
+              watchTimeMinutes: snap.watch_time_minutes ?? null,
             });
           }
         }
@@ -89,6 +90,7 @@ export default async function Home() {
             publishedAt: item.published_at,
             totalViews: perf?.views ?? 0,
             engagementRate: perf?.engagementRate ?? 0,
+            watchTimeMinutes: perf?.watchTimeMinutes ?? null,
           };
         });
       }
