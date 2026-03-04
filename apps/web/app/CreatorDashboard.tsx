@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import ContentMetricsTable from "./ContentMetricsTable";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ interface ContentPerformance {
   publishedAt: string;
   totalViews: number;
   engagementRate: number;
+  watchTimeMinutes: number | null;
 }
 
 export interface DashboardProps {
@@ -237,6 +239,11 @@ export default function CreatorDashboard({ content }: DashboardProps) {
           {period === "7d" ? "7" : period === "30d" ? "30" : "90"} days.
         </p>
       )}
+
+      {/* ── Content metrics table ── */}
+      <div style={{ marginTop: 48 }}>
+        <ContentMetricsTable rows={content} />
+      </div>
     </div>
   );
 }
