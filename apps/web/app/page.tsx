@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import CreatorDashboard from "./CreatorDashboard";
 import type { DashboardProps } from "./CreatorDashboard";
@@ -148,9 +149,35 @@ export default async function Home() {
       )}
 
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>
-          Dashboard
-        </h1>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 4,
+            gap: 12,
+          }}
+        >
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>
+            Dashboard
+          </h1>
+          <Link
+            href="/platforms"
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#2563eb",
+              textDecoration: "none",
+              padding: "6px 14px",
+              border: "1px solid #bfdbfe",
+              borderRadius: 6,
+              background: "#eff6ff",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Platform comparison →
+          </Link>
+        </div>
         <p style={{ color: "#6b7280", margin: 0, fontSize: 15 }}>
           Your content performance at a glance.
         </p>
