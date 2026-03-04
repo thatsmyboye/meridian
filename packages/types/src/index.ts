@@ -97,6 +97,26 @@ export interface PatternInsight {
   updated_at: string;
 }
 
+/**
+ * Platform-agnostic metrics produced by the normalisation layer.
+ *
+ * All platform-native metric schemas are mapped to this consistent shape so
+ * that cross-platform comparisons are apples-to-apples.
+ *
+ * Fields
+ * ──────
+ *  views              — Total view / open count (integer ≥ 0).
+ *  engagement_rate    — Ratio of interactions to views, clamped to [0, 1].
+ *                       Calculated per-platform (see normalizeMetrics docs).
+ *  watch_time_seconds — Cumulative watch time in seconds. `null` for platforms
+ *                       that do not expose this data (Instagram, Beehiiv).
+ */
+export interface NormalizedMetrics {
+  views: number;
+  engagement_rate: number;
+  watch_time_seconds: number | null;
+}
+
 export interface RepurposeJob {
   id: string;
   creator_id: string;

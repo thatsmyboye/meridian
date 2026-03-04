@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { inngest } from "../client";
 import { ensureValidYouTubeToken } from "../lib/refreshYouTubeToken";
+import { normalizeMetrics } from "../lib/normalizeMetrics";
 
 // ─── YouTube Analytics API response type ─────────────────────────────────────
 
@@ -366,13 +367,32 @@ export const fetchYoutubeAnalyticsSnapshot = inngest.createFunction(
     await step.run("store-snapshot", async () => {
       const supabase = getSupabaseAdmin();
 
-      const { error } = await supabase.from("performance_snapshots").insert({
-        content_item_id,
-        creator_id,
+      // Normalise platform-native metrics into the canonical schema.
+      // YouTube mapping:
+      //   views              ← views (direct)
+      //   engagement_rate    ← (likes + comments + shares) / views
+      //   watch_time_seconds ← estimatedMinutesWatched × 60
+      const normalized = normalizeMetrics({
+        platform: "youtube",
         views: metrics.views,
+        estimatedMinutesWatched: metrics.estimatedMinutesWatched,
         likes: metrics.likes,
         comments: metrics.comments,
         shares: metrics.shares,
+      });
+
+      const { error } = await supabase.from("performance_snapshots").insert({
+        content_item_id,
+        creator_id,
+        views: normalized.views,
+        likes: metrics.likes,
+        comments: metrics.comments,
+        shares: metrics.shares,
+        engagement_rate: normalized.engagement_rate,
+        // DB column stores minutes; convert from normalized seconds.
+        watch_time_minutes: normalized.watch_time_seconds !== null
+          ? normalized.watch_time_seconds / 60
+          : null,
         day_mark: day_mark ?? null,
         raw_data: {
           estimated_minutes_watched: metrics.estimatedMinutesWatched,

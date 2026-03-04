@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { inngest } from "../client";
 import { ensureValidInstagramToken } from "../lib/refreshInstagramToken";
+import { normalizeMetrics } from "../lib/normalizeMetrics";
 
 // ─── Instagram Insights API response types ────────────────────────────────────
 
@@ -391,15 +392,31 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
     await step.run("store-snapshot", async () => {
       const supabase = getSupabaseAdmin();
 
-      const { error } = await supabase.from("performance_snapshots").insert({
-        content_item_id,
-        creator_id,
+      // Normalise platform-native metrics into the canonical schema.
+      // Instagram mapping:
+      //   views              ← views (Meta's unified metric, Apr 2025)
+      //   engagement_rate    ← (likes + comments + shares + saves) / views
+      //   watch_time_seconds ← null (not exposed by the Instagram API)
+      const normalized = normalizeMetrics({
+        platform: "instagram",
         views: metrics.views,
         likes: metrics.likes,
         comments: metrics.comments,
         shares: metrics.shares,
         saves: metrics.saves,
+      });
+
+      const { error } = await supabase.from("performance_snapshots").insert({
+        content_item_id,
+        creator_id,
+        views: normalized.views,
+        likes: metrics.likes,
+        comments: metrics.comments,
+        shares: metrics.shares,
+        saves: metrics.saves,
         reach: metrics.reach,
+        engagement_rate: normalized.engagement_rate,
+        // watch_time_seconds is null for Instagram; leave watch_time_minutes unset.
         // Meta's `views` metric is the post-deprecation replacement for
         // `impressions` (images) and `plays` (videos/Reels) as of Apr 2025.
         // We store it in both columns so the normalised schema remains
