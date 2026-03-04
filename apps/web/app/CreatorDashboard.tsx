@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart,
   Bar,
@@ -12,6 +13,9 @@ import {
 } from "recharts";
 import ContentMetricsTable from "./ContentMetricsTable";
 import ConsistencyHeatmap from "./ConsistencyHeatmap";
+import ContentTypeFilter from "./ContentTypeFilter";
+import type { ContentType } from "@meridian/types";
+import { CONTENT_TYPE_PLATFORMS } from "@meridian/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -42,6 +46,8 @@ const PLATFORM_COLORS: Record<string, string> = {
   tiktok: "#000000",
 };
 
+const TYPES_PARAM = "types";
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatNumber(n: number): string {
@@ -54,15 +60,66 @@ function truncate(s: string, max: number): string {
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
 }
 
+/** Derive a platform's content type so we can filter by content type. */
+function platformToContentType(platform: string): ContentType | null {
+  for (const [type, platforms] of Object.entries(CONTENT_TYPE_PLATFORMS) as [
+    ContentType,
+    string[],
+  ][]) {
+    if (platforms.includes(platform)) return type;
+  }
+  return null;
+}
+
+/** Parse valid ContentType values out of a comma-separated URL param value. */
+function parseTypesParam(value: string | null): ContentType[] {
+  if (!value) return [];
+  const valid = new Set<ContentType>(["video", "short", "newsletter", "podcast"]);
+  return value
+    .split(",")
+    .filter((v): v is ContentType => valid.has(v as ContentType));
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function CreatorDashboard({ content }: DashboardProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [period, setPeriod] = useState<Period>("30d");
 
+  // Content type filter — persisted in the `types` URL param
+  const selectedTypes = useMemo(
+    () => parseTypesParam(searchParams.get(TYPES_PARAM)),
+    [searchParams],
+  );
+
+  function handleTypesChange(types: ContentType[]) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (types.length > 0) {
+      params.set(TYPES_PARAM, types.join(","));
+    } else {
+      params.delete(TYPES_PARAM);
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }
+
+  // Apply content type filter first (all-time, for the table + heatmap)
+  const typeFiltered = useMemo(() => {
+    if (selectedTypes.length === 0) return content;
+    return content.filter((c) => {
+      const ct = platformToContentType(c.platform);
+      return ct !== null && selectedTypes.includes(ct);
+    });
+  }, [content, selectedTypes]);
+
+  // Then apply the period window for cards + bar chart
   const filtered = useMemo(() => {
     const cutoff = Date.now() - PERIOD_DAYS[period] * 86_400_000;
-    return content.filter((c) => new Date(c.publishedAt).getTime() >= cutoff);
-  }, [content, period]);
+    return typeFiltered.filter(
+      (c) => new Date(c.publishedAt).getTime() >= cutoff,
+    );
+  }, [typeFiltered, period]);
 
   const totalViews = useMemo(
     () => filtered.reduce((sum, c) => sum + c.totalViews, 0),
@@ -140,7 +197,15 @@ export default function CreatorDashboard({ content }: DashboardProps) {
           marginBottom: 36,
         }}
       >
-        <ConsistencyHeatmap content={content} />
+        <ConsistencyHeatmap content={typeFiltered} />
+      </div>
+
+      {/* ── Content type filter ── */}
+      <div style={{ marginBottom: 20 }}>
+        <ContentTypeFilter
+          selected={selectedTypes}
+          onChange={handleTypesChange}
+        />
       </div>
 
       {/* ── Period filter ── */}
@@ -250,13 +315,14 @@ export default function CreatorDashboard({ content }: DashboardProps) {
       {filtered.length === 0 && (
         <p style={{ color: "#9ca3af", textAlign: "center", marginTop: 24 }}>
           No content published in the last{" "}
-          {period === "7d" ? "7" : period === "30d" ? "30" : "90"} days.
+          {period === "7d" ? "7" : period === "30d" ? "30" : "90"} days
+          {selectedTypes.length > 0 ? " for the selected content type(s)" : ""}.
         </p>
       )}
 
       {/* ── Content metrics table ── */}
       <div style={{ marginTop: 48 }}>
-        <ContentMetricsTable rows={content} />
+        <ContentMetricsTable rows={typeFiltered} />
       </div>
     </div>
   );

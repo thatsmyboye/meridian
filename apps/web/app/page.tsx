@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import CreatorDashboard from "./CreatorDashboard";
@@ -184,7 +185,9 @@ export default async function Home() {
         </p>
       </div>
 
-      <CreatorDashboard content={dashboardContent} />
+      <Suspense>
+        <CreatorDashboard content={dashboardContent} />
+      </Suspense>
     </main>
   );
 }
