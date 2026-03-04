@@ -269,6 +269,15 @@ export const syncYoutubeMetadata = inngest.createFunction(
       totalUpserted += result.upserted;
     } while (pageToken);
 
+    // ── Final step: stamp last_synced_at on the connected_platforms row ───────
+    await step.run("mark-synced", async () => {
+      const supabase = getSupabaseAdmin();
+      await supabase
+        .from("connected_platforms")
+        .update({ last_synced_at: new Date().toISOString() })
+        .eq("id", connected_platform_id);
+    });
+
     return { creator_id, connected_platform_id, totalUpserted };
   }
 );
