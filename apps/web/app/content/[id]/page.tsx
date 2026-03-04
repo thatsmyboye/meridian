@@ -172,21 +172,47 @@ export default async function ContentDetailPage({
         fontFamily: "system-ui, sans-serif",
       }}
     >
-      {/* ── Back link ── */}
-      <Link
-        href="/"
+      {/* ── Back link + lineage link ── */}
+      <div
         style={{
-          display: "inline-flex",
+          display: "flex",
           alignItems: "center",
-          gap: 4,
-          color: "#6b7280",
-          fontSize: 14,
-          textDecoration: "none",
+          justifyContent: "space-between",
           marginBottom: 24,
         }}
       >
-        ← Back to dashboard
-      </Link>
+        <Link
+          href="/"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            color: "#6b7280",
+            fontSize: 14,
+            textDecoration: "none",
+          }}
+        >
+          ← Back to dashboard
+        </Link>
+        <Link
+          href={`/content/${id}/lineage`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#2563eb",
+            textDecoration: "none",
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: 7,
+            padding: "5px 12px",
+          }}
+        >
+          View lineage tree →
+        </Link>
+      </div>
 
       {/* ── Header ── */}
       <div style={{ marginBottom: 28 }}>
