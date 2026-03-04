@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -350,7 +351,8 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
                         maxWidth: 300,
                       }}
                     >
-                      <span
+                      <Link
+                        href={`/content/${row.contentId}`}
                         title={row.title}
                         style={{
                           display: "block",
@@ -358,10 +360,18 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                           fontWeight: 500,
+                          color: "#111827",
+                          textDecoration: "none",
                         }}
+                        onMouseEnter={(e) =>
+                          ((e.currentTarget as HTMLAnchorElement).style.color = "#2563eb")
+                        }
+                        onMouseLeave={(e) =>
+                          ((e.currentTarget as HTMLAnchorElement).style.color = "#111827")
+                        }
                       >
                         {row.title}
-                      </span>
+                      </Link>
                     </td>
 
                     {/* Platform */}
