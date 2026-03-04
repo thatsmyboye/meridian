@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { decryptToken } from "@meridian/api";
 import { inngest } from "../client";
+import { normalizeMetrics } from "../lib/normalizeMetrics";
 
 // ─── Beehiiv API v2 response types ───────────────────────────────────────────
 
@@ -324,11 +325,25 @@ export const fetchBeehiivAnalyticsSnapshot = inngest.createFunction(
     await step.run("store-snapshot", async () => {
       const supabase = getSupabaseAdmin();
 
+      // Normalise platform-native metrics into the canonical schema.
+      // Beehiiv mapping:
+      //   views              ← uniqueOpened (unique email opens ≈ "unique content views")
+      //   engagement_rate    ← openRate / 100 (convert percentage → fraction)
+      //   watch_time_seconds ← null (email newsletters have no watch-time concept)
+      const normalized = normalizeMetrics({
+        platform: "beehiiv",
+        uniqueOpened: metrics.uniqueOpened,
+        recipients: metrics.recipients,
+        openRate: metrics.openRate,
+      });
+
       const { error } = await supabase.from("performance_snapshots").insert({
         content_item_id,
         creator_id,
         // Map newsletter metrics to the shared performance_snapshots schema.
-        views: metrics.uniqueOpened,
+        views: normalized.views,
+        engagement_rate: normalized.engagement_rate,
+        // watch_time_seconds is null for Beehiiv; leave watch_time_minutes unset.
         reach: metrics.recipients,
         clicks: metrics.uniqueClicked,
         open_rate: metrics.openRate,

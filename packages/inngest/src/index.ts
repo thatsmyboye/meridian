@@ -8,6 +8,15 @@
 export { INNGEST_APP_ID, inngest } from "./client";
 export type { MeridianEvents } from "./events";
 
+// ─── Metrics normalisation layer ─────────────────────────────────────────────
+export { normalizeMetrics } from "./lib/normalizeMetrics";
+export type {
+  PlatformRawMetrics,
+  YouTubeRawMetrics,
+  InstagramRawMetrics,
+  BeehiivRawMetrics,
+} from "./lib/normalizeMetrics";
+
 // ─── Background function handlers ────────────────────────────────────────────
 export { syncYoutubeMetadata } from "./functions/youtube-sync";
 export { handlePlatformConnected } from "./functions/platform-connected";
