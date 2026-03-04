@@ -95,7 +95,7 @@ export async function ensureValidYouTubeToken(
   // Optimistic concurrency: only update if the stored token hasn't changed.
   // If concurrent functions refreshed the token first, the WHERE clause on
   // access_token_enc won't match and we re-read the already-refreshed token.
-  const { count, error: updateError } = await supabase
+  const { data: updatedRows, error: updateError } = await supabase
     .from("connected_platforms")
     .update({
       access_token_enc: newTokenEnc,
@@ -104,7 +104,7 @@ export async function ensureValidYouTubeToken(
     })
     .eq("id", platformRow.id)
     .eq("access_token_enc", platformRow.access_token_enc)
-    .select("id", { count: "exact", head: true });
+    .select("id");
 
   if (updateError) {
     // Log but don't fail — we can still use the fresh token for this run.
@@ -115,7 +115,7 @@ export async function ensureValidYouTubeToken(
     return { ok: true, accessToken: tokens.access_token };
   }
 
-  if (count === 0) {
+  if (updatedRows.length === 0) {
     // Another concurrent run already refreshed the token. Re-read from DB.
     const { data: fresh, error: readErr } = await supabase
       .from("connected_platforms")
