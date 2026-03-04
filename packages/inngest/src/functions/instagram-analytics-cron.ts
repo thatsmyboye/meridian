@@ -4,13 +4,37 @@ import { ensureValidInstagramToken } from "../lib/refreshInstagramToken";
 
 // ─── Instagram Insights API response types ────────────────────────────────────
 
+/**
+ * A single metric result from the Instagram Insights API.
+ *
+ * Meta introduced a `total_value` field in Graph API v19.0 for some endpoints
+ * as an alternative to the `values` array. Both formats are still returned
+ * depending on the metric and API version, so we handle both defensively.
+ */
+interface InstagramInsightsResult {
+  name: string;
+  period: string;
+  /** Standard format: lifetime metrics as a single-element array. */
+  values?: Array<{ value: number }>;
+  /** Newer format (v19.0+): aggregate lifetime value returned as an object. */
+  total_value?: { value: number };
+  id: string;
+}
+
 interface InstagramInsightsResponse {
-  data: Array<{
-    name: string;
-    period: string;
-    values: Array<{ value: number }>;
-    id: string;
-  }>;
+  data: InstagramInsightsResult[];
+}
+
+/**
+ * Extracts the numeric value from an insights result, handling both the
+ * older `values[0].value` array format and the newer `total_value.value`
+ * object format that Meta introduced in Graph API v19.0.
+ */
+function extractInsightValue(metric: InstagramInsightsResult): number {
+  if (metric.total_value !== undefined) {
+    return metric.total_value.value ?? 0;
+  }
+  return metric.values?.[0]?.value ?? 0;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -232,7 +256,7 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
 
         const { data: item, error: itemError } = await supabase
           .from("content_items")
-          .select("id, external_id, platform_id, published_at, raw_data")
+          .select("id, external_id, platform_id")
           .eq("id", content_item_id)
           .single();
 
@@ -269,8 +293,6 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
             id: string;
             external_id: string;
             platform_id: string;
-            published_at: string | null;
-            raw_data: { media_type?: string } | null;
           },
           platformRow: cp as {
             id: string;
@@ -299,13 +321,14 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
 
     // ── Step 3: fetch Instagram Insights for this media item ──────────────────
     const metrics = await step.run("fetch-instagram-insights", async () => {
-      const mediaType = contentItem.raw_data?.media_type ?? "IMAGE";
-
-      // Fetch insights (views, reach, saved, shares)
+      // Fetch insights (views, reach, saved, shares).
+      // period=lifetime requests cumulative totals from the time the media was
+      // posted, which is what we want for lifecycle day-mark snapshots.
       const insightsUrl = new URL(
         `https://graph.facebook.com/v21.0/${contentItem.external_id}/insights`
       );
       insightsUrl.searchParams.set("metric", MEDIA_METRICS);
+      insightsUrl.searchParams.set("period", "lifetime");
       insightsUrl.searchParams.set("access_token", accessToken);
 
       const insightsRes = await fetch(insightsUrl.toString());
@@ -318,11 +341,11 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
 
       const insightsData: InstagramInsightsResponse = await insightsRes.json();
 
-      // Build a metric → value map
+      // Build a metric → value map, handling both `values[0].value` (standard)
+      // and `total_value.value` (Graph API v19.0+ aggregate format).
       const metricsMap: Record<string, number> = {};
       for (const metric of insightsData.data) {
-        // Lifetime metrics have a single value in the values array
-        metricsMap[metric.name] = metric.values[0]?.value ?? 0;
+        metricsMap[metric.name] = extractInsightValue(metric);
       }
 
       // Fetch like_count and comments_count directly from the media object
@@ -351,15 +374,13 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
       }
 
       return {
-        impressions: metricsMap["views"] ?? 0,
+        // `views` is Meta's unified metric (Apr 2025): counts impressions for
+        // images/carousels and plays for videos/Reels, replacing the now-
+        // deprecated `impressions` and `plays` metrics.
+        views: metricsMap["views"] ?? 0,
         reach: metricsMap["reach"] ?? 0,
         saves: metricsMap["saved"] ?? 0,
         shares: metricsMap["shares"] ?? 0,
-        // For VIDEO/REEL, `views` is the post-deprecation replacement for `plays`.
-        plays:
-          mediaType === "VIDEO" || mediaType === "REEL"
-            ? (metricsMap["views"] ?? null)
-            : null,
         likes: likesCount,
         comments: commentsCount,
         rawInsights: insightsData,
@@ -373,18 +394,19 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
       const { error } = await supabase.from("performance_snapshots").insert({
         content_item_id,
         creator_id,
-        views: metrics.impressions, // sourced from Meta `views` metric; stored as views for cross-platform consistency
+        views: metrics.views,
         likes: metrics.likes,
         comments: metrics.comments,
         shares: metrics.shares,
         saves: metrics.saves,
         reach: metrics.reach,
-        impressions: metrics.impressions,
+        // Meta's `views` metric is the post-deprecation replacement for
+        // `impressions` (images) and `plays` (videos/Reels) as of Apr 2025.
+        // We store it in both columns so the normalised schema remains
+        // consistent with other platforms that report impressions separately.
+        impressions: metrics.views,
         day_mark: day_mark ?? null,
-        raw_data: {
-          plays: metrics.plays,
-          api_response: metrics.rawInsights,
-        },
+        raw_data: { api_response: metrics.rawInsights },
       });
 
       if (error) {
@@ -403,7 +425,7 @@ export const fetchInstagramAnalyticsSnapshot = inngest.createFunction(
     return {
       content_item_id,
       day_mark: day_mark ?? null,
-      impressions: metrics.impressions,
+      views: metrics.views,
       reach: metrics.reach,
       likes: metrics.likes,
       comments: metrics.comments,
