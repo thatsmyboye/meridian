@@ -8,6 +8,9 @@ import {
   syncInstagramMedia,
   instagramAnalyticsCron,
   fetchInstagramAnalyticsSnapshot,
+  syncBeehiivPosts,
+  beehiivAnalyticsCron,
+  fetchBeehiivAnalyticsSnapshot,
 } from "@meridian/inngest";
 
 /**
@@ -33,5 +36,8 @@ export const { GET, POST, PUT } = serve({
     syncInstagramMedia,
     instagramAnalyticsCron,
     fetchInstagramAnalyticsSnapshot,
+    syncBeehiivPosts,
+    beehiivAnalyticsCron,
+    fetchBeehiivAnalyticsSnapshot,
   ],
 });

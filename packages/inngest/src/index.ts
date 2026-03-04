@@ -20,3 +20,8 @@ export {
   instagramAnalyticsCron,
   fetchInstagramAnalyticsSnapshot,
 } from "./functions/instagram-analytics-cron";
+export { syncBeehiivPosts } from "./functions/beehiiv-sync";
+export {
+  beehiivAnalyticsCron,
+  fetchBeehiivAnalyticsSnapshot,
+} from "./functions/beehiiv-analytics-cron";
