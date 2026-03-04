@@ -42,6 +42,16 @@ const PLATFORM_BADGE: Record<string, { bg: string; color: string }> = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function csvEscape(value: string | number | null): string {
+  if (value === null || value === undefined) return "";
+  const str = String(value);
+  // Wrap in quotes if the value contains a comma, quote, or newline
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -165,6 +175,32 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
       : []),
   ];
 
+  function exportToCSV() {
+    const headers = columns.map((c) => c.label);
+    const dataRows = processed.map((row) => {
+      const cells: (string | number | null)[] = [
+        row.title,
+        row.platform,
+        new Date(row.publishedAt).toISOString().slice(0, 10),
+        row.totalViews,
+        row.engagementRate,
+      ];
+      if (hasVideoContent) {
+        cells.push(VIDEO_PLATFORMS.has(row.platform) ? row.watchTimeMinutes : null);
+      }
+      return cells.map(csvEscape).join(",");
+    });
+
+    const csv = [headers.map(csvEscape).join(","), ...dataRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "analytics-export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
       {/* ── Section header ── */}
@@ -179,11 +215,48 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
         <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>
           All content
         </h2>
-        <span style={{ fontSize: 13, color: "#6b7280" }}>
-          {processed.length === rows.length
-            ? `${rows.length} item${rows.length !== 1 ? "s" : ""}`
-            : `${processed.length} of ${rows.length} items`}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 13, color: "#6b7280" }}>
+            {processed.length === rows.length
+              ? `${rows.length} item${rows.length !== 1 ? "s" : ""}`
+              : `${processed.length} of ${rows.length} items`}
+          </span>
+          <button
+            onClick={exportToCSV}
+            disabled={processed.length === 0}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 12px",
+              borderRadius: 6,
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              color: processed.length === 0 ? "#9ca3af" : "#374151",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: processed.length === 0 ? "not-allowed" : "pointer",
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M7 1v8M4 6l3 3 3-3M2 10v1.5A1.5 1.5 0 0 0 3.5 13h7a1.5 1.5 0 0 0 1.5-1.5V10"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* ── Filters ── */}
