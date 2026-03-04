@@ -159,7 +159,6 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
   }, [weeks]);
 
   const gridWidth = weeks.length * CELL_STEP;
-  const gridHeight = 7 * CELL_STEP;
 
   return (
     <div>

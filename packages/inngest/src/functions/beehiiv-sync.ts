@@ -41,7 +41,7 @@ function getSupabaseAdmin() {
  * Returns null if the timestamp is missing or zero.
  */
 function toIso(unixSeconds: number | null | undefined): string | null {
-  if (!unixSeconds) return null;
+  if (unixSeconds == null) return null;
   return new Date(unixSeconds * 1000).toISOString();
 }
 
@@ -176,10 +176,11 @@ export const syncBeehiivPosts = inngest.createFunction(
     // ── Final step: stamp last_synced_at on the connected_platforms row ───────
     await step.run("mark-synced", async () => {
       const supabase = getSupabaseAdmin();
-      await supabase
+      const { error } = await supabase
         .from("connected_platforms")
         .update({ last_synced_at: new Date().toISOString() })
         .eq("id", connected_platform_id);
+      if (error) throw new Error(`mark-synced failed: ${error.message}`);
     });
 
     return { creator_id, connected_platform_id, totalUpserted };
