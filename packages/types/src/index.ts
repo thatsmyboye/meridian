@@ -8,6 +8,16 @@
 
 export type Platform = "youtube" | "instagram" | "tiktok" | "beehiiv";
 
+export type ContentType = "video" | "short" | "newsletter" | "podcast";
+
+/** Maps each content type to the platform identifier(s) that produce it. */
+export const CONTENT_TYPE_PLATFORMS: Record<ContentType, string[]> = {
+  video: ["youtube"],
+  short: ["instagram", "tiktok"],
+  newsletter: ["beehiiv"],
+  podcast: ["podcast"],
+};
+
 export type ConnectionStatus = "active" | "reauth_required" | "disconnected";
 
 export type RepurposeJobStatus =
