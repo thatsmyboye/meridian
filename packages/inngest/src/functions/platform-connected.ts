@@ -30,6 +30,13 @@ export const handlePlatformConnected = inngest.createFunction(
       });
     }
 
+    if (platform === "beehiiv") {
+      await step.sendEvent("request-beehiiv-sync", {
+        name: "content/sync.requested",
+        data: { creator_id, connected_platform_id, platform },
+      });
+    }
+
     return { creator_id, platform };
   }
 );

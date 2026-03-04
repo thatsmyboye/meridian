@@ -1,9 +1,9 @@
 /**
  * /connect – Platform connection page
  *
- * Lets creators connect their social accounts to Meridian via OAuth.
- * Supports YouTube and Instagram. Shows success/error feedback via query
- * params set by the OAuth callback routes.
+ * Lets creators connect their social accounts to Meridian via OAuth or API key.
+ * Supports YouTube, Instagram, and Beehiiv. Shows success/error feedback via
+ * query params set by the connection routes.
  */
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -71,6 +71,22 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
           }}
         >
           Instagram connected successfully. Your posts will be imported shortly.
+        </div>
+      )}
+
+      {success === "beehiiv" && (
+        <div
+          role="status"
+          style={{
+            background: "#f0fdf4",
+            border: "1px solid #86efac",
+            borderRadius: 8,
+            padding: "12px 16px",
+            marginBottom: 24,
+            color: "#166534",
+          }}
+        >
+          Beehiiv connected successfully. Your newsletter posts will be imported shortly.
         </div>
       )}
 
@@ -165,6 +181,46 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
             }}
           >
             {success === "instagram" ? "Reconnect" : "Connect"}
+          </a>
+        </div>
+
+        {/* Beehiiv */}
+        <div
+          style={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            padding: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>Beehiiv</div>
+            <div style={{ fontSize: 14, color: "#6b7280" }}>
+              Import newsletter posts and track open rates &amp; clicks
+            </div>
+            <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
+              Requires a Beehiiv API key and publication ID
+            </div>
+          </div>
+
+          <a
+            href="/connect/beehiiv"
+            style={{
+              display: "inline-block",
+              background: "#f97316",
+              color: "#fff",
+              padding: "8px 18px",
+              borderRadius: 6,
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: 14,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {success === "beehiiv" ? "Reconnect" : "Connect"}
           </a>
         </div>
       </div>
