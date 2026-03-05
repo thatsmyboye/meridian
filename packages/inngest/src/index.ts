@@ -34,3 +34,7 @@ export {
   beehiivAnalyticsCron,
   fetchBeehiivAnalyticsSnapshot,
 } from "./functions/beehiiv-analytics-cron";
+export {
+  weeklyStatsCron,
+  computeCreatorPatterns,
+} from "./functions/weekly-stats-cron";
