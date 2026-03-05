@@ -38,3 +38,7 @@ export {
   weeklyStatsCron,
   computeCreatorPatterns,
 } from "./functions/weekly-stats-cron";
+export {
+  weeklyDigestCron,
+  sendWeeklyDigest,
+} from "./functions/weekly-digest-cron";

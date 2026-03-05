@@ -53,4 +53,11 @@ export type MeridianEvents = {
       repurpose_job_id: string;
     };
   };
+
+  /** Triggers sending the weekly digest email for a single creator. */
+  "digest/weekly.send": {
+    data: {
+      creator_id: string;
+    };
+  };
 };
