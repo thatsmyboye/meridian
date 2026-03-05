@@ -84,14 +84,16 @@ function pickCaptionTrackId(
  * Triggered by: repurpose/job.created
  *
  * Steps:
- *  1. load-job           – Load the repurpose job, source content_item, and
- *                          connected_platform credentials.
- *  2. fetch-yt-captions  – (YouTube only) Download caption track via the
- *                          YouTube Data API captions.list + captions.download.
- *  3. whisper-fallback   – If captions are unavailable, fetch the audio from
- *                          media_urls[0] and transcribe via OpenAI Whisper.
- *  4. store-transcript   – Persist the transcript (or empty string) to
- *                          repurpose_jobs.source_transcript.
+ *  1. load-job             – Load the repurpose job, source content_item, and
+ *                            connected_platform credentials.
+ *  2. (text_import only)   – Short-circuit: use content_items.body directly
+ *                            as the transcript and emit transcript.extracted.
+ *  3. fetch-yt-captions    – (YouTube only) Download caption track via the
+ *                            YouTube Data API captions.list + captions.download.
+ *  4. whisper-fallback     – If captions are unavailable, fetch the audio from
+ *                            media_urls[0] and transcribe via OpenAI Whisper.
+ *  5. store-transcript     – Persist the transcript (or empty string) to
+ *                            repurpose_jobs.source_transcript.
  */
 export const extractRepurposeTranscript = inngest.createFunction(
   {
@@ -121,7 +123,7 @@ export const extractRepurposeTranscript = inngest.createFunction(
 
       const { data: contentItem, error: contentErr } = await supabase
         .from("content_items")
-        .select("id, platform, external_id, media_urls, platform_id")
+        .select("id, platform, content_type, body, external_id, media_urls, platform_id")
         .eq("id", job.source_item_id)
         .single();
 
@@ -151,7 +153,44 @@ export const extractRepurposeTranscript = inngest.createFunction(
       return { contentItem, platformRow };
     });
 
-    // ── Step 2 (YouTube): Try YouTube Data API captions ───────────────────────
+    // ── Step 2 (text_import): Use body directly as the transcript ─────────────
+    // For manually pasted content (newsletters, blog posts, etc.) the body IS
+    // the transcript – no audio extraction needed.
+    if (contentItem.content_type === "text_import") {
+      const textTranscript = (contentItem.body ?? "").trim();
+
+      await step.run("store-transcript", async () => {
+        const supabase = getSupabaseAdmin();
+        const { error } = await supabase
+          .from("repurpose_jobs")
+          .update({ source_transcript: textTranscript })
+          .eq("id", repurpose_job_id);
+
+        if (error) {
+          throw new Error(
+            `[transcript] Failed to store transcript for job ${repurpose_job_id}: ${error.message}`
+          );
+        }
+      });
+
+      await step.sendEvent("emit-transcript-extracted", {
+        name: "repurpose/transcript.extracted",
+        data: {
+          creator_id,
+          repurpose_job_id,
+          transcript_length: textTranscript.length,
+        },
+      });
+
+      return {
+        repurpose_job_id,
+        creator_id,
+        platform: "text_import",
+        transcriptLength: textTranscript.length,
+      };
+    }
+
+    // ── Step 3 (YouTube): Try YouTube Data API captions ───────────────────────
     let transcript: string | null = null;
 
     if (contentItem.platform === "youtube" && contentItem.external_id) {
@@ -229,7 +268,7 @@ export const extractRepurposeTranscript = inngest.createFunction(
       });
     }
 
-    // ── Step 3: Whisper fallback if no captions were obtained ─────────────────
+    // ── Step 4: Whisper fallback if no captions were obtained ─────────────────
     if (!transcript) {
       transcript = await step.run("whisper-fallback", async () => {
         const mediaUrls: string[] = contentItem.media_urls ?? [];
@@ -273,7 +312,7 @@ export const extractRepurposeTranscript = inngest.createFunction(
       });
     }
 
-    // ── Step 4: Persist the transcript ────────────────────────────────────────
+    // ── Step 5: Persist the transcript ────────────────────────────────────────
     await step.run("store-transcript", async () => {
       const supabase = getSupabaseAdmin();
 
@@ -289,7 +328,7 @@ export const extractRepurposeTranscript = inngest.createFunction(
       }
     });
 
-    // ── Step 5: Emit transcript.extracted event for downstream steps ──────────
+    // ── Step 6: Emit transcript.extracted event for downstream steps ──────────
     const transcriptLength = transcript?.length ?? 0;
 
     await step.sendEvent("emit-transcript-extracted", {
