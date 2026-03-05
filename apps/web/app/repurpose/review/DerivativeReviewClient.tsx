@@ -10,8 +10,12 @@ interface Derivative {
   content: string;
   platform: string;
   char_count: number;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "scheduled" | "published" | "failed_publish";
   previous_drafts: string[];
+  scheduled_at: string | null;
+  schedule_id: string | null;
+  published_at: string | null;
+  publish_error: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +56,17 @@ const PLATFORM_COLORS: Record<string, { bg: string; color: string }> = {
   tiktok: { bg: "#f0f0f0", color: "#000000" },
 };
 
+function formatScheduledDate(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function DerivativeReviewClient({
@@ -70,6 +85,7 @@ export default function DerivativeReviewClient({
   const [, setJobStatus] = useState(initialJobStatus);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState<Record<string, boolean>>({});
+  const [scheduling, setScheduling] = useState<Record<string, boolean>>({});
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Polling for regeneration updates
@@ -86,7 +102,6 @@ export default function DerivativeReviewClient({
         const data = await res.json();
         setDerivatives(data.derivatives);
 
-        // Check if any regenerating formats have updated
         const stillRegenerating: Record<string, boolean> = {};
         for (const [key, val] of Object.entries(regenerating)) {
           if (!val) continue;
@@ -128,7 +143,7 @@ export default function DerivativeReviewClient({
             }),
           });
         } catch {
-          // Silently fail; user can retry
+          // Silently fail
         } finally {
           setSaving(false);
         }
@@ -189,10 +204,88 @@ export default function DerivativeReviewClient({
     }
   }
 
+  async function handleSchedule(formatKey: string, scheduledAt: string) {
+    setScheduling((prev) => ({ ...prev, [formatKey]: true }));
+    try {
+      const res = await fetch("/api/repurpose/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          job_id: jobId,
+          format_key: formatKey,
+          scheduled_at: scheduledAt,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error ?? "Failed to schedule");
+        return;
+      }
+      const data = await res.json();
+      setDerivatives(data.derivatives);
+    } catch {
+      alert("Failed to schedule");
+    } finally {
+      setScheduling((prev) => ({ ...prev, [formatKey]: false }));
+    }
+  }
+
+  async function handleCancelSchedule(formatKey: string) {
+    setScheduling((prev) => ({ ...prev, [formatKey]: true }));
+    try {
+      const res = await fetch("/api/repurpose/schedule", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_id: jobId, format_key: formatKey }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error ?? "Failed to cancel schedule");
+        return;
+      }
+      const data = await res.json();
+      setDerivatives(data.derivatives);
+    } catch {
+      alert("Failed to cancel schedule");
+    } finally {
+      setScheduling((prev) => ({ ...prev, [formatKey]: false }));
+    }
+  }
+
+  async function handleReschedule(formatKey: string, newScheduledAt: string) {
+    setScheduling((prev) => ({ ...prev, [formatKey]: true }));
+    try {
+      const res = await fetch("/api/repurpose/schedule", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          job_id: jobId,
+          format_key: formatKey,
+          scheduled_at: newScheduledAt,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error ?? "Failed to reschedule");
+        return;
+      }
+      const data = await res.json();
+      setDerivatives(data.derivatives);
+    } catch {
+      alert("Failed to reschedule");
+    } finally {
+      setScheduling((prev) => ({ ...prev, [formatKey]: false }));
+    }
+  }
+
   const activeDerivative = derivatives.find((d) => d.format === activeTab);
   const sourceText = sourceTranscript || contentBody || "No source content available.";
   const allApproved = derivatives.length > 0 && derivatives.every(
-    (d) => d.status === "approved" || d.status === "rejected"
+    (d) =>
+      d.status === "approved" ||
+      d.status === "rejected" ||
+      d.status === "scheduled" ||
+      d.status === "published"
   );
 
   return (
@@ -256,6 +349,21 @@ export default function DerivativeReviewClient({
             {saving && (
               <span style={{ fontSize: 12, color: "#9ca3af" }}>Saving...</span>
             )}
+            <Link
+              href="/repurpose/calendar"
+              style={{
+                padding: "6px 12px",
+                borderRadius: 7,
+                border: "1px solid #e5e7eb",
+                background: "#fff",
+                color: "#374151",
+                fontWeight: 500,
+                fontSize: 13,
+                textDecoration: "none",
+              }}
+            >
+              View Calendar
+            </Link>
             {allApproved && (
               <span
                 style={{
@@ -346,11 +454,15 @@ export default function DerivativeReviewClient({
             {derivatives.map((d) => {
               const isActive = activeTab === d.format;
               const statusDot =
-                d.status === "approved"
-                  ? "#10b981"
-                  : d.status === "rejected"
-                    ? "#ef4444"
-                    : "#d1d5db";
+                d.status === "published"
+                  ? "#8b5cf6"
+                  : d.status === "scheduled"
+                    ? "#f59e0b"
+                    : d.status === "approved"
+                      ? "#10b981"
+                      : d.status === "rejected"
+                        ? "#ef4444"
+                        : "#d1d5db";
 
               return (
                 <button
@@ -394,12 +506,22 @@ export default function DerivativeReviewClient({
             <DerivativeCard
               derivative={activeDerivative}
               isRegenerating={!!regenerating[activeDerivative.format]}
+              isScheduling={!!scheduling[activeDerivative.format]}
               onContentChange={(content) =>
                 handleContentChange(activeDerivative.format, content)
               }
               onApprove={() => handleAction(activeDerivative.format, "approve")}
               onReject={() => handleAction(activeDerivative.format, "reject")}
               onRegenerate={() => handleRegenerate(activeDerivative.format)}
+              onSchedule={(scheduledAt) =>
+                handleSchedule(activeDerivative.format, scheduledAt)
+              }
+              onCancelSchedule={() =>
+                handleCancelSchedule(activeDerivative.format)
+              }
+              onReschedule={(newScheduledAt) =>
+                handleReschedule(activeDerivative.format, newScheduledAt)
+              }
             />
           )}
 
@@ -433,17 +555,25 @@ export default function DerivativeReviewClient({
 function DerivativeCard({
   derivative,
   isRegenerating,
+  isScheduling,
   onContentChange,
   onApprove,
   onReject,
   onRegenerate,
+  onSchedule,
+  onCancelSchedule,
+  onReschedule,
 }: {
   derivative: Derivative;
   isRegenerating: boolean;
+  isScheduling: boolean;
   onContentChange: (content: string) => void;
   onApprove: () => void;
   onReject: () => void;
   onRegenerate: () => void;
+  onSchedule: (scheduledAt: string) => void;
+  onCancelSchedule: () => void;
+  onReschedule: (newScheduledAt: string) => void;
 }) {
   const charLimit = PLATFORM_LIMITS[derivative.platform] ?? 2000;
   const isOverLimit = derivative.char_count > charLimit;
@@ -451,6 +581,10 @@ function DerivativeCard({
     bg: "#f3f4f6",
     color: "#374151",
   };
+  const isScheduled = derivative.status === "scheduled";
+  const isPublished = derivative.status === "published";
+  const isFailedPublish = derivative.status === "failed_publish";
+  const isLocked = isScheduled || isPublished;
 
   return (
     <div
@@ -502,26 +636,59 @@ function DerivativeCard({
             {derivative.char_count.toLocaleString()} / {charLimit.toLocaleString()}
           </span>
           {derivative.status !== "pending" && (
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "2px 8px",
-                borderRadius: 4,
-                background:
-                  derivative.status === "approved" ? "#d1fae5" : "#fee2e2",
-                color:
-                  derivative.status === "approved" ? "#065f46" : "#991b1b",
-              }}
-            >
-              {derivative.status === "approved" ? "Approved" : "Rejected"}
-            </span>
+            <StatusBadge status={derivative.status} />
           )}
         </div>
       </div>
 
+      {/* Scheduled info banner */}
+      {isScheduled && derivative.scheduled_at && (
+        <div
+          style={{
+            padding: "10px 20px",
+            background: "#fffbeb",
+            borderBottom: "1px solid #fde68a",
+            fontSize: 13,
+            color: "#92400e",
+          }}
+        >
+          Scheduled to publish:{" "}
+          <strong>{formatScheduledDate(derivative.scheduled_at)}</strong>
+        </div>
+      )}
+
+      {/* Published info banner */}
+      {isPublished && derivative.published_at && (
+        <div
+          style={{
+            padding: "10px 20px",
+            background: "#f0fdf4",
+            borderBottom: "1px solid #bbf7d0",
+            fontSize: 13,
+            color: "#14532d",
+          }}
+        >
+          Published: {formatScheduledDate(derivative.published_at)}
+        </div>
+      )}
+
+      {/* Failed publish banner */}
+      {isFailedPublish && derivative.publish_error && (
+        <div
+          style={{
+            padding: "10px 20px",
+            background: "#fef2f2",
+            borderBottom: "1px solid #fecaca",
+            fontSize: 13,
+            color: "#991b1b",
+          }}
+        >
+          Publish failed: {derivative.publish_error}
+        </div>
+      )}
+
       {/* Over-limit warning */}
-      {isOverLimit && (
+      {isOverLimit && !isLocked && (
         <div
           style={{
             padding: "8px 20px",
@@ -566,6 +733,7 @@ function DerivativeCard({
           <textarea
             value={derivative.content}
             onChange={(e) => onContentChange(e.target.value)}
+            disabled={isLocked}
             style={{
               width: "100%",
               minHeight: 280,
@@ -575,9 +743,10 @@ function DerivativeCard({
               resize: "vertical",
               fontSize: 14,
               lineHeight: 1.7,
-              color: "#374151",
+              color: isLocked ? "#9ca3af" : "#374151",
               fontFamily: "system-ui, sans-serif",
               background: "transparent",
+              cursor: isLocked ? "default" : "text",
             }}
           />
         )}
@@ -627,69 +796,394 @@ function DerivativeCard({
         <PreviousDrafts drafts={derivative.previous_drafts} />
       )}
 
-      {/* Action buttons */}
-      <div
-        style={{
-          padding: "14px 20px",
-          borderTop: "1px solid #f3f4f6",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <button
-          onClick={onRegenerate}
-          disabled={isRegenerating}
+      {/* Schedule picker — shown when approved */}
+      {derivative.status === "approved" && (
+        <SchedulePicker isScheduling={isScheduling} onSchedule={onSchedule} />
+      )}
+
+      {/* Reschedule/Cancel — shown when scheduled */}
+      {isScheduled && (
+        <ReschedulePicker
+          currentScheduledAt={derivative.scheduled_at!}
+          isScheduling={isScheduling}
+          onReschedule={onReschedule}
+          onCancelSchedule={onCancelSchedule}
+        />
+      )}
+
+      {/* Failed publish — allow re-approving to reschedule */}
+      {isFailedPublish && (
+        <div
           style={{
-            padding: "7px 14px",
-            borderRadius: 7,
-            border: "1px solid #e5e7eb",
-            background: "#fff",
-            color: isRegenerating ? "#9ca3af" : "#374151",
-            fontWeight: 500,
-            fontSize: 13,
-            cursor: isRegenerating ? "not-allowed" : "pointer",
+            padding: "10px 20px",
+            borderTop: "1px solid #f3f4f6",
             display: "flex",
-            alignItems: "center",
-            gap: 5,
+            gap: 8,
           }}
         >
-          ↻ Regenerate
-        </button>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={onReject}
-            style={{
-              padding: "7px 16px",
-              borderRadius: 7,
-              border: "1px solid #fecaca",
-              background: derivative.status === "rejected" ? "#fee2e2" : "#fff",
-              color: "#dc2626",
-              fontWeight: 500,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
-            Reject
-          </button>
           <button
             onClick={onApprove}
             style={{
               padding: "7px 16px",
               borderRadius: 7,
               border: "none",
-              background:
-                derivative.status === "approved" ? "#059669" : "#2563eb",
+              background: "#2563eb",
               color: "#fff",
               fontWeight: 600,
               fontSize: 13,
               cursor: "pointer",
             }}
           >
-            {derivative.status === "approved" ? "Approved" : "Approve"}
+            Re-approve &amp; reschedule
           </button>
         </div>
+      )}
+
+      {/* Action buttons — shown when pending/approved/rejected only */}
+      {!isLocked && !isFailedPublish && (
+        <div
+          style={{
+            padding: "14px 20px",
+            borderTop: "1px solid #f3f4f6",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <button
+            onClick={onRegenerate}
+            disabled={isRegenerating}
+            style={{
+              padding: "7px 14px",
+              borderRadius: 7,
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              color: isRegenerating ? "#9ca3af" : "#374151",
+              fontWeight: 500,
+              fontSize: 13,
+              cursor: isRegenerating ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            ↻ Regenerate
+          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={onReject}
+              style={{
+                padding: "7px 16px",
+                borderRadius: 7,
+                border: "1px solid #fecaca",
+                background: derivative.status === "rejected" ? "#fee2e2" : "#fff",
+                color: "#dc2626",
+                fontWeight: 500,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              Reject
+            </button>
+            <button
+              onClick={onApprove}
+              style={{
+                padding: "7px 16px",
+                borderRadius: 7,
+                border: "none",
+                background:
+                  derivative.status === "approved" ? "#059669" : "#2563eb",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              {derivative.status === "approved" ? "Approved" : "Approve"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── StatusBadge ─────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: string }) {
+  const configs: Record<string, { bg: string; color: string; label: string }> = {
+    approved: { bg: "#d1fae5", color: "#065f46", label: "Approved" },
+    rejected: { bg: "#fee2e2", color: "#991b1b", label: "Rejected" },
+    scheduled: { bg: "#fef3c7", color: "#92400e", label: "Scheduled" },
+    published: { bg: "#ede9fe", color: "#5b21b6", label: "Published" },
+    failed_publish: { bg: "#fee2e2", color: "#991b1b", label: "Failed" },
+  };
+  const cfg = configs[status];
+  if (!cfg) return null;
+
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        fontWeight: 600,
+        padding: "2px 8px",
+        borderRadius: 4,
+        background: cfg.bg,
+        color: cfg.color,
+      }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
+
+// ─── SchedulePicker ──────────────────────────────────────────────────────────
+
+function SchedulePicker({
+  isScheduling,
+  onSchedule,
+}: {
+  isScheduling: boolean;
+  onSchedule: (scheduledAt: string) => void;
+}) {
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerValue, setPickerValue] = useState("");
+
+  function getDefaultDatetime(): string {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(9, 0, 0, 0);
+    return d.toISOString().slice(0, 16);
+  }
+
+  function handleOpen() {
+    setPickerValue(getDefaultDatetime());
+    setShowPicker(true);
+  }
+
+  function handleSchedule() {
+    if (!pickerValue) return;
+    onSchedule(new Date(pickerValue).toISOString());
+    setShowPicker(false);
+  }
+
+  if (!showPicker) {
+    return (
+      <div
+        style={{
+          padding: "12px 20px",
+          borderTop: "1px solid #f3f4f6",
+          display: "flex",
+          justifyContent: "flex-end",
+        }}
+      >
+        <button
+          onClick={handleOpen}
+          style={{
+            padding: "7px 16px",
+            borderRadius: 7,
+            border: "1px solid #d1d5db",
+            background: "#f9fafb",
+            color: "#374151",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          📅 Schedule Publish
+        </button>
       </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        padding: "14px 20px",
+        borderTop: "1px solid #f3f4f6",
+        background: "#fffbeb",
+      }}
+    >
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#92400e", marginBottom: 10 }}>
+        Schedule publish time
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          type="datetime-local"
+          value={pickerValue}
+          min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+          onChange={(e) => setPickerValue(e.target.value)}
+          style={{
+            flex: 1,
+            padding: "7px 10px",
+            borderRadius: 6,
+            border: "1px solid #d1d5db",
+            fontSize: 13,
+            color: "#374151",
+            background: "#fff",
+          }}
+        />
+        <button
+          onClick={handleSchedule}
+          disabled={isScheduling || !pickerValue}
+          style={{
+            padding: "7px 16px",
+            borderRadius: 7,
+            border: "none",
+            background: isScheduling ? "#9ca3af" : "#d97706",
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: isScheduling ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {isScheduling ? "Scheduling…" : "Confirm"}
+        </button>
+        <button
+          onClick={() => setShowPicker(false)}
+          style={{
+            padding: "7px 10px",
+            borderRadius: 7,
+            border: "1px solid #e5e7eb",
+            background: "#fff",
+            color: "#6b7280",
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── ReschedulePicker ─────────────────────────────────────────────────────────
+
+function ReschedulePicker({
+  currentScheduledAt,
+  isScheduling,
+  onReschedule,
+  onCancelSchedule,
+}: {
+  currentScheduledAt: string;
+  isScheduling: boolean;
+  onReschedule: (newScheduledAt: string) => void;
+  onCancelSchedule: () => void;
+}) {
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [pickerValue, setPickerValue] = useState(
+    new Date(currentScheduledAt).toISOString().slice(0, 16)
+  );
+
+  function handleReschedule() {
+    if (!pickerValue) return;
+    onReschedule(new Date(pickerValue).toISOString());
+    setShowReschedule(false);
+  }
+
+  return (
+    <div
+      style={{
+        padding: "12px 20px",
+        borderTop: "1px solid #f3f4f6",
+        background: "#fffbeb",
+      }}
+    >
+      {!showReschedule ? (
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button
+            onClick={() => setShowReschedule(true)}
+            disabled={isScheduling}
+            style={{
+              padding: "7px 14px",
+              borderRadius: 7,
+              border: "1px solid #d1d5db",
+              background: "#fff",
+              color: "#374151",
+              fontWeight: 500,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Reschedule
+          </button>
+          <button
+            onClick={onCancelSchedule}
+            disabled={isScheduling}
+            style={{
+              padding: "7px 14px",
+              borderRadius: 7,
+              border: "1px solid #fecaca",
+              background: "#fff",
+              color: "#dc2626",
+              fontWeight: 500,
+              fontSize: 13,
+              cursor: isScheduling ? "not-allowed" : "pointer",
+            }}
+          >
+            {isScheduling ? "Cancelling…" : "Cancel Schedule"}
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#92400e", marginBottom: 10 }}>
+            Choose new publish time
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="datetime-local"
+              value={pickerValue}
+              min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+              onChange={(e) => setPickerValue(e.target.value)}
+              style={{
+                flex: 1,
+                padding: "7px 10px",
+                borderRadius: 6,
+                border: "1px solid #d1d5db",
+                fontSize: 13,
+                color: "#374151",
+                background: "#fff",
+              }}
+            />
+            <button
+              onClick={handleReschedule}
+              disabled={isScheduling || !pickerValue}
+              style={{
+                padding: "7px 16px",
+                borderRadius: 7,
+                border: "none",
+                background: isScheduling ? "#9ca3af" : "#d97706",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: isScheduling ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {isScheduling ? "Updating…" : "Update"}
+            </button>
+            <button
+              onClick={() => setShowReschedule(false)}
+              style={{
+                padding: "7px 10px",
+                borderRadius: 7,
+                border: "1px solid #e5e7eb",
+                background: "#fff",
+                color: "#6b7280",
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

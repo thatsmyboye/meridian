@@ -128,7 +128,13 @@ export interface NormalizedMetrics {
   watch_time_seconds: number | null;
 }
 
-export type DerivativeStatus = "pending" | "approved" | "rejected";
+export type DerivativeStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "scheduled"
+  | "published"
+  | "failed_publish";
 
 export type DerivativeFormatKey =
   | "twitter_thread"
@@ -144,6 +150,14 @@ export interface Derivative {
   char_count: number;
   status: DerivativeStatus;
   previous_drafts: string[];
+  /** ISO 8601 datetime when this derivative is scheduled to publish. Null if not scheduled. */
+  scheduled_at: string | null;
+  /** Unique ID used to cancel this schedule via Inngest cancelOn. Null if not scheduled. */
+  schedule_id: string | null;
+  /** ISO 8601 datetime when this derivative was actually published. Null until published. */
+  published_at: string | null;
+  /** Error message if publishing failed. Null otherwise. */
+  publish_error: string | null;
   created_at: string;
   updated_at: string;
 }

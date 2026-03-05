@@ -49,3 +49,7 @@ export {
 } from "./functions/generate-derivatives";
 export { DERIVATIVE_FORMATS, FORMAT_KEYS } from "./lib/derivative-prompts";
 export type { DerivativeFormat } from "./lib/derivative-prompts";
+export {
+  publishScheduledDerivative,
+  handlePublishFailure,
+} from "./functions/publish-scheduled-derivative";
