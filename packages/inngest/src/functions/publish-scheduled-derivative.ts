@@ -147,11 +147,12 @@ export const publishScheduledDerivative = inngest.createFunction(
 
     // Skip if the derivative was superseded or already handled
     if (jobData.skip) {
+      const skipReason = "reason" in jobData ? jobData.reason : "unknown";
       return {
         repurpose_job_id,
         format_key,
         status: "skipped",
-        reason: jobData.reason,
+        reason: skipReason,
       };
     }
 
