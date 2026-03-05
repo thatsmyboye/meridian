@@ -73,7 +73,11 @@ export const publishScheduledDerivative = inngest.createFunction(
     await step.sleepUntil("sleep-until-scheduled", new Date(scheduled_at));
 
     // ── Step 2: load job, derivative, and platform credentials ─────────────
-    const jobData = await step.run("load-job", async () => {
+    type LoadJobResult =
+      | { skip: true; reason: string }
+      | { skip: false; content: string; platformName: string; platform: PlatformRow };
+
+    const jobData = await step.run("load-job", async (): Promise<LoadJobResult> => {
       const supabase = getSupabaseAdmin();
 
       const { data: job, error: jobErr } = await supabase
@@ -147,22 +151,20 @@ export const publishScheduledDerivative = inngest.createFunction(
 
     // Skip if the derivative was superseded or already handled
     if (jobData.skip) {
-      const skipReason = "reason" in jobData ? jobData.reason : "unknown";
       return {
         repurpose_job_id,
         format_key,
         status: "skipped",
-        reason: skipReason,
+        reason: jobData.reason,
       };
     }
 
+    // TypeScript now knows jobData is the non-skip branch
+    const { content, platformName, platform: platformRow } = jobData;
+
     // ── Step 3: publish to the platform ───────────────────────────────────
     const publishResult = await step.run("publish", async () => {
-      return publishDerivative(
-        jobData.platformName!,
-        jobData.platform!,
-        jobData.content!
-      );
+      return publishDerivative(platformName, platformRow, content);
     });
 
     // ── Step 4: mark derivative as published ──────────────────────────────
