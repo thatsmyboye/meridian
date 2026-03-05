@@ -3,13 +3,15 @@ import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import CreatorDashboard from "./CreatorDashboard";
 import type { DashboardProps } from "./CreatorDashboard";
+import InsightsPanel from "./InsightsPanel";
+import type { DashboardInsight, InsightEvidenceItem } from "./InsightsPanel";
 
 /**
  * / — Meridian dashboard home
  *
- * Server component. Fetches the creator's content and latest performance
- * snapshots, then hands the data to the client-side CreatorDashboard
- * component for interactive filtering and charting.
+ * Server component. Fetches the creator's content, latest performance
+ * snapshots, and pattern insights, then hands the data to the client-side
+ * components for interactive filtering and charting.
  *
  * Also checks whether any connected platform has status = "reauth_required"
  * and renders a sticky alert banner.
@@ -23,6 +25,7 @@ export default async function Home() {
 
   let reauthPlatforms: string[] = [];
   let dashboardContent: DashboardProps["content"] = [];
+  let dashboardInsights: DashboardInsight[] = [];
 
   if (user) {
     const { data: creator } = await supabase
@@ -49,24 +52,35 @@ export default async function Home() {
 
       const { data: contentItems } = await supabase
         .from("content_items")
-        .select("id, title, platform, published_at")
+        .select("id, title, platform, published_at, duration_seconds")
         .eq("creator_id", creator.id)
         .gte("published_at", cutoff)
         .order("published_at", { ascending: false });
 
-      if (contentItems && contentItems.length > 0) {
-        // Fetch the latest performance snapshot per content item.
-        // We use distinct-on-like behaviour by ordering by snapshot_date desc
-        // and grabbing snapshots for these content items.
-        const contentIds = contentItems.map((c) => c.id);
-
-        const { data: snapshots } = await supabase
-          .from("performance_snapshots")
+      // Fetch pattern insights in parallel with snapshot data
+      const [snapshotsResult, insightsResult] = await Promise.all([
+        contentItems && contentItems.length > 0
+          ? supabase
+              .from("performance_snapshots")
+              .select(
+                "content_item_id, views, engagement_rate, watch_time_minutes, snapshot_date",
+              )
+              .in("content_item_id", contentItems.map((c) => c.id))
+              .order("snapshot_date", { ascending: false })
+          : Promise.resolve({ data: null }),
+        supabase
+          .from("pattern_insights")
           .select(
-            "content_item_id, views, engagement_rate, watch_time_minutes, snapshot_date",
+            "id, insight_type, summary, narrative, confidence_label, confidence, generated_at, evidence_json",
           )
-          .in("content_item_id", contentIds)
-          .order("snapshot_date", { ascending: false });
+          .eq("creator_id", creator.id)
+          .eq("is_dismissed", false)
+          .order("generated_at", { ascending: false })
+          .limit(4),
+      ]);
+
+      if (contentItems && contentItems.length > 0) {
+        const snapshots = snapshotsResult.data;
 
         // Keep only the latest snapshot per content item
         const latestByContent = new Map<
@@ -96,6 +110,54 @@ export default async function Home() {
             watchTimeMinutes: perf?.watchTimeMinutes ?? null,
           };
         });
+
+        // Build enriched lookup for evidence derivation
+        const enrichedContent = contentItems.map((item) => {
+          const perf = latestByContent.get(item.id);
+          return {
+            contentId: item.id,
+            title: item.title,
+            platform: item.platform as string,
+            publishedAt: item.published_at,
+            durationSeconds: item.duration_seconds as number | null,
+            totalViews: perf?.views ?? 0,
+            engagementRate: perf?.engagementRate ?? 0,
+          };
+        });
+
+        // Derive supporting content items for each insight
+        dashboardInsights = (insightsResult.data ?? []).map((row) => {
+          const evidence = (row.evidence_json ?? {}) as Record<string, unknown>;
+          const supporting = deriveSupportingContent(
+            row.insight_type as string,
+            evidence,
+            enrichedContent,
+          );
+          return {
+            id: row.id as string,
+            insight_type: row.insight_type as string,
+            summary: row.summary as string,
+            narrative: row.narrative as string | null,
+            confidence_label: row.confidence_label as string | null,
+            confidence: row.confidence as number,
+            generated_at: row.generated_at as string,
+            evidence_json: evidence,
+            supporting_content: supporting,
+          };
+        });
+      } else {
+        // No content items yet, but still surface insights if they exist
+        dashboardInsights = (insightsResult.data ?? []).map((row) => ({
+          id: row.id as string,
+          insight_type: row.insight_type as string,
+          summary: row.summary as string,
+          narrative: row.narrative as string | null,
+          confidence_label: row.confidence_label as string | null,
+          confidence: row.confidence as number,
+          generated_at: row.generated_at as string,
+          evidence_json: (row.evidence_json ?? {}) as Record<string, unknown>,
+          supporting_content: [],
+        }));
       }
     }
   }
@@ -185,9 +247,107 @@ export default async function Home() {
         </p>
       </div>
 
+      <InsightsPanel insights={dashboardInsights} />
+
       <Suspense>
         <CreatorDashboard content={dashboardContent} />
       </Suspense>
     </main>
   );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+type EnrichedContentItem = {
+  contentId: string;
+  title: string;
+  platform: string;
+  publishedAt: string;
+  durationSeconds: number | null;
+  totalViews: number;
+  engagementRate: number;
+};
+
+/**
+ * Returns the top 5 content items that contributed most to the given pattern
+ * insight, sorted descending by engagement rate.
+ */
+function deriveSupportingContent(
+  insightType: string,
+  evidence: Record<string, unknown>,
+  content: EnrichedContentItem[],
+): InsightEvidenceItem[] {
+  let candidates: EnrichedContentItem[] = [];
+
+  if (insightType === "day_of_week") {
+    const bestDay = (evidence.best_day as { day: number } | undefined)?.day;
+    if (bestDay != null) {
+      candidates = content.filter(
+        (c) => new Date(c.publishedAt).getDay() === bestDay,
+      );
+    }
+  } else if (insightType === "content_type") {
+    const bestType = evidence.best_type as string | undefined;
+    if (bestType) {
+      candidates = content.filter((c) => c.platform === bestType);
+    }
+  } else if (insightType === "length_bucket") {
+    const bestBucket = evidence.best_bucket as string | undefined;
+    if (bestBucket) {
+      candidates = content.filter(
+        (c) => contentLengthBucket(c.platform, c.durationSeconds) === bestBucket,
+      );
+    }
+  } else if (insightType === "posting_frequency") {
+    // Find content from high-frequency weeks (weeks with post count > median)
+    const medianPosts = evidence.median_posts_per_week as number | undefined;
+    if (medianPosts != null) {
+      const byWeek = new Map<string, EnrichedContentItem[]>();
+      for (const c of content) {
+        const key = isoWeekKey(new Date(c.publishedAt));
+        const bucket = byWeek.get(key) ?? [];
+        bucket.push(c);
+        byWeek.set(key, bucket);
+      }
+      for (const weekItems of byWeek.values()) {
+        if (weekItems.length > medianPosts) {
+          candidates.push(...weekItems);
+        }
+      }
+    }
+  }
+
+  return candidates
+    .sort((a, b) => b.engagementRate - a.engagementRate)
+    .slice(0, 5)
+    .map(({ contentId, title, platform, publishedAt, totalViews, engagementRate }) => ({
+      contentId,
+      title,
+      platform,
+      publishedAt,
+      totalViews,
+      engagementRate,
+    }));
+}
+
+function contentLengthBucket(
+  platform: string,
+  durationSeconds: number | null,
+): string {
+  if (platform === "beehiiv" || durationSeconds === null) return "newsletter";
+  if (durationSeconds < 60) return "short";
+  if (durationSeconds < 600) return "medium";
+  return "long";
+}
+
+function isoWeekKey(date: Date): string {
+  // Use ISO week: find Thursday of this week's week, then get its year-week.
+  const d = new Date(date);
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(
+    ((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7,
+  );
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
