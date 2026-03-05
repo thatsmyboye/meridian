@@ -30,6 +30,14 @@ const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }>
   failed: { bg: "#fee2e2", color: "#991b1b", label: "Failed" },
 };
 
+const FORMAT_LABELS: Record<string, string> = {
+  twitter_thread: "Twitter Thread",
+  linkedin_post: "LinkedIn Post",
+  instagram_caption: "Instagram Caption",
+  newsletter_blurb: "Newsletter Blurb",
+  tiktok_script: "TikTok Script",
+};
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
@@ -37,6 +45,13 @@ function formatDate(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function formatsList(formats: string[]): string {
+  if (!formats || formats.length === 0) return "All formats";
+  return formats
+    .map((f) => FORMAT_LABELS[f] ?? f)
+    .join(", ");
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -71,26 +86,27 @@ export default async function RepurposeQueuePage() {
 
   // Fetch content item titles
   const sourceIds = [...new Set(allJobs.map((j) => j.source_item_id))];
-  const contentMap: Record<string, { title: string; platform: string }> = {};
+  const contentMap: Record<string, { title: string; platform: string | null; content_type: string | null }> = {};
 
   if (sourceIds.length > 0) {
     const { data: items } = await supabase
       .from("content_items")
-      .select("id, title, platform")
+      .select("id, title, platform, content_type")
       .in("id", sourceIds);
 
     for (const item of items ?? []) {
-      contentMap[item.id] = { title: item.title, platform: item.platform };
+      contentMap[item.id] = {
+        title: item.title,
+        platform: item.platform,
+        content_type: item.content_type,
+      };
     }
   }
-
-  const reviewJobs = allJobs.filter((j) => j.status === "review");
-  const otherJobs = allJobs.filter((j) => j.status !== "review");
 
   return (
     <main
       style={{
-        maxWidth: 900,
+        maxWidth: 960,
         margin: "64px auto",
         padding: "0 24px",
         fontFamily: "system-ui, sans-serif",
@@ -100,9 +116,10 @@ export default async function RepurposeQueuePage() {
       <div
         style={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           justifyContent: "space-between",
           marginBottom: 32,
+          gap: 16,
         }}
       >
         <div>
@@ -129,89 +146,33 @@ export default async function RepurposeQueuePage() {
             Repurpose Queue
           </h1>
           <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6b7280" }}>
-            Review and approve AI-generated derivatives before publishing.
+            Track all in-progress and completed repurpose jobs.
           </p>
         </div>
+
+        {/* New text import CTA */}
+        <Link
+          href="/repurpose/new"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "9px 16px",
+            borderRadius: 8,
+            background: "#2563eb",
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: 14,
+            textDecoration: "none",
+            flexShrink: 0,
+            marginTop: 28,
+          }}
+        >
+          + Paste text
+        </Link>
       </div>
 
-      {/* Ready for Review section */}
-      {reviewJobs.length > 0 && (
-        <section style={{ marginBottom: 40 }}>
-          <h2
-            style={{
-              fontSize: 16,
-              fontWeight: 700,
-              color: "#111827",
-              margin: "0 0 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            Ready for Review
-            <span
-              style={{
-                background: "#e0e7ff",
-                color: "#3730a3",
-                borderRadius: 12,
-                padding: "2px 10px",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              {reviewJobs.length}
-            </span>
-          </h2>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            {reviewJobs.map((job) => (
-              <JobCard
-                key={job.id}
-                job={job}
-                contentInfo={contentMap[job.source_item_id]}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* All Jobs section */}
-      {otherJobs.length > 0 && (
-        <section>
-          <h2
-            style={{
-              fontSize: 16,
-              fontWeight: 700,
-              color: "#111827",
-              margin: "0 0 16px",
-            }}
-          >
-            All Jobs
-          </h2>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            {otherJobs.map((job) => (
-              <JobCard
-                key={job.id}
-                job={job}
-                contentInfo={contentMap[job.source_item_id]}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {allJobs.length === 0 && (
+      {allJobs.length === 0 ? (
         <div
           style={{
             textAlign: "center",
@@ -222,102 +183,183 @@ export default async function RepurposeQueuePage() {
           <p style={{ fontSize: 16, margin: "0 0 8px" }}>
             No repurpose jobs yet.
           </p>
-          <p style={{ fontSize: 14 }}>
-            Start by clicking &quot;Repurpose&quot; on any content item from the dashboard.
+          <p style={{ fontSize: 14, margin: "0 0 20px" }}>
+            Start by pasting text or clicking &quot;Repurpose&quot; on any content item.
           </p>
+          <Link
+            href="/repurpose/new"
+            style={{
+              display: "inline-block",
+              padding: "9px 18px",
+              borderRadius: 8,
+              background: "#2563eb",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 14,
+              textDecoration: "none",
+            }}
+          >
+            + Paste text to repurpose
+          </Link>
+        </div>
+      ) : (
+        <div
+          style={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            overflow: "hidden",
+            background: "#fff",
+          }}
+        >
+          {/* Table header */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 220px 160px 140px 32px",
+              padding: "10px 20px",
+              background: "#f9fafb",
+              borderBottom: "1px solid #e5e7eb",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#6b7280",
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+            }}
+          >
+            <span>Source</span>
+            <span>Formats</span>
+            <span>Status</span>
+            <span>Created</span>
+            <span />
+          </div>
+
+          {/* Table rows */}
+          {allJobs.map((job, idx) => {
+            const contentInfo = contentMap[job.source_item_id];
+            const badge = STATUS_BADGE[job.status] ?? STATUS_BADGE.pending;
+            const derivatives = (job.derivatives ?? []) as Derivative[];
+            const approvedCount = derivatives.filter(
+              (d) => d.status === "approved"
+            ).length;
+            const isLast = idx === allJobs.length - 1;
+
+            return (
+              <Link
+                key={job.id}
+                href={`/repurpose/review?job_id=${job.id}`}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 220px 160px 140px 32px",
+                  padding: "14px 20px",
+                  borderBottom: isLast ? "none" : "1px solid #f3f4f6",
+                  textDecoration: "none",
+                  color: "inherit",
+                  alignItems: "center",
+                  gap: 0,
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLAnchorElement).style.background =
+                    "#f9fafb";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLAnchorElement).style.background =
+                    "transparent";
+                }}
+              >
+                {/* Source title */}
+                <div style={{ minWidth: 0, paddingRight: 16 }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 14,
+                      color: "#111827",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {contentInfo?.title ?? "Untitled content"}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#9ca3af",
+                      marginTop: 2,
+                    }}
+                  >
+                    {contentInfo?.content_type === "text_import"
+                      ? "Text import"
+                      : contentInfo?.platform
+                        ? contentInfo.platform.charAt(0).toUpperCase() +
+                          contentInfo.platform.slice(1)
+                        : "Unknown"}
+                  </div>
+                </div>
+
+                {/* Formats */}
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "#374151",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    paddingRight: 16,
+                  }}
+                  title={formatsList(job.selected_formats)}
+                >
+                  {formatsList(job.selected_formats)}
+                  {derivatives.length > 0 && approvedCount > 0 && (
+                    <span style={{ color: "#9ca3af", marginLeft: 4 }}>
+                      ({approvedCount}/{derivatives.length} approved)
+                    </span>
+                  )}
+                </div>
+
+                {/* Status badge */}
+                <div>
+                  <span
+                    style={{
+                      background: badge.bg,
+                      color: badge.color,
+                      borderRadius: 6,
+                      padding: "3px 10px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {badge.label}
+                  </span>
+                </div>
+
+                {/* Created at */}
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "#6b7280",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatDate(job.created_at)}
+                </div>
+
+                {/* Arrow */}
+                <div
+                  style={{
+                    color: "#d1d5db",
+                    fontSize: 18,
+                    textAlign: "right",
+                  }}
+                >
+                  ›
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </main>
-  );
-}
-
-// ─── JobCard ─────────────────────────────────────────────────────────────────
-
-function JobCard({
-  job,
-  contentInfo,
-}: {
-  job: RepurposeJob;
-  contentInfo?: { title: string; platform: string };
-}) {
-  const badge = STATUS_BADGE[job.status] ?? STATUS_BADGE.pending;
-  const derivatives = (job.derivatives ?? []) as Derivative[];
-  const approvedCount = derivatives.filter((d) => d.status === "approved").length;
-  const isReviewable = job.status === "review";
-
-  return (
-    <Link
-      href={isReviewable ? `/repurpose/review?job_id=${job.id}` : "#"}
-      style={{
-        display: "block",
-        border: "1px solid #e5e7eb",
-        borderRadius: 10,
-        padding: "16px 20px",
-        background: "#fff",
-        textDecoration: "none",
-        color: "inherit",
-        cursor: isReviewable ? "pointer" : "default",
-        transition: "border-color 0.15s, box-shadow 0.15s",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 16,
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: 15,
-              color: "#111827",
-              marginBottom: 4,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {contentInfo?.title ?? "Untitled content"}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              fontSize: 13,
-              color: "#6b7280",
-            }}
-          >
-            <span>{formatDate(job.created_at)}</span>
-            {derivatives.length > 0 && (
-              <span>
-                {derivatives.length} format{derivatives.length !== 1 ? "s" : ""}
-                {approvedCount > 0 && ` · ${approvedCount} approved`}
-              </span>
-            )}
-          </div>
-        </div>
-        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
-          <span
-            style={{
-              background: badge.bg,
-              color: badge.color,
-              borderRadius: 6,
-              padding: "3px 10px",
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            {badge.label}
-          </span>
-          {isReviewable && (
-            <span style={{ color: "#d1d5db", fontSize: 18 }}>›</span>
-          )}
-        </div>
-      </div>
-    </Link>
   );
 }
