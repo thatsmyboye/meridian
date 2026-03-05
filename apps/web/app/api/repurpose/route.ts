@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { inngest } from "@meridian/inngest";
 import { createServerClient } from "@/lib/supabase/server";
 
 const VALID_PLATFORMS = new Set([
@@ -116,6 +117,20 @@ export async function POST(request: NextRequest) {
       { error: "Failed to create repurpose job" },
       { status: 500 }
     );
+  }
+
+  // ── 6. Fire repurpose/job.created event to kick off the pipeline ───────────
+  try {
+    await inngest.send({
+      name: "repurpose/job.created",
+      data: {
+        creator_id: creator.id,
+        repurpose_job_id: job.id,
+      },
+    });
+  } catch (err) {
+    console.error("[repurpose] inngest.send failed:", err);
+    // Non-fatal: job row exists, pipeline can be retried separately
   }
 
   return NextResponse.json({ job_id: job.id }, { status: 201 });
