@@ -9,6 +9,7 @@
  *  2. load-job             — loads the job, derivative, and platform credentials
  *  3. publish              — calls the per-platform API (Twitter, Instagram, etc.)
  *  4. mark-published       — updates derivative status to "published" + stores external_id
+ *  5. notify-published     — inserts a publish_notifications row (Realtime) + sends email
  *
  * On repeated failure (after Inngest retries are exhausted), the derivative is
  * marked "failed_publish" and an alert event is sent to notify the creator.
@@ -16,9 +17,23 @@
  * Retry policy: 4 attempts with Inngest's default exponential back-off.
  */
 
+import { render } from "@react-email/components";
+import { Resend } from "resend";
+import * as React from "react";
 import { inngest } from "../client";
 import { getSupabaseAdmin } from "../lib/supabaseAdmin";
 import { publishDerivative, type PlatformRow } from "../lib/platform-publishers";
+import { PublishNotificationEmail } from "../emails/PublishNotificationEmail";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const FORMAT_LABELS: Record<string, string> = {
+  twitter_thread: "Twitter / X Thread",
+  linkedin_post: "LinkedIn Post",
+  instagram_caption: "Instagram Caption",
+  newsletter_blurb: "Newsletter Blurb",
+  tiktok_script: "TikTok Script",
+};
 
 // ─── Derivative shape stored in repurpose_jobs.derivatives ───────────────────
 
@@ -47,6 +62,19 @@ const FORMAT_TO_PLATFORM_DB: Record<string, string> = {
   newsletter_blurb: "other", // Beehiiv is stored as 'other'
   tiktok_script: "tiktok",
 };
+
+// ─── Helper: format a Date as a readable publish timestamp ───────────────────
+
+function fmtPublishedAt(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
 
 // ─── Inngest function ─────────────────────────────────────────────────────────
 
@@ -168,17 +196,17 @@ export const publishScheduledDerivative = inngest.createFunction(
     });
 
     // ── Step 4: mark derivative as published ──────────────────────────────
-    await step.run("mark-published", async () => {
+    const markResult = await step.run("mark-published", async () => {
       const supabase = getSupabaseAdmin();
       const now = new Date().toISOString();
 
       const { data: job } = await supabase
         .from("repurpose_jobs")
-        .select("derivatives, scheduled_derivative_ids")
+        .select("derivatives, scheduled_derivative_ids, source_item_id")
         .eq("id", repurpose_job_id)
         .single();
 
-      if (!job) return;
+      if (!job) return { now, contentTitle: null as string | null };
 
       const derivatives = (job.derivatives ?? []) as Derivative[];
       const updatedDerivatives = derivatives.map((d) => {
@@ -203,6 +231,74 @@ export const publishScheduledDerivative = inngest.createFunction(
           scheduled_derivative_ids: scheduledIds,
         })
         .eq("id", repurpose_job_id);
+
+      // Fetch the source content title for the notification
+      let contentTitle: string | null = null;
+      if (job.source_item_id) {
+        const { data: contentItem } = await supabase
+          .from("content_items")
+          .select("title")
+          .eq("id", job.source_item_id as string)
+          .single();
+        contentTitle = (contentItem?.title as string) ?? null;
+      }
+
+      return { now, contentTitle };
+    });
+
+    // ── Step 5: send in-app + email notification ───────────────────────────
+    await step.run("notify-published", async () => {
+      const supabase = getSupabaseAdmin();
+      const platformLabel = FORMAT_LABELS[format_key] ?? format_key;
+      const contentTitle = markResult.contentTitle ?? "your content";
+
+      // Fetch creator profile for the email
+      const { data: creator } = await supabase
+        .from("creators")
+        .select("email, display_name")
+        .eq("id", creator_id)
+        .single();
+
+      if (!creator) return;
+
+      // Insert in-app notification (Realtime will push to connected clients)
+      await supabase.from("publish_notifications").insert({
+        creator_id,
+        type: "published",
+        repurpose_job_id,
+        format_key,
+        platform_label: platformLabel,
+        content_title: contentTitle,
+        external_url: publishResult.url ?? null,
+      });
+
+      // Send transactional email via Resend
+      const resend = new Resend(process.env.RESEND_API_KEY!);
+
+      const html = await render(
+        React.createElement(PublishNotificationEmail, {
+          type: "published",
+          creatorName: creator.display_name as string,
+          platformLabel,
+          contentTitle,
+          externalUrl: publishResult.url ?? undefined,
+          publishedAt: fmtPublishedAt(markResult.now),
+        })
+      );
+
+      const { error } = await resend.emails.send({
+        from: "Meridian <notifications@meridian.app>",
+        to: creator.email as string,
+        subject: `Your ${platformLabel} post is live`,
+        html,
+      });
+
+      if (error) {
+        // Log but don't throw — the post is already published; email is best-effort
+        console.error(
+          `[notify-published] Resend failed for creator ${creator_id}: ${JSON.stringify(error)}`
+        );
+      }
     });
 
     return {
@@ -220,7 +316,8 @@ export const publishScheduledDerivative = inngest.createFunction(
 
 /**
  * Marks the derivative as "failed_publish" when all Inngest retries are exhausted.
- * Fires a creator alert so they can take action.
+ * Inserts a publish_notifications row (Realtime) and sends a failure email with
+ * a retry link so the creator can reschedule from the review page.
  *
  * This is registered as a separate Inngest function using onFailure.
  */
@@ -247,17 +344,22 @@ export const handlePublishFailure = inngest.createFunction(
     const { creator_id, repurpose_job_id, format_key } =
       originalEvent.data;
 
-    await step.run("mark-failed", async () => {
+    const failureMessage =
+      (event.data.error as { message?: string } | undefined)?.message ??
+      "Publishing failed after multiple retries.";
+
+    // ── Step: mark derivative as failed + load context for notifications ──
+    const failedContext = await step.run("mark-failed", async () => {
       const supabase = getSupabaseAdmin();
       const now = new Date().toISOString();
 
       const { data: job } = await supabase
         .from("repurpose_jobs")
-        .select("derivatives, scheduled_derivative_ids")
+        .select("derivatives, scheduled_derivative_ids, source_item_id")
         .eq("id", repurpose_job_id)
         .single();
 
-      if (!job) return;
+      if (!job) return { contentTitle: null as string | null, now };
 
       const derivatives = (job.derivatives ?? []) as Derivative[];
       const updatedDerivatives = derivatives.map((d) => {
@@ -265,9 +367,7 @@ export const handlePublishFailure = inngest.createFunction(
         return {
           ...d,
           status: "failed_publish",
-          publish_error:
-            (event.data.error as { message?: string } | undefined)?.message ??
-            "Publishing failed after multiple retries.",
+          publish_error: failureMessage,
           updated_at: now,
         };
       });
@@ -283,11 +383,28 @@ export const handlePublishFailure = inngest.createFunction(
           scheduled_derivative_ids: scheduledIds,
         })
         .eq("id", repurpose_job_id);
+
+      // Fetch source content title
+      let contentTitle: string | null = null;
+      if (job.source_item_id) {
+        const { data: contentItem } = await supabase
+          .from("content_items")
+          .select("title")
+          .eq("id", job.source_item_id as string)
+          .single();
+        contentTitle = (contentItem?.title as string) ?? null;
+      }
+
+      return { contentTitle, now };
     });
 
-    // Fetch creator email for alert notification
+    // ── Step: send in-app notification + failure email ─────────────────────
     await step.run("alert-creator", async () => {
       const supabase = getSupabaseAdmin();
+      const platformLabel = FORMAT_LABELS[format_key] ?? format_key;
+      const contentTitle = failedContext.contentTitle ?? "your content";
+      const retryUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/repurpose/review?job_id=${repurpose_job_id}`;
+
       const { data: creator } = await supabase
         .from("creators")
         .select("email, display_name")
@@ -296,14 +413,43 @@ export const handlePublishFailure = inngest.createFunction(
 
       if (!creator) return;
 
-      // Log the failure — in production this would trigger a Resend email
-      // similar to the weekly digest pattern. The creator email/Resend
-      // integration follows the same pattern as WeeklyDigestEmail.
-      console.error(
-        `[publish-failure] Creator ${creator.display_name} (${creator.email}) ` +
-          `failed to publish ${format_key} for job ${repurpose_job_id}. ` +
-          `Error: ${(event.data.error as { message?: string } | undefined)?.message}`
+      // Insert in-app notification with retry link
+      await supabase.from("publish_notifications").insert({
+        creator_id,
+        type: "failed_publish",
+        repurpose_job_id,
+        format_key,
+        platform_label: platformLabel,
+        content_title: contentTitle,
+        retry_url: retryUrl,
+      });
+
+      // Send failure email via Resend
+      const resend = new Resend(process.env.RESEND_API_KEY!);
+
+      const html = await render(
+        React.createElement(PublishNotificationEmail, {
+          type: "failed_publish",
+          creatorName: creator.display_name as string,
+          platformLabel,
+          contentTitle,
+          retryUrl,
+          publishedAt: fmtPublishedAt(failedContext.now),
+        })
       );
+
+      const { error } = await resend.emails.send({
+        from: "Meridian <notifications@meridian.app>",
+        to: creator.email as string,
+        subject: `Action required: ${platformLabel} publishing failed`,
+        html,
+      });
+
+      if (error) {
+        console.error(
+          `[alert-creator] Resend failed for creator ${creator_id}: ${JSON.stringify(error)}`
+        );
+      }
     });
 
     return {
