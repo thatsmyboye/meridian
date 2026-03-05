@@ -13,6 +13,8 @@ import {
   fetchBeehiivAnalyticsSnapshot,
   weeklyStatsCron,
   computeCreatorPatterns,
+  weeklyDigestCron,
+  sendWeeklyDigest,
 } from "@meridian/inngest";
 
 /**
@@ -43,5 +45,7 @@ export const { GET, POST, PUT } = serve({
     fetchBeehiivAnalyticsSnapshot,
     weeklyStatsCron,
     computeCreatorPatterns,
+    weeklyDigestCron,
+    sendWeeklyDigest,
   ],
 });

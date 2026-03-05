@@ -14,9 +14,13 @@
     "@anthropic-ai/sdk": "^0.55.0",
     "@meridian/api": "workspace:*",
     "@meridian/types": "workspace:*",
-    "@supabase/supabase-js": "^2.0.0"
+    "@react-email/components": "^0.0.31",
+    "@supabase/supabase-js": "^2.0.0",
+    "react": "^19.0.0",
+    "resend": "^4.0.0"
   },
   "devDependencies": {
+    "@types/react": "^19",
     "inngest": "^3.0.0",
     "typescript": "^5.7.3"
   },
