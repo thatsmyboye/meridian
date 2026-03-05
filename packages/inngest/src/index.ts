@@ -43,3 +43,9 @@ export {
   sendWeeklyDigest,
 } from "./functions/weekly-digest-cron";
 export { extractRepurposeTranscript } from "./functions/repurpose-transcript-extraction";
+export {
+  generateDerivatives,
+  regenerateDerivative,
+} from "./functions/generate-derivatives";
+export { DERIVATIVE_FORMATS, FORMAT_KEYS } from "./lib/derivative-prompts";
+export type { DerivativeFormat } from "./lib/derivative-prompts";

@@ -44,9 +44,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { content_item_id, target_platform } = body as {
+  const { content_item_id, target_platform, selected_formats } = body as {
     content_item_id?: string;
     target_platform?: string;
+    selected_formats?: string[];
   };
 
   if (!content_item_id || typeof content_item_id !== "string") {
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
       source_item_id: content_item_id,
       target_platform,
       status: "pending",
+      selected_formats: selected_formats ?? [],
     })
     .select("id")
     .single();
