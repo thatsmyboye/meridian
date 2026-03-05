@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     ...new Set((jobs ?? []).map((j) => j.source_item_id).filter(Boolean)),
   ];
 
-  let contentItems: Record<string, { title: string; platform: string }> = {};
+  const contentItems: Record<string, { title: string; platform: string }> = {};
   if (sourceItemIds.length > 0) {
     const { data: items } = await supabase
       .from("content_items")

@@ -71,7 +71,7 @@ export default async function RepurposeQueuePage() {
 
   // Fetch content item titles
   const sourceIds = [...new Set(allJobs.map((j) => j.source_item_id))];
-  let contentMap: Record<string, { title: string; platform: string }> = {};
+  const contentMap: Record<string, { title: string; platform: string }> = {};
 
   if (sourceIds.length > 0) {
     const { data: items } = await supabase

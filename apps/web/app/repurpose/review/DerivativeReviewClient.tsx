@@ -67,7 +67,7 @@ export default function DerivativeReviewClient({
   const [activeTab, setActiveTab] = useState<string>(
     initialDerivatives[0]?.format ?? ""
   );
-  const [jobStatus, setJobStatus] = useState(initialJobStatus);
+  const [, setJobStatus] = useState(initialJobStatus);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState<Record<string, boolean>>({});
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
