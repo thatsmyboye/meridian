@@ -26,6 +26,7 @@ export interface DashboardInsight {
   confidence_label: string | null;
   confidence: number;
   generated_at: string;
+  dismissed_at: string | null;
   evidence_json: Record<string, unknown>;
   supporting_content: InsightEvidenceItem[];
 }
@@ -33,6 +34,7 @@ export interface DashboardInsight {
 interface InsightsPanelProps {
   insights: DashboardInsight[];
   content?: ContentItem[];
+  onDismissInsight?: (insightId: string) => Promise<void>;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -67,11 +69,15 @@ function dataWindowLabel(insight: DashboardInsight): string {
 function InsightCard({
   insight,
   animationDelay,
+  onDismiss,
 }: {
   insight: DashboardInsight;
   animationDelay: number;
+  onDismiss?: (insightId: string) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [isDismissing, setIsDismissing] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const meta = INSIGHT_META[insight.insight_type] ?? {
     icon: "💡",
@@ -80,6 +86,23 @@ function InsightCard({
   const confidenceBadge = insight.confidence_label
     ? CONFIDENCE_BADGE[insight.confidence_label]
     : null;
+
+  const handleDismiss = async () => {
+    if (!onDismiss) return;
+    setIsDismissing(true);
+    try {
+      await onDismiss(insight.id);
+      // Trigger removal animation
+      setIsRemoving(true);
+    } catch (error) {
+      console.error("Failed to dismiss insight:", error);
+      setIsDismissing(false);
+    }
+  };
+
+  if (isRemoving) {
+    return null;
+  }
 
   return (
     <div
@@ -114,21 +137,62 @@ function InsightCard({
           >
             {meta.label}
           </span>
-          {confidenceBadge && (
-            <span
-              style={{
-                marginLeft: "auto",
-                fontSize: 11,
-                fontWeight: 700,
-                padding: "2px 8px",
-                borderRadius: 99,
-                background: confidenceBadge.bg,
-                color: confidenceBadge.color,
-              }}
-            >
-              {insight.confidence_label}
-            </span>
-          )}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+            {confidenceBadge && (
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: 99,
+                  background: confidenceBadge.bg,
+                  color: confidenceBadge.color,
+                }}
+              >
+                {insight.confidence_label}
+              </span>
+            )}
+            {onDismiss && (
+              <button
+                onClick={handleDismiss}
+                disabled={isDismissing}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 24,
+                  height: 24,
+                  padding: 0,
+                  background: "transparent",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 4,
+                  cursor: isDismissing ? "not-allowed" : "pointer",
+                  color: "#9ca3af",
+                  fontSize: 14,
+                  lineHeight: 1,
+                  transition: "all 0.2s",
+                  opacity: isDismissing ? 0.5 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isDismissing) {
+                    (e.currentTarget as HTMLButtonElement).style.background = "#f3f4f6";
+                    (e.currentTarget as HTMLButtonElement).style.color = "#6b7280";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "#d1d5db";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isDismissing) {
+                    (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                    (e.currentTarget as HTMLButtonElement).style.color = "#9ca3af";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "#e5e7eb";
+                  }
+                }}
+                title="Dismiss this insight"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Headline */}
@@ -322,6 +386,7 @@ function InsightCard({
 export default function InsightsPanel({
   insights,
   content = [],
+  onDismissInsight,
 }: InsightsPanelProps) {
   // Check if content has less than 30 days of data
   const thresholdInfo = useMemo(
@@ -361,6 +426,7 @@ export default function InsightsPanel({
             key={insight.id}
             insight={insight}
             animationDelay={i * 80}
+            onDismiss={onDismissInsight}
           />
         ))}
       </div>
