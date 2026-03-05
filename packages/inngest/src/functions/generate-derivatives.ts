@@ -2,6 +2,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { inngest } from "../client";
 import { getSupabaseAdmin } from "../lib/supabaseAdmin";
 import { DERIVATIVE_FORMATS, type DerivativeFormat } from "../lib/derivative-prompts";
+import {
+  fetchTopCreatorInsights,
+  buildInsightContext,
+} from "../lib/fetchCreatorInsights";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -22,15 +26,20 @@ async function generateSingleDerivative(
   transcript: string,
   contentTitle: string,
   format: DerivativeFormat,
+  insightContext: string,
 ): Promise<{ content: string; char_count: number }> {
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!,
   });
 
+  const systemPrompt = insightContext
+    ? `${format.systemPrompt}${insightContext}`
+    : format.systemPrompt;
+
   const message = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 2000,
-    system: format.systemPrompt,
+    system: systemPrompt,
     messages: [
       {
         role: "user",
@@ -57,8 +66,9 @@ async function generateSingleDerivative(
  *
  * Steps:
  *  1. load-job – Load the repurpose job and verify transcript exists
- *  2. generate-{format} – One step per selected format, calling Claude API
- *  3. save-derivatives – Persist all generated derivatives to the job
+ *  2. fetch-creator-insights – Load top 2 pattern insights for the creator
+ *  3. generate-{format} – One step per selected format, calling Claude API
+ *  4. save-derivatives – Persist all generated derivatives to the job
  */
 export const generateDerivatives = inngest.createFunction(
   {
@@ -121,12 +131,18 @@ export const generateDerivatives = inngest.createFunction(
 
     const { transcript, selectedFormats, contentTitle } = jobData;
 
+    // ── Step 2: Fetch creator pattern insights ───────────────────────────────
+    const insightContext = await step.run("fetch-creator-insights", async () => {
+      const insights = await fetchTopCreatorInsights(creator_id);
+      return buildInsightContext(insights);
+    });
+
     // Determine which formats to generate
     const formatsToGenerate = selectedFormats.length > 0
       ? selectedFormats.filter((f) => DERIVATIVE_FORMATS[f])
       : Object.keys(DERIVATIVE_FORMATS);
 
-    // ── Step 2: Generate each derivative ─────────────────────────────────────
+    // ── Step 3: Generate each derivative ─────────────────────────────────────
     const derivatives: Derivative[] = [];
     const now = new Date().toISOString();
 
@@ -134,7 +150,7 @@ export const generateDerivatives = inngest.createFunction(
       const format = DERIVATIVE_FORMATS[formatKey]!;
 
       const result = await step.run(`generate-${formatKey}`, async () => {
-        return generateSingleDerivative(transcript, contentTitle, format);
+        return generateSingleDerivative(transcript, contentTitle, format, insightContext);
       });
 
       derivatives.push({
@@ -149,7 +165,7 @@ export const generateDerivatives = inngest.createFunction(
       });
     }
 
-    // ── Step 3: Save derivatives and mark job as ready for review ─────────
+    // ── Step 4: Save derivatives and mark job as ready for review ─────────
     await step.run("save-derivatives", async () => {
       const supabase = getSupabaseAdmin();
 
@@ -199,7 +215,7 @@ export const regenerateDerivative = inngest.createFunction(
 
       const { data: job, error } = await supabase
         .from("repurpose_jobs")
-        .select("id, source_item_id, source_transcript, derivatives")
+        .select("id, creator_id, source_item_id, source_transcript, derivatives")
         .eq("id", repurpose_job_id)
         .single();
 
@@ -214,6 +230,7 @@ export const regenerateDerivative = inngest.createFunction(
         .single();
 
       return {
+        creatorId: job.creator_id as string,
         transcript: job.source_transcript ?? "",
         derivatives: (job.derivatives ?? []) as Derivative[],
         contentTitle: contentItem?.title ?? "Untitled",
@@ -225,11 +242,18 @@ export const regenerateDerivative = inngest.createFunction(
       throw new Error(`Unknown format: ${format_key}`);
     }
 
+    // ── Fetch creator pattern insights ───────────────────────────────────────
+    const insightContext = await step.run("fetch-creator-insights", async () => {
+      const insights = await fetchTopCreatorInsights(jobData.creatorId);
+      return buildInsightContext(insights);
+    });
+
     const result = await step.run("regenerate", async () => {
       return generateSingleDerivative(
         jobData.transcript,
         jobData.contentTitle,
         format,
+        insightContext,
       );
     });
 
