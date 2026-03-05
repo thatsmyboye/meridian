@@ -66,6 +66,15 @@ export type MeridianEvents = {
     };
   };
 
+  /** Triggers regeneration of a single derivative format for a job. */
+  "repurpose/derivative.regenerate": {
+    data: {
+      creator_id: string;
+      repurpose_job_id: string;
+      format_key: string;
+    };
+  };
+
   /** Triggers sending the weekly digest email for a single creator. */
   "digest/weekly.send": {
     data: {

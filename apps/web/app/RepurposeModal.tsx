@@ -25,6 +25,14 @@ const ALL_PLATFORMS: { value: string; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
+const DERIVATIVE_FORMATS: { value: string; label: string }[] = [
+  { value: "twitter_thread", label: "Twitter / X Thread" },
+  { value: "linkedin_post", label: "LinkedIn Post" },
+  { value: "instagram_caption", label: "Instagram Caption" },
+  { value: "newsletter_blurb", label: "Newsletter Blurb" },
+  { value: "tiktok_script", label: "TikTok Script" },
+];
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function RepurposeModal({
@@ -35,6 +43,7 @@ export default function RepurposeModal({
   onSuccess,
 }: RepurposeModalProps) {
   const [selectedPlatform, setSelectedPlatform] = useState<string>("");
+  const [selectedFormats, setSelectedFormats] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -55,6 +64,18 @@ export default function RepurposeModal({
     (p) => p.value !== sourcePlatform
   );
 
+  function toggleFormat(value: string) {
+    setSelectedFormats((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) {
+        next.delete(value);
+      } else {
+        next.add(value);
+      }
+      return next;
+    });
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!selectedPlatform) return;
@@ -69,6 +90,7 @@ export default function RepurposeModal({
         body: JSON.stringify({
           content_item_id: contentItemId,
           target_platform: selectedPlatform,
+          selected_formats: [...selectedFormats],
         }),
       });
 
@@ -207,6 +229,64 @@ export default function RepurposeModal({
                     style={{ accentColor: "#2563eb" }}
                   />
                   {p.label}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {/* Derivative format selection */}
+        <fieldset
+          style={{ border: "none", padding: 0, margin: "0 0 20px" }}
+        >
+          <legend
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#374151",
+              marginBottom: 10,
+              padding: 0,
+            }}
+          >
+            Select derivative formats
+            <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 4 }}>
+              (optional — all if none selected)
+            </span>
+          </legend>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 8,
+            }}
+          >
+            {DERIVATIVE_FORMATS.map((f) => {
+              const isSelected = selectedFormats.has(f.value);
+              return (
+                <label
+                  key={f.value}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    border: `1.5px solid ${isSelected ? "#7c3aed" : "#e5e7eb"}`,
+                    background: isSelected ? "#f5f3ff" : "#fff",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: isSelected ? 600 : 400,
+                    color: isSelected ? "#6d28d9" : "#374151",
+                    transition: "border-color 0.1s, background 0.1s",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleFormat(f.value)}
+                    style={{ accentColor: "#7c3aed" }}
+                  />
+                  {f.label}
                 </label>
               );
             })}

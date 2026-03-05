@@ -128,6 +128,26 @@ export interface NormalizedMetrics {
   watch_time_seconds: number | null;
 }
 
+export type DerivativeStatus = "pending" | "approved" | "rejected";
+
+export type DerivativeFormatKey =
+  | "twitter_thread"
+  | "linkedin_post"
+  | "instagram_caption"
+  | "newsletter_blurb"
+  | "tiktok_script";
+
+export interface Derivative {
+  format: DerivativeFormatKey;
+  content: string;
+  platform: string;
+  char_count: number;
+  status: DerivativeStatus;
+  previous_drafts: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface RepurposeJob {
   id: string;
   creator_id: string;
@@ -136,6 +156,9 @@ export interface RepurposeJob {
   target_format: string;
   status: RepurposeJobStatus;
   output: string | null;
+  derivatives: Derivative[];
+  selected_formats: DerivativeFormatKey[];
+  source_transcript: string | null;
   created_at: string;
   updated_at: string;
 }
