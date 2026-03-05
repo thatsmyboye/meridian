@@ -1,5 +1,9 @@
 import { inngest } from "../client";
 import { getSupabaseAdmin } from "../lib/supabaseAdmin";
+import {
+  narratePatternInsights,
+  type PatternNarration,
+} from "../lib/narratePatternInsights";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -42,6 +46,8 @@ interface PatternInsightRecord {
   summary: string;
   evidence_json: Record<string, unknown>;
   confidence: number;
+  narrative: string | null;
+  confidence_label: PatternNarration["confidence_label"] | null;
 }
 
 // ─── Statistics helpers ───────────────────────────────────────────────────────
@@ -364,6 +370,8 @@ export const computeCreatorPatterns = inngest.createFunction(
               computed_at: now,
             },
             confidence: confidenceFromCount(best.sample_count),
+            narrative: null,
+            confidence_label: null,
           });
         }
       }
@@ -408,6 +416,8 @@ export const computeCreatorPatterns = inngest.createFunction(
               computed_at: now,
             },
             confidence: confidenceFromCount(best.sample_count),
+            narrative: null,
+            confidence_label: null,
           });
         }
       }
@@ -458,6 +468,8 @@ export const computeCreatorPatterns = inngest.createFunction(
               computed_at: now,
             },
             confidence: confidenceFromCount(best.sample_count),
+            narrative: null,
+            confidence_label: null,
           });
         }
       }
@@ -524,6 +536,8 @@ export const computeCreatorPatterns = inngest.createFunction(
               computed_at: now,
             },
             confidence: confidenceFromCount(weeks.length),
+            narrative: null,
+            confidence_label: null,
           });
         }
       }
@@ -539,10 +553,38 @@ export const computeCreatorPatterns = inngest.createFunction(
       };
     }
 
-    // ── Step 3: replace stale insights, insert fresh ones ─────────────────────
+    // ── Step 3: narrate each statistical pattern via Claude ────────────────────
+    //
+    // Calls claude-opus-4-6 once per insight to produce a 2–3 sentence plain-
+    // English narrative that creators can read instead of raw statistics.
+    // Individual failures are caught inside narratePatternInsights() so the
+    // record simply omits that key; the statistical `summary` is the fallback.
+    const narrations = await step.run(
+      "narrate-pattern-insights",
+      async () => {
+        return narratePatternInsights(
+          insights.map(({ insight_type, summary, evidence_json, confidence }) => ({
+            insight_type,
+            summary,
+            evidence_json,
+            confidence,
+          }))
+        );
+      }
+    );
+
+    // Merge narrations back into the insight records.
+    const narratedInsights = insights.map((insight) => ({
+      ...insight,
+      narrative: narrations[insight.insight_type]?.narrative ?? null,
+      confidence_label:
+        narrations[insight.insight_type]?.confidence_label ?? null,
+    }));
+
+    // ── Step 4: replace stale insights, insert fresh ones ─────────────────────
     await step.run("write-pattern-insights", async () => {
       const supabase = getSupabaseAdmin();
-      const insightTypes = insights.map((i) => i.insight_type);
+      const insightTypes = narratedInsights.map((i) => i.insight_type);
 
       // Delete non-dismissed insights for the same creator + type so that
       // each weekly run produces exactly one fresh row per dimension.
@@ -559,10 +601,12 @@ export const computeCreatorPatterns = inngest.createFunction(
         );
       }
 
-      const rows = insights.map((insight) => ({
+      const rows = narratedInsights.map((insight) => ({
         creator_id,
         insight_type: insight.insight_type,
         summary: insight.summary,
+        narrative: insight.narrative,
+        confidence_label: insight.confidence_label,
         evidence_json: insight.evidence_json,
         confidence: insight.confidence,
         generated_at: new Date().toISOString(),
@@ -583,8 +627,9 @@ export const computeCreatorPatterns = inngest.createFunction(
 
     return {
       creator_id,
-      insightsWritten: insights.length,
-      insightTypes: insights.map((i) => i.insight_type),
+      insightsWritten: narratedInsights.length,
+      insightTypes: narratedInsights.map((i) => i.insight_type),
+      narratedCount: narratedInsights.filter((i) => i.narrative !== null).length,
     };
   }
 );
