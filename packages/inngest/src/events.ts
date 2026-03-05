@@ -54,6 +54,18 @@ export type MeridianEvents = {
     };
   };
 
+  /**
+   * Fired when transcript extraction for a repurpose job is complete.
+   * `transcript_length` is 0 when no transcript could be obtained.
+   */
+  "repurpose/transcript.extracted": {
+    data: {
+      creator_id: string;
+      repurpose_job_id: string;
+      transcript_length: number;
+    };
+  };
+
   /** Triggers sending the weekly digest email for a single creator. */
   "digest/weekly.send": {
     data: {

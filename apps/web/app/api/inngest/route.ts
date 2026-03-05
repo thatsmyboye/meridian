@@ -15,6 +15,7 @@ import {
   computeCreatorPatterns,
   weeklyDigestCron,
   sendWeeklyDigest,
+  extractRepurposeTranscript,
 } from "@meridian/inngest";
 
 /**
@@ -47,5 +48,6 @@ export const { GET, POST, PUT } = serve({
     computeCreatorPatterns,
     weeklyDigestCron,
     sendWeeklyDigest,
+    extractRepurposeTranscript,
   ],
 });
