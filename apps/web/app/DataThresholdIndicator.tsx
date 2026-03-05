@@ -3,7 +3,6 @@
 import {
   calculateDataThreshold,
   getInsightsReadinessMessage,
-  type DataThresholdInfo,
   type ContentItem,
 } from "@/lib/dataThreshold";
 
@@ -60,8 +59,8 @@ export default function DataThresholdIndicator({
               lineHeight: 1.5,
             }}
           >
-            We're analyzing your content patterns. Once you have 30 days of data,
-            we'll generate insights to help you optimize your strategy.
+            We&apos;re analyzing your content patterns. Once you have 30 days of data,
+            we&apos;ll generate insights to help you optimize your strategy.
           </p>
         </div>
 
