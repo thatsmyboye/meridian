@@ -16,6 +16,7 @@
     "@meridian/types": "workspace:*",
     "@react-email/components": "^0.0.31",
     "@supabase/supabase-js": "^2.0.0",
+    "openai": "^6.26.0",
     "react": "^19.0.0",
     "resend": "^4.0.0"
   },

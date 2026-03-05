@@ -42,3 +42,4 @@ export {
   weeklyDigestCron,
   sendWeeklyDigest,
 } from "./functions/weekly-digest-cron";
+export { extractRepurposeTranscript } from "./functions/repurpose-transcript-extraction";
