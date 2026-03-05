@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { formatNumber, formatDate, PLATFORM_BADGE } from "@/lib/formatters";
+import RepurposeModal from "./RepurposeModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -56,12 +57,23 @@ function formatWatchTime(minutes: number | null): string {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+interface RepurposeTarget {
+  contentId: string;
+  title: string;
+  platform: string;
+}
+
 export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) {
   const [platformFilter, setPlatformFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("publishedAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [repurposeTarget, setRepurposeTarget] =
+    useState<RepurposeTarget | null>(null);
+  const [submittedJobIds, setSubmittedJobIds] = useState<Set<string>>(
+    new Set()
+  );
 
   const availablePlatforms = useMemo(
     () => [...new Set(rows.map((r) => r.platform))].sort(),
@@ -154,6 +166,9 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
       ? ([{ key: "watchTimeMinutes", label: "Watch time", align: "right" }] as const)
       : []),
   ];
+
+  // +1 for the non-sortable Actions column
+  const totalColSpan = columns.length + 1;
 
   function exportToCSV() {
     const headers = columns.map((c) => c.label);
@@ -327,6 +342,21 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
         )}
       </div>
 
+      {/* ── Repurpose modal ── */}
+      {repurposeTarget && (
+        <RepurposeModal
+          contentItemId={repurposeTarget.contentId}
+          contentTitle={repurposeTarget.title}
+          sourcePlatform={repurposeTarget.platform}
+          onClose={() => setRepurposeTarget(null)}
+          onSuccess={(jobId) => {
+            setSubmittedJobIds((prev) => new Set(prev).add(repurposeTarget.contentId));
+            setRepurposeTarget(null);
+            console.info("[repurpose] Job created:", jobId);
+          }}
+        />
+      )}
+
       {/* ── Table ── */}
       <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid #e5e7eb" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -357,6 +387,14 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
                   </span>
                 </th>
               ))}
+              {/* Non-sortable actions column */}
+              <th
+                style={{
+                  padding: "10px 14px",
+                  borderBottom: "1px solid #e5e7eb",
+                  width: 1,
+                }}
+              />
             </tr>
           </thead>
 
@@ -364,7 +402,7 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
             {processed.length === 0 ? (
               <tr>
                 <td
-                  colSpan={columns.length}
+                  colSpan={totalColSpan}
                   style={{
                     padding: "36px 14px",
                     textAlign: "center",
@@ -498,6 +536,92 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
                           : "—"}
                       </td>
                     )}
+
+                    {/* Repurpose action */}
+                    <td style={{ padding: "8px 14px 8px 8px", whiteSpace: "nowrap" }}>
+                      {submittedJobIds.has(row.contentId) ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            fontSize: 12,
+                            fontWeight: 500,
+                            color: "#16a34a",
+                          }}
+                        >
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 13 13"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M2.5 6.5l3 3 5-5"
+                              stroke="currentColor"
+                              strokeWidth="1.6"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          Queued
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            setRepurposeTarget({
+                              contentId: row.contentId,
+                              title: row.title,
+                              platform: row.platform,
+                            })
+                          }
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
+                            padding: "5px 10px",
+                            borderRadius: 6,
+                            border: "1px solid #e5e7eb",
+                            background: "#fff",
+                            color: "#374151",
+                            fontSize: 12,
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLButtonElement).style.borderColor =
+                              "#2563eb";
+                            (e.currentTarget as HTMLButtonElement).style.color =
+                              "#2563eb";
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLButtonElement).style.borderColor =
+                              "#e5e7eb";
+                            (e.currentTarget as HTMLButtonElement).style.color =
+                              "#374151";
+                          }}
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M9.5 1.5 A5 5 0 1 1 2.5 8M9.5 1.5v3h-3"
+                              stroke="currentColor"
+                              strokeWidth="1.4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          Repurpose
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })
