@@ -18,6 +18,8 @@ import {
   extractRepurposeTranscript,
   generateDerivatives,
   regenerateDerivative,
+  publishScheduledDerivative,
+  handlePublishFailure,
 } from "@meridian/inngest";
 
 /**
@@ -53,5 +55,7 @@ export const { GET, POST, PUT } = serve({
     extractRepurposeTranscript,
     generateDerivatives,
     regenerateDerivative,
+    publishScheduledDerivative,
+    handlePublishFailure,
   ],
 });

@@ -81,4 +81,33 @@ export type MeridianEvents = {
       creator_id: string;
     };
   };
+
+  /**
+   * Fires when a creator schedules an approved derivative for publishing.
+   * The Inngest function sleeps until `scheduled_at` then publishes via
+   * the target platform API.
+   */
+  "repurpose/derivative.scheduled": {
+    data: {
+      creator_id: string;
+      repurpose_job_id: string;
+      format_key: string;
+      /** UUID used for cancelOn correlation — stored in derivative.schedule_id */
+      schedule_id: string;
+      /** ISO 8601 datetime to publish at */
+      scheduled_at: string;
+    };
+  };
+
+  /**
+   * Fired when a creator cancels a scheduled derivative publish.
+   * The Inngest function listening for `repurpose/derivative.scheduled`
+   * will be cancelled via cancelOn matching `data.schedule_id`.
+   */
+  "repurpose/derivative.publish_cancelled": {
+    data: {
+      /** Must match the schedule_id stored in the derivative */
+      schedule_id: string;
+    };
+  };
 };
