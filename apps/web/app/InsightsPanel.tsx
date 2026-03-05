@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { formatNumber, PLATFORM_BADGE } from "@/lib/formatters";
+import DataThresholdIndicator from "./DataThresholdIndicator";
+import { calculateDataThreshold } from "@/lib/dataThreshold";
+import type { ContentItem } from "@/lib/dataThreshold";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,6 +32,7 @@ export interface DashboardInsight {
 
 interface InsightsPanelProps {
   insights: DashboardInsight[];
+  content?: ContentItem[];
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -315,7 +319,21 @@ function InsightCard({
 
 // ─── InsightsPanel ────────────────────────────────────────────────────────────
 
-export default function InsightsPanel({ insights }: InsightsPanelProps) {
+export default function InsightsPanel({
+  insights,
+  content = [],
+}: InsightsPanelProps) {
+  // Check if content has less than 30 days of data
+  const thresholdInfo = useMemo(
+    () => calculateDataThreshold(content),
+    [content],
+  );
+
+  // Show data threshold indicator if content exists but is less than 30 days old
+  if (content.length > 0 && !thresholdInfo.hasMinimumData) {
+    return <DataThresholdIndicator content={content} />;
+  }
+
   if (insights.length === 0) return null;
 
   return (
