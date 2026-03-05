@@ -15,6 +15,24 @@ interface Derivative {
   updated_at: string;
 }
 
+// Maps derivative format keys to the platform_name DB enum value
+const DERIVATIVE_PLATFORM_MAP: Record<string, string> = {
+  twitter_thread: "twitter",
+  linkedin_post: "linkedin",
+  instagram_caption: "instagram",
+  newsletter_blurb: "other",
+  tiktok_script: "tiktok",
+};
+
+// Human-readable labels for each derivative format (used as content_item title)
+const DERIVATIVE_FORMAT_LABELS: Record<string, string> = {
+  twitter_thread: "Twitter / X Thread",
+  linkedin_post: "LinkedIn Post",
+  instagram_caption: "Instagram Caption",
+  newsletter_blurb: "Newsletter Blurb",
+  tiktok_script: "TikTok Script",
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function getAuthenticatedCreator(supabase: Awaited<ReturnType<typeof createServerClient>>) {
@@ -146,7 +164,7 @@ export async function PUT(request: NextRequest) {
 
   const { data: job, error: jobErr } = await supabase
     .from("repurpose_jobs")
-    .select("id, derivatives")
+    .select("id, derivatives, source_item_id")
     .eq("id", job_id)
     .eq("creator_id", creator.id)
     .single();
@@ -211,6 +229,27 @@ export async function PUT(request: NextRequest) {
       { error: "Failed to update derivative" },
       { status: 500 }
     );
+  }
+
+  // On approval, write the derivative as a new content_item with parent_id
+  // pointing back to the source — this feeds the lineage tree automatically.
+  if (action === "approve") {
+    const approvedDerivative = updatedDerivatives.find((d) => d.format === format_key);
+    if (approvedDerivative) {
+      const platform = DERIVATIVE_PLATFORM_MAP[format_key] ?? "other";
+      const title = DERIVATIVE_FORMAT_LABELS[format_key] ?? format_key;
+      const { error: insertErr } = await supabase.from("content_items").insert({
+        creator_id: creator.id,
+        platform,
+        title,
+        body: approvedDerivative.content,
+        parent_content_item_id: (job as { source_item_id: string }).source_item_id,
+        published_at: now,
+      });
+      if (insertErr) {
+        console.error("[derivatives] Failed to create lineage content_item:", insertErr.message);
+      }
+    }
   }
 
   return NextResponse.json({
