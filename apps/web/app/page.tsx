@@ -247,7 +247,10 @@ export default async function Home() {
         </p>
       </div>
 
-      <InsightsPanel insights={dashboardInsights} />
+      <InsightsPanel
+        insights={dashboardInsights}
+        content={dashboardContent.map(({ publishedAt }) => ({ publishedAt }))}
+      />
 
       <Suspense>
         <CreatorDashboard content={dashboardContent} />
