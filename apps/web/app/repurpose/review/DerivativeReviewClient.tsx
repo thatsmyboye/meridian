@@ -798,12 +798,17 @@ function DerivativeCard({
 
       {/* Schedule picker — shown when approved */}
       {derivative.status === "approved" && (
-        <SchedulePicker isScheduling={isScheduling} onSchedule={onSchedule} />
+        <SchedulePicker
+          platform={derivative.platform}
+          isScheduling={isScheduling}
+          onSchedule={onSchedule}
+        />
       )}
 
       {/* Reschedule/Cancel — shown when scheduled */}
       {isScheduled && (
         <ReschedulePicker
+          platform={derivative.platform}
           currentScheduledAt={derivative.scheduled_at!}
           isScheduling={isScheduling}
           onReschedule={onReschedule}
@@ -937,28 +942,80 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+// ─── Optimal time helpers (client-side) ──────────────────────────────────────
+
+interface OptimalTime {
+  hour: number;   // UTC hour (0–23)
+  label: string;  // formatted in UTC, e.g. "9:00 AM"
+}
+
+/** Convert a UTC hour to a local datetime string for datetime-local inputs */
+function nextOccurrenceOfUTCHour(utcHour: number): string {
+  const now = new Date();
+  const target = new Date(now);
+  target.setUTCHours(utcHour, 0, 0, 0);
+  // If that time has already passed today (UTC), move to tomorrow
+  if (target <= now) {
+    target.setUTCDate(target.getUTCDate() + 1);
+  }
+  // Format for datetime-local (local timezone)
+  const offsetMs = target.getTimezoneOffset() * 60000;
+  return new Date(target.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+/** Convert UTC hour label to local timezone display */
+function localTimeLabel(utcHour: number): string {
+  const target = new Date(Date.UTC(2024, 0, 1, utcHour, 0, 0));
+  return target.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 // ─── SchedulePicker ──────────────────────────────────────────────────────────
 
 function SchedulePicker({
+  platform,
   isScheduling,
   onSchedule,
 }: {
+  platform: string;
   isScheduling: boolean;
   onSchedule: (scheduledAt: string) => void;
 }) {
   const [showPicker, setShowPicker] = useState(false);
   const [pickerValue, setPickerValue] = useState("");
+  const [suggestedTimes, setSuggestedTimes] = useState<OptimalTime[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   function getDefaultDatetime(): string {
     const d = new Date();
     d.setDate(d.getDate() + 1);
     d.setHours(9, 0, 0, 0);
-    return d.toISOString().slice(0, 16);
+    // Format for datetime-local (local timezone)
+    const offsetMs = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offsetMs).toISOString().slice(0, 16);
   }
 
-  function handleOpen() {
+  async function handleOpen() {
     setPickerValue(getDefaultDatetime());
     setShowPicker(true);
+    // Fetch optimal times in background
+    setLoadingSuggestions(true);
+    try {
+      const res = await fetch(
+        `/api/repurpose/optimal-times?platform=${encodeURIComponent(platform)}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setSuggestedTimes(data.times ?? []);
+      }
+    } catch {
+      // Silently ignore — suggestions are best-effort
+    } finally {
+      setLoadingSuggestions(false);
+    }
   }
 
   function handleSchedule() {
@@ -1010,6 +1067,92 @@ function SchedulePicker({
       <div style={{ fontSize: 13, fontWeight: 600, color: "#92400e", marginBottom: 10 }}>
         Schedule publish time
       </div>
+
+      {/* AI suggested time chips */}
+      {(loadingSuggestions || suggestedTimes.length > 0) && (
+        <div style={{ marginBottom: 12 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "#6b7280",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              marginBottom: 6,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            <span
+              style={{
+                display: "inline-block",
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#8b5cf6",
+              }}
+            />
+            Your audience is most active here
+          </div>
+
+          {loadingSuggestions ? (
+            <div
+              style={{
+                fontSize: 12,
+                color: "#9ca3af",
+                fontStyle: "italic",
+              }}
+            >
+              Analysing your engagement data…
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {suggestedTimes.map((t, i) => (
+                <button
+                  key={t.hour}
+                  onClick={() => setPickerValue(nextOccurrenceOfUTCHour(t.hour))}
+                  title="Click to apply this time"
+                  style={{
+                    padding: "5px 11px",
+                    borderRadius: 20,
+                    border: "1.5px solid #c4b5fd",
+                    background: "#f5f3ff",
+                    color: "#5b21b6",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    transition: "background 0.1s",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      background: "#8b5cf6",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 16,
+                      height: 16,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  {localTimeLabel(t.hour)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <input
           type="datetime-local"
@@ -1065,20 +1208,44 @@ function SchedulePicker({
 // ─── ReschedulePicker ─────────────────────────────────────────────────────────
 
 function ReschedulePicker({
+  platform,
   currentScheduledAt,
   isScheduling,
   onReschedule,
   onCancelSchedule,
 }: {
+  platform: string;
   currentScheduledAt: string;
   isScheduling: boolean;
   onReschedule: (newScheduledAt: string) => void;
   onCancelSchedule: () => void;
 }) {
   const [showReschedule, setShowReschedule] = useState(false);
-  const [pickerValue, setPickerValue] = useState(
-    new Date(currentScheduledAt).toISOString().slice(0, 16)
-  );
+  const [pickerValue, setPickerValue] = useState(() => {
+    const d = new Date(currentScheduledAt);
+    const offsetMs = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offsetMs).toISOString().slice(0, 16);
+  });
+  const [suggestedTimes, setSuggestedTimes] = useState<OptimalTime[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  async function handleShowReschedule() {
+    setShowReschedule(true);
+    setLoadingSuggestions(true);
+    try {
+      const res = await fetch(
+        `/api/repurpose/optimal-times?platform=${encodeURIComponent(platform)}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setSuggestedTimes(data.times ?? []);
+      }
+    } catch {
+      // Best-effort
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }
 
   function handleReschedule() {
     if (!pickerValue) return;
@@ -1097,7 +1264,7 @@ function ReschedulePicker({
       {!showReschedule ? (
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button
-            onClick={() => setShowReschedule(true)}
+            onClick={handleShowReschedule}
             disabled={isScheduling}
             style={{
               padding: "7px 14px",
@@ -1134,6 +1301,85 @@ function ReschedulePicker({
           <div style={{ fontSize: 13, fontWeight: 600, color: "#92400e", marginBottom: 10 }}>
             Choose new publish time
           </div>
+
+          {/* AI suggested time chips */}
+          {(loadingSuggestions || suggestedTimes.length > 0) && (
+            <div style={{ marginBottom: 12 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#6b7280",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  marginBottom: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: "#8b5cf6",
+                  }}
+                />
+                Your audience is most active here
+              </div>
+
+              {loadingSuggestions ? (
+                <div style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic" }}>
+                  Analysing your engagement data…
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {suggestedTimes.map((t, i) => (
+                    <button
+                      key={t.hour}
+                      onClick={() => setPickerValue(nextOccurrenceOfUTCHour(t.hour))}
+                      title="Click to apply this time"
+                      style={{
+                        padding: "5px 11px",
+                        borderRadius: 20,
+                        border: "1.5px solid #c4b5fd",
+                        background: "#f5f3ff",
+                        color: "#5b21b6",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 10,
+                          background: "#8b5cf6",
+                          color: "#fff",
+                          borderRadius: "50%",
+                          width: 16,
+                          height: 16,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+                      {localTimeLabel(t.hour)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input
               type="datetime-local"
