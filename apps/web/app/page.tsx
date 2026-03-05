@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import CreatorDashboard from "./CreatorDashboard";
 import type { DashboardProps } from "./CreatorDashboard";
-import InsightsPanel from "./InsightsPanel";
+import InsightsPanelClient from "./InsightsPanelClient";
 import type { DashboardInsight, InsightEvidenceItem } from "./InsightsPanel";
 
 /**
@@ -71,7 +71,7 @@ export default async function Home() {
         supabase
           .from("pattern_insights")
           .select(
-            "id, insight_type, summary, narrative, confidence_label, confidence, generated_at, evidence_json",
+            "id, insight_type, summary, narrative, confidence_label, confidence, generated_at, dismissed_at, evidence_json",
           )
           .eq("creator_id", creator.id)
           .eq("is_dismissed", false)
@@ -141,6 +141,7 @@ export default async function Home() {
             confidence_label: row.confidence_label as string | null,
             confidence: row.confidence as number,
             generated_at: row.generated_at as string,
+            dismissed_at: row.dismissed_at as string | null,
             evidence_json: evidence,
             supporting_content: supporting,
           };
@@ -155,6 +156,7 @@ export default async function Home() {
           confidence_label: row.confidence_label as string | null,
           confidence: row.confidence as number,
           generated_at: row.generated_at as string,
+          dismissed_at: row.dismissed_at as string | null,
           evidence_json: (row.evidence_json ?? {}) as Record<string, unknown>,
           supporting_content: [],
         }));
@@ -247,7 +249,7 @@ export default async function Home() {
         </p>
       </div>
 
-      <InsightsPanel
+      <InsightsPanelClient
         insights={dashboardInsights}
         content={dashboardContent.map(({ publishedAt }) => ({ publishedAt }))}
       />
