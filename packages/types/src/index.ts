@@ -90,6 +90,8 @@ export interface PerformanceSnapshot {
   created_at: string;
 }
 
+export type PatternConfidenceLabel = "Strong" | "Moderate" | "Emerging";
+
 export interface PatternInsight {
   id: string;
   creator_id: string;
@@ -98,6 +100,10 @@ export interface PatternInsight {
   description: string;
   confidence_score: number;
   supporting_content_ids: string[];
+  /** Claude-generated 2–3 sentence plain-English insight. Null if narration failed. */
+  narrative: string | null;
+  /** Human-readable confidence tier derived from sample count. Null if narration failed. */
+  confidence_label: PatternConfidenceLabel | null;
   created_at: string;
   updated_at: string;
 }

@@ -168,6 +168,9 @@ importers:
 
   packages/inngest:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.55.0
+        version: 0.55.1
       '@meridian/api':
         specifier: workspace:*
         version: link:../api
@@ -213,6 +216,10 @@ packages:
     peerDependenciesMeta:
       graphql:
         optional: true
+
+  '@anthropic-ai/sdk@0.55.1':
+    resolution: {integrity: sha512-gjOMS4chmm8BxClKmCjNHmvf1FrO1Cn++CSX6K3YCZjz5JG4I9ZttQ/xEH4FBsz6HQyZvnUpiKlOAkmxaGmEaQ==}
+    hasBin: true
 
   '@babel/code-frame@7.10.4':
     resolution: {integrity: sha512-vG6SvB6oYEhvgisZNFRmRCUkLz11c7rp+tbNTynGqc6mS1d5ATd/sGyV6W0KZZnXRKMTzZDRgQT3Ou9jhpAfUg==}
@@ -5341,6 +5348,8 @@ packages:
 snapshots:
 
   '@0no-co/graphql.web@1.2.0': {}
+
+  '@anthropic-ai/sdk@0.55.1': {}
 
   '@babel/code-frame@7.10.4':
     dependencies:
