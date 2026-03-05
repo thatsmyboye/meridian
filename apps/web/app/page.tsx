@@ -5,6 +5,7 @@ import CreatorDashboard from "./CreatorDashboard";
 import type { DashboardProps } from "./CreatorDashboard";
 import InsightsPanelClient from "./InsightsPanelClient";
 import type { DashboardInsight, InsightEvidenceItem } from "./InsightsPanel";
+import PublishNotificationBell from "./PublishNotificationBell";
 
 /**
  * / — Meridian dashboard home
@@ -26,6 +27,19 @@ export default async function Home() {
   let reauthPlatforms: string[] = [];
   let dashboardContent: DashboardProps["content"] = [];
   let dashboardInsights: DashboardInsight[] = [];
+  let creatorId: string | null = null;
+  let initialNotifications: {
+    id: string;
+    type: "published" | "failed_publish";
+    repurpose_job_id: string;
+    format_key: string;
+    platform_label: string;
+    content_title: string | null;
+    external_url: string | null;
+    retry_url: string | null;
+    read_at: string | null;
+    created_at: string;
+  }[] = [];
 
   if (user) {
     const { data: creator } = await supabase
@@ -35,6 +49,8 @@ export default async function Home() {
       .single();
 
     if (creator) {
+      creatorId = creator.id as string;
+
       // Check for platforms needing re-auth
       const { data: platforms } = await supabase
         .from("connected_platforms")
@@ -43,6 +59,29 @@ export default async function Home() {
         .eq("status", "reauth_required");
 
       reauthPlatforms = (platforms ?? []).map((p) => p.platform as string);
+
+      // Fetch the 20 most recent publish notifications for the bell
+      const { data: notifRows } = await supabase
+        .from("publish_notifications")
+        .select(
+          "id, type, repurpose_job_id, format_key, platform_label, content_title, external_url, retry_url, read_at, created_at"
+        )
+        .eq("creator_id", creator.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      initialNotifications = (notifRows ?? []).map((n) => ({
+        id: n.id as string,
+        type: n.type as "published" | "failed_publish",
+        repurpose_job_id: n.repurpose_job_id as string,
+        format_key: n.format_key as string,
+        platform_label: n.platform_label as string,
+        content_title: n.content_title as string | null,
+        external_url: n.external_url as string | null,
+        retry_url: n.retry_url as string | null,
+        read_at: n.read_at as string | null,
+        created_at: n.created_at as string,
+      }));
 
       // Fetch content published in the last 364 days (52 weeks for the heatmap;
       // the dashboard's 7d/30d/90d filters narrow it down client-side)
@@ -227,22 +266,30 @@ export default async function Home() {
           <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>
             Dashboard
           </h1>
-          <Link
-            href="/platforms"
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#2563eb",
-              textDecoration: "none",
-              padding: "6px 14px",
-              border: "1px solid #bfdbfe",
-              borderRadius: 6,
-              background: "#eff6ff",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Platform comparison →
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {creatorId && (
+              <PublishNotificationBell
+                creatorId={creatorId}
+                initialNotifications={initialNotifications}
+              />
+            )}
+            <Link
+              href="/platforms"
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#2563eb",
+                textDecoration: "none",
+                padding: "6px 14px",
+                border: "1px solid #bfdbfe",
+                borderRadius: 6,
+                background: "#eff6ff",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Platform comparison →
+            </Link>
+          </div>
         </div>
         <p style={{ color: "#6b7280", margin: 0, fontSize: 15 }}>
           Your content performance at a glance.
