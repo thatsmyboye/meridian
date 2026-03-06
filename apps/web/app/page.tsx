@@ -6,6 +6,7 @@ import type { DashboardProps } from "./CreatorDashboard";
 import InsightsPanelClient from "./InsightsPanelClient";
 import type { DashboardInsight, InsightEvidenceItem } from "./InsightsPanel";
 import PublishNotificationBell from "./PublishNotificationBell";
+import UpgradedConfetti from "./UpgradedConfetti";
 
 /**
  * / — Meridian dashboard home
@@ -214,6 +215,11 @@ export default async function Home() {
         fontFamily: "system-ui, sans-serif",
       }}
     >
+      {/* Confetti celebration on successful plan upgrade */}
+      <Suspense>
+        <UpgradedConfetti />
+      </Suspense>
+
       {youtubeReauthRequired && (
         <div
           role="alert"
