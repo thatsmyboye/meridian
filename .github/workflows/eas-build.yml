@@ -1,13 +1,12 @@
 name: EAS Build
 
-on: {}
-  # Temporarily disabled automatic EAS builds
-  # push:
-  #   branches:
-  #     - main
-  # pull_request:
-  #   branches:
-  #     - main
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
