@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
+import { getCreatorSubscription, checkPlatformLimit } from "@/lib/subscription";
 
 /**
  * GET /api/connect/youtube
@@ -33,6 +34,32 @@ export async function GET(request: Request) {
 
   if (!user) {
     return NextResponse.redirect(`${siteUrl}/login`);
+  }
+
+  // ── Platform limit gate ───────────────────────────────────────────────────
+  // Check before sending the user through the full OAuth flow to avoid
+  // wasting their time when the limit is already hit.
+  const subscription = await getCreatorSubscription();
+  if (subscription) {
+    const limitCheck = await checkPlatformLimit(
+      subscription.creatorId,
+      subscription.tier
+    );
+    // Only block if this would be a brand-new platform (YouTube not yet connected)
+    if (!limitCheck.allowed) {
+      const supabaseCheck = await (await import("@/lib/supabase/server")).createServerClient();
+      const { count } = await supabaseCheck
+        .from("connected_platforms")
+        .select("id", { count: "exact", head: true })
+        .eq("creator_id", subscription.creatorId)
+        .eq("platform", "youtube");
+      // Allow reconnect (upsert) but block new connections when at limit
+      if ((count ?? 0) === 0) {
+        return NextResponse.redirect(
+          `${siteUrl}/connect?error=platform_limit_reached`
+        );
+      }
+    }
   }
 
   const state = randomBytes(16).toString("hex");

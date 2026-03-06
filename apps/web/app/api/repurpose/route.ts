@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { inngest } from "@meridian/inngest";
 import { createServerClient } from "@/lib/supabase/server";
+import { checkRepurposeMonthlyLimit } from "@/lib/subscription";
+import type { SubscriptionTier } from "@/lib/subscription";
 
 const VALID_PLATFORMS = new Set([
   "youtube",
@@ -77,12 +79,28 @@ export async function POST(request: NextRequest) {
   // ── 3. Look up the creator ─────────────────────────────────────────────────
   const { data: creator, error: creatorErr } = await supabase
     .from("creators")
-    .select("id")
+    .select("id, subscription_tier")
     .eq("auth_user_id", user.id)
     .single();
 
   if (creatorErr || !creator) {
     return NextResponse.json({ error: "Creator not found" }, { status: 401 });
+  }
+
+  // ── 3a. Repurpose job monthly quota gate ───────────────────────────────────
+  const tier = ((creator.subscription_tier as SubscriptionTier | null) ?? "free");
+  const quotaCheck = await checkRepurposeMonthlyLimit(creator.id as string, tier);
+  if (!quotaCheck.allowed) {
+    return NextResponse.json(
+      {
+        error: "repurpose_limit_reached",
+        message: `You have used all ${quotaCheck.limit} repurpose jobs for this month on the ${tier} plan.`,
+        current: quotaCheck.current,
+        limit: quotaCheck.limit,
+        tier,
+      },
+      { status: 403 }
+    );
   }
 
   // ── 4. Verify the content item belongs to this creator ─────────────────────

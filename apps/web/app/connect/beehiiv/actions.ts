@@ -13,6 +13,7 @@ import { redirect } from "next/navigation";
 import { encryptToken } from "@meridian/api";
 import { inngest } from "@meridian/inngest";
 import { createServerClient } from "@/lib/supabase/server";
+import { getCreatorSubscription, checkPlatformLimit } from "@/lib/subscription";
 
 const BEEHIIV_API_BASE = "https://api.beehiiv.com/v2";
 
@@ -35,6 +36,26 @@ export async function connectBeehiiv(formData: FormData) {
 
   if (!user) {
     redirect("/connect/beehiiv?error=unauthenticated");
+  }
+
+  // ── Platform limit gate ───────────────────────────────────────────────────
+  const subscription = await getCreatorSubscription();
+  if (subscription) {
+    const limitCheck = await checkPlatformLimit(
+      subscription.creatorId,
+      subscription.tier
+    );
+    if (!limitCheck.allowed) {
+      // Only block if beehiiv is not already connected (allow re-connect/update)
+      const { count } = await supabase
+        .from("connected_platforms")
+        .select("id", { count: "exact", head: true })
+        .eq("creator_id", subscription.creatorId)
+        .eq("platform", "beehiiv");
+      if ((count ?? 0) === 0) {
+        redirect("/connect?error=platform_limit_reached");
+      }
+    }
   }
 
   // Validate credentials against the Beehiiv API.
