@@ -1,3 +1,4 @@
+import "../global.css";
 import { provisionCreator } from "@meridian/api";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@supabase/supabase-js";
