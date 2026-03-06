@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, type MouseEvent, useEffect, useRef, useState } from "react";
+import UpgradeLimitModal from "@/app/UpgradeLimitModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ export default function RepurposeModal({
   const [selectedFormats, setSelectedFormats] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Open the native dialog on mount
@@ -94,9 +96,18 @@ export default function RepurposeModal({
         }),
       });
 
-      const data = (await res.json()) as { job_id?: string; error?: string };
+      const data = (await res.json()) as {
+        job_id?: string;
+        error?: string;
+        message?: string;
+      };
 
       if (!res.ok) {
+        if (res.status === 403 && data.error === "repurpose_limit_reached") {
+          setStatus("idle");
+          setShowUpgradeModal(true);
+          return;
+        }
         setErrorMessage(data.error ?? "Something went wrong. Please try again.");
         setStatus("error");
         return;
@@ -110,6 +121,7 @@ export default function RepurposeModal({
   }
 
   return (
+    <>
     <dialog
       ref={dialogRef}
       onClick={handleDialogClick}
@@ -353,5 +365,14 @@ export default function RepurposeModal({
         </div>
       </form>
     </dialog>
+
+    {/* Upgrade modal rendered outside the dialog to avoid stacking-context issues */}
+    {showUpgradeModal && (
+      <UpgradeLimitModal
+        kind="repurpose"
+        onClose={() => setShowUpgradeModal(false)}
+      />
+    )}
+  </>
   );
 }

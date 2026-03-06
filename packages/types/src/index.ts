@@ -6,6 +6,23 @@
 
 // ─── Enums / Union types ─────────────────────────────────────────────────────
 
+export type SubscriptionTier = "free" | "creator" | "pro";
+
+export interface TierLimits {
+  /** Maximum number of connected platforms. */
+  platforms: number;
+  /** Maximum repurpose jobs per calendar month. */
+  repurposeJobsPerMonth: number;
+  /** Maximum roster (team member) seats. */
+  rosterSize: number;
+}
+
+export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
+  free: { platforms: 1, repurposeJobsPerMonth: 5, rosterSize: 1 },
+  creator: { platforms: 3, repurposeJobsPerMonth: 20, rosterSize: 3 },
+  pro: { platforms: Infinity, repurposeJobsPerMonth: Infinity, rosterSize: Infinity },
+};
+
 export type Platform = "youtube" | "instagram" | "tiktok" | "beehiiv";
 
 export type ContentType = "video" | "short" | "newsletter" | "podcast";
