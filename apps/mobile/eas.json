@@ -8,9 +8,6 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
-      "env": {
-        "NODE_PATH": "../../node_modules"
-      },
       "ios": {
         "buildConfiguration": "Debug",
         "credentialsSource": "remote"
@@ -23,9 +20,6 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "env": {
-        "NODE_PATH": "../../node_modules"
-      },
       "ios": {
         "simulator": true
       },
@@ -37,9 +31,6 @@
     "production": {
       "channel": "production",
       "autoIncrement": true,
-      "env": {
-        "NODE_PATH": "../../node_modules"
-      },
       "ios": {
         "credentialsSource": "remote"
       },
