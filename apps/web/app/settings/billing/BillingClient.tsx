@@ -41,7 +41,147 @@ const PLANS: Record<Plan, PlanConfig> = {
   },
 };
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+const TIER_COLORS: Record<"free" | "creator" | "pro", string> = {
+  free: "#6b7280",
+  creator: "#2563eb",
+  pro: "#7c3aed",
+};
+
+// ─── Usage summary card ───────────────────────────────────────────────────────
+
+function UsageSummaryCard({
+  currentTier,
+  repurposeJobsUsed,
+  repurposeJobsLimit,
+  nextBillingDate,
+}: {
+  currentTier: "free" | "creator" | "pro";
+  repurposeJobsUsed: number;
+  repurposeJobsLimit: number | null;
+  nextBillingDate: string | null;
+}) {
+  const tierColor = TIER_COLORS[currentTier];
+  const tierLabel =
+    currentTier === "free"
+      ? "Free"
+      : currentTier === "creator"
+      ? "Creator"
+      : "Pro";
+
+  const usageLabel =
+    repurposeJobsLimit === null
+      ? `${repurposeJobsUsed} / ∞`
+      : `${repurposeJobsUsed} / ${repurposeJobsLimit}`;
+
+  const usagePct =
+    repurposeJobsLimit === null
+      ? 0
+      : Math.min((repurposeJobsUsed / repurposeJobsLimit) * 100, 100);
+
+  return (
+    <div
+      style={{
+        border: "1px solid #e5e7eb",
+        borderRadius: 12,
+        padding: 24,
+        marginBottom: 28,
+        background: "#f9fafb",
+      }}
+    >
+      <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 16px", color: "#111827" }}>
+        Current usage
+      </h2>
+
+      <div style={{ display: "flex", gap: 0, flexWrap: "wrap" }}>
+        {/* Plan */}
+        <div
+          style={{
+            flex: "1 1 140px",
+            paddingRight: 24,
+            borderRight: "1px solid #e5e7eb",
+            marginRight: 24,
+            marginBottom: 8,
+          }}
+        >
+          <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
+            Plan
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: tierColor,
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontSize: 18, fontWeight: 700, color: tierColor }}>
+              {tierLabel}
+            </span>
+          </div>
+        </div>
+
+        {/* Repurpose jobs */}
+        <div
+          style={{
+            flex: "1 1 160px",
+            paddingRight: 24,
+            borderRight: nextBillingDate ? "1px solid #e5e7eb" : undefined,
+            marginRight: nextBillingDate ? 24 : 0,
+            marginBottom: 8,
+          }}
+        >
+          <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
+            Repurpose jobs
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
+            {usageLabel}
+            <span style={{ fontSize: 13, fontWeight: 400, color: "#6b7280", marginLeft: 4 }}>
+              this month
+            </span>
+          </div>
+          {repurposeJobsLimit !== null && (
+            <div
+              style={{
+                height: 4,
+                background: "#e5e7eb",
+                borderRadius: 99,
+                overflow: "hidden",
+                maxWidth: 140,
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${usagePct}%`,
+                  background: usagePct >= 90 ? "#ef4444" : usagePct >= 70 ? "#f59e0b" : "#2563eb",
+                  borderRadius: 99,
+                  transition: "width 0.3s",
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Next billing date */}
+        {nextBillingDate && (
+          <div style={{ flex: "1 1 120px", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
+              Next billing
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#111827" }}>
+              {nextBillingDate}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Plan card ────────────────────────────────────────────────────────────────
 
 function PlanCard({
   plan,
@@ -124,11 +264,17 @@ function PlanCard({
 interface BillingClientProps {
   currentTier: "free" | "creator" | "pro";
   hasStripeCustomer: boolean;
+  repurposeJobsUsed: number;
+  repurposeJobsLimit: number | null;
+  nextBillingDate: string | null;
 }
 
 export default function BillingClient({
   currentTier,
   hasStripeCustomer,
+  repurposeJobsUsed,
+  repurposeJobsLimit,
+  nextBillingDate,
 }: BillingClientProps) {
   const [checkoutLoading, setCheckoutLoading] = useState<Plan | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -178,6 +324,14 @@ export default function BillingClient({
 
   return (
     <div>
+      {/* Usage summary */}
+      <UsageSummaryCard
+        currentTier={currentTier}
+        repurposeJobsUsed={repurposeJobsUsed}
+        repurposeJobsLimit={repurposeJobsLimit}
+        nextBillingDate={nextBillingDate}
+      />
+
       {/* Current tier banner for free users */}
       {currentTier === "free" && (
         <div
