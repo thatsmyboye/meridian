@@ -10,7 +10,7 @@ Meridian is a pnpm + Turborepo monorepo with two apps (`apps/web` Next.js, `apps
 
 - **Node.js 22**, **pnpm 9.15.4** (matches `packageManager` field)
 - **Docker** with `fuse-overlayfs` storage driver and `iptables-legacy` (required for nested container environment)
-- **Supabase CLI** (installed from GitHub `.deb` release)
+- **Supabase CLI v2.75.0+** (installed from GitHub `.deb` release — the `supabase/config.toml` uses features unavailable in earlier versions; v2.20.x fails with "invalid keys" errors)
 
 ### Starting services
 
@@ -32,6 +32,9 @@ Meridian is a pnpm + Turborepo monorepo with two apps (`apps/web` Next.js, `apps
 - `eslint-config-next` must match the Next.js major version (v15). Installing v16 causes circular JSON errors with the legacy `.eslintrc.json` format.
 - Inngest is stubbed (event schemas only, no functions wired up). The app runs fine without it.
 - The Supabase local anon/service-role JWT keys are deterministic demo keys and do not change between `supabase start` runs.
+- `apps/web/.env.local` also needs `TOKEN_ENCRYPTION_KEY` (64 hex chars, generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), `NEXT_PUBLIC_SITE_URL=http://localhost:3000`, and `SITE_URL=http://127.0.0.1:3000`.
+- The login page only supports Google OAuth. To test locally (where Google OAuth is unavailable), create a user directly via the Supabase Dashboard at `http://127.0.0.1:54323` (Authentication > Users > Add User) or via the Supabase JS client `signUp` method.
+- `supabase start` may report stopped services (`imgproxy`, `pooler`) — these are non-essential and don't affect the app.
 
 ### Running checks
 
