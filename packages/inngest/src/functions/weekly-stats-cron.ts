@@ -1,4 +1,5 @@
 import { inngest } from "../client";
+import { sendPushNotificationsToCreator } from "../lib/sendPushNotifications";
 import { getSupabaseAdmin } from "../lib/supabaseAdmin";
 import {
   narratePatternInsights,
@@ -623,6 +624,16 @@ export const computeCreatorPatterns = inngest.createFunction(
       }
 
       return { written: rows.length };
+    });
+
+    // ── Step 5: send push notification to creator's mobile devices ───────────
+    await step.run("notify-insights-push", async () => {
+      await sendPushNotificationsToCreator(
+        creator_id,
+        "New insights available",
+        "Your weekly pattern insights are ready. Tap to review.",
+        { screen: "insights" }
+      );
     });
 
     return {
