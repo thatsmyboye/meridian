@@ -32,7 +32,18 @@
       "bundler": "metro",
       "output": "static"
     },
-    "plugins": ["expo-router", "expo-updates"],
+    "plugins": [
+      "expo-router",
+      "expo-updates",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#2563eb",
+          "sounds": []
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     },

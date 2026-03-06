@@ -24,6 +24,7 @@ import { inngest } from "../client";
 import { getSupabaseAdmin } from "../lib/supabaseAdmin";
 import { publishDerivative, type PlatformRow } from "../lib/platform-publishers";
 import { PublishNotificationEmail } from "../emails/PublishNotificationEmail";
+import { sendPushNotificationsToCreator } from "../lib/sendPushNotifications";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -299,6 +300,14 @@ export const publishScheduledDerivative = inngest.createFunction(
           `[notify-published] Resend failed for creator ${creator_id}: ${JSON.stringify(error)}`
         );
       }
+
+      // Send push notification to mobile devices (best-effort).
+      await sendPushNotificationsToCreator(
+        creator_id,
+        `${platformLabel} post is live`,
+        `${contentTitle} has been published. Tap to view.`,
+        { screen: "review" }
+      );
     });
 
     return {
@@ -450,6 +459,14 @@ export const handlePublishFailure = inngest.createFunction(
           `[alert-creator] Resend failed for creator ${creator_id}: ${JSON.stringify(error)}`
         );
       }
+
+      // Send push notification to mobile devices (best-effort).
+      await sendPushNotificationsToCreator(
+        creator_id,
+        "Publishing failed — action required",
+        `Your ${platformLabel} post for ${contentTitle} could not be published. Tap to retry.`,
+        { screen: "review" }
+      );
     });
 
     return {
