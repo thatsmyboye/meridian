@@ -8,7 +8,6 @@ const VALID_PLATFORMS = new Set([
   "tiktok",
   "twitter",
   "linkedin",
-  "facebook",
   "podcast",
   "other",
 ]);

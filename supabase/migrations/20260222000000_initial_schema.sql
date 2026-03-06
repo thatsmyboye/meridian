@@ -12,7 +12,6 @@ create type platform_name as enum (
   'tiktok',
   'twitter',
   'linkedin',
-  'facebook',
   'podcast',
   'other'
 );

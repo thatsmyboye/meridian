@@ -21,7 +21,6 @@ const ALL_PLATFORMS: { value: string; label: string }[] = [
   { value: "tiktok", label: "TikTok" },
   { value: "twitter", label: "Twitter / X" },
   { value: "linkedin", label: "LinkedIn" },
-  { value: "facebook", label: "Facebook" },
   { value: "podcast", label: "Podcast" },
   { value: "other", label: "Other" },
 ];
