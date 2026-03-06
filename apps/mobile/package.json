@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "eas-build-pre-install": "cd ../../ && pnpm install --frozen-lockfile"
+    "eas-build-pre-install": "npm install -g pnpm@9.15.4 && cd ../../ && pnpm install --no-frozen-lockfile"
   },
   "dependencies": {
     "@meridian/api": "workspace:*",
