@@ -21,9 +21,13 @@ interface BeehiivPublicationResponse {
   data: { id: string; name: string };
 }
 
-export async function connectBeehiiv(formData: FormData) {
-  const apiKey = (formData.get("api_key") as string | null)?.trim();
-  const publicationId = (formData.get("publication_id") as string | null)?.trim();
+export async function connectBeehiiv(_formData: FormData) {
+  // TypeScript 5.9+ merges the DOM FormData and @types/node v22 FormData
+  // declarations into an incompatible intersection where .get() is absent.
+  // Casting through unknown to a minimal interface resolves the ambiguity.
+  const formData = _formData as unknown as { get(name: string): string | null };
+  const apiKey = formData.get("api_key")?.trim();
+  const publicationId = formData.get("publication_id")?.trim();
 
   if (!apiKey || !publicationId) {
     redirect("/connect/beehiiv?error=missing_params");

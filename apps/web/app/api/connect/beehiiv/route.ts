@@ -38,11 +38,15 @@ export async function POST(request: NextRequest) {
     process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
   // ── 1. Parse form body ────────────────────────────────────────────────────
-  const formData = await request.formData();
-  const apiKey = (formData.get("api_key") as string | null)?.trim();
-  const publicationId = (
-    formData.get("publication_id") as string | null
-  )?.trim();
+  // TypeScript 5.9+ merges the DOM FormData and @types/node v22 FormData
+  // declarations into an incompatible intersection where .get() is absent.
+  // Casting through unknown to a minimal interface resolves the ambiguity;
+  // the method is present at runtime on both runtimes.
+  const formData = (await request.formData()) as unknown as {
+    get(name: string): string | null;
+  };
+  const apiKey = formData.get("api_key")?.trim();
+  const publicationId = formData.get("publication_id")?.trim();
 
   if (!apiKey || !publicationId) {
     return NextResponse.redirect(
