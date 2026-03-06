@@ -144,12 +144,34 @@ export default async function ConnectionsPage() {
         >
           ← Back
         </Link>
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 6px" }}>
-          Platform connections
-        </h1>
-        <p style={{ color: "#6b7280", margin: 0, fontSize: 15 }}>
-          Manage the accounts Meridian syncs content and analytics from.
-        </p>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 6px" }}>
+              Platform connections
+            </h1>
+            <p style={{ color: "#6b7280", margin: 0, fontSize: 15 }}>
+              Manage the accounts Meridian syncs content and analytics from.
+            </p>
+          </div>
+          <Link
+            href="/settings/billing"
+            style={{
+              display: "inline-block",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#2563eb",
+              textDecoration: "none",
+              padding: "7px 14px",
+              border: "1px solid #bfdbfe",
+              borderRadius: 8,
+              background: "#eff6ff",
+              whiteSpace: "nowrap",
+              marginTop: 4,
+            }}
+          >
+            Billing &amp; subscription →
+          </Link>
+        </div>
       </div>
 
       {/* ── Platform cards ── */}
