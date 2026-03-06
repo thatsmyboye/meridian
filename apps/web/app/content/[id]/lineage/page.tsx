@@ -160,9 +160,8 @@ export default async function ContentLineagePage({
     <main
       style={{
         maxWidth: 800,
-        margin: "64px auto",
-        padding: "0 24px",
-        fontFamily: "system-ui, sans-serif",
+        margin: "0 auto",
+        padding: "32px 24px 64px",
       }}
     >
       {/* ── Back link ── */}

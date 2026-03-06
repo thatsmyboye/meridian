@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import PlatformComparisonView from "./PlatformComparisonView";
 import type { ContentDataPoint } from "./PlatformComparisonView";
@@ -104,28 +103,10 @@ export default async function PlatformsPage() {
     <main
       style={{
         maxWidth: 900,
-        margin: "64px auto",
-        padding: "0 24px",
-        fontFamily: "system-ui, sans-serif",
+        margin: "0 auto",
+        padding: "32px 24px 64px",
       }}
     >
-      {/* Back nav */}
-      <div style={{ marginBottom: 24 }}>
-        <Link
-          href="/"
-          style={{
-            color: "#6b7280",
-            textDecoration: "none",
-            fontSize: 14,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-          }}
-        >
-          ← Dashboard
-        </Link>
-      </div>
-
       {/* Page header */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>

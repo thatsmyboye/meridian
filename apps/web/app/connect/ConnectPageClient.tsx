@@ -37,14 +37,12 @@ const SUCCESS_MESSAGES: Record<string, string> = {
 // ─── Connect button ───────────────────────────────────────────────────────────
 
 function ConnectButton({
-  label,
   href,
   color,
   isConnected,
   atLimit,
   onLimitClick,
 }: {
-  label: string;
   href: string;
   color: string;
   isConnected: boolean;
@@ -142,10 +140,9 @@ export default function ConnectPageClient({
   return (
     <main
       style={{
-        maxWidth: 480,
-        margin: "64px auto",
-        padding: "0 24px",
-        fontFamily: "system-ui, sans-serif",
+        maxWidth: 520,
+        margin: "0 auto",
+        padding: "32px 24px 64px",
       }}
     >
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
@@ -259,7 +256,6 @@ export default function ConnectPageClient({
               )}
             </div>
             <ConnectButton
-              label={p.label}
               href={p.href}
               color={p.color}
               isConnected={connectedSet.has(p.id)}

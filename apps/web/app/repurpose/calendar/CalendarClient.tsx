@@ -574,9 +574,8 @@ export default function CalendarClient({ items: initialItems }: { items: Calenda
     <main
       style={{
         maxWidth: 1080,
-        margin: "40px auto",
-        padding: "0 24px",
-        fontFamily: "system-ui, sans-serif",
+        margin: "0 auto",
+        padding: "32px 24px 64px",
       }}
     >
       {/* Header */}
