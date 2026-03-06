@@ -1,4 +1,5 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
 
 // Monorepo roots
@@ -16,4 +17,6 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
-module.exports = config;
+// 3. Wrap with NativeWind — processes global.css through Tailwind and injects
+//    the resulting style sheet into the bundle at startup.
+module.exports = withNativeWind(config, { input: "./global.css" });
