@@ -12,7 +12,6 @@ const ALL_PLATFORMS: { value: string; label: string }[] = [
   { value: "instagram", label: "Instagram" },
   { value: "tiktok", label: "TikTok" },
   { value: "youtube", label: "YouTube" },
-  { value: "facebook", label: "Facebook" },
   { value: "podcast", label: "Podcast" },
   { value: "other", label: "Other" },
 ];
