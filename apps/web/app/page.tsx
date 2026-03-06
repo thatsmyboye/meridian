@@ -7,6 +7,7 @@ import InsightsPanelClient from "./InsightsPanelClient";
 import type { DashboardInsight, InsightEvidenceItem } from "./InsightsPanel";
 import PublishNotificationBell from "./PublishNotificationBell";
 import UpgradedConfetti from "./UpgradedConfetti";
+import LandingPage from "./LandingPage";
 
 /**
  * / — Meridian dashboard home
@@ -206,13 +207,17 @@ export default async function Home() {
 
   const youtubeReauthRequired = reauthPlatforms.includes("youtube");
 
+  // Unauthenticated landing page
+  if (!user) {
+    return <LandingPage />;
+  }
+
   return (
     <main
       style={{
         maxWidth: 800,
-        margin: "64px auto",
-        padding: "0 24px",
-        fontFamily: "system-ui, sans-serif",
+        margin: "0 auto",
+        padding: "32px 24px 64px",
       }}
     >
       {/* Confetti celebration on successful plan upgrade */}
@@ -280,20 +285,19 @@ export default async function Home() {
               />
             )}
             <Link
-              href="/platforms"
+              href="/repurpose/new"
               style={{
                 fontSize: 13,
                 fontWeight: 600,
-                color: "#2563eb",
+                color: "#fff",
                 textDecoration: "none",
-                padding: "6px 14px",
-                border: "1px solid #bfdbfe",
-                borderRadius: 6,
-                background: "#eff6ff",
+                padding: "7px 14px",
+                borderRadius: 7,
+                background: "#2563eb",
                 whiteSpace: "nowrap",
               }}
             >
-              Platform comparison →
+              + New repurpose
             </Link>
           </div>
         </div>

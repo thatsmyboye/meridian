@@ -130,20 +130,13 @@ export default async function ConnectionsPage() {
   return (
     <main
       style={{
-        maxWidth: 560,
-        margin: "64px auto",
-        padding: "0 24px",
-        fontFamily: "system-ui, sans-serif",
+        maxWidth: 600,
+        margin: "0 auto",
+        padding: "32px 24px 64px",
       }}
     >
       {/* ── Header ── */}
       <div style={{ marginBottom: 32 }}>
-        <Link
-          href="/"
-          style={{ display: "inline-block", marginBottom: 20, fontSize: 14, color: "#6b7280", textDecoration: "none" }}
-        >
-          ← Back
-        </Link>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 6px" }}>

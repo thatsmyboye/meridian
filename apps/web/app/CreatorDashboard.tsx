@@ -158,17 +158,70 @@ export default function CreatorDashboard({ content }: DashboardProps) {
       <div
         style={{
           textAlign: "center",
-          padding: "48px 24px",
-          color: "#6b7280",
+          padding: "60px 24px",
+          background: "#fff",
+          border: "1px solid #e5e7eb",
+          borderRadius: 16,
         }}
       >
-        <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 12,
+            background: "#eff6ff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 16px",
+            fontSize: 22,
+          }}
+        >
+          📊
+        </div>
+        <p style={{ fontSize: 18, fontWeight: 700, marginBottom: 6, color: "#111827" }}>
           No content data yet
         </p>
-        <p style={{ fontSize: 14 }}>
-          Connect a platform and sync your content to see performance metrics
-          here.
+        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 24, maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
+          Connect a platform to import your content and start tracking performance across all your channels.
         </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          <a
+            href="/connect"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "10px 20px",
+              borderRadius: 8,
+              background: "#2563eb",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 14,
+              textDecoration: "none",
+            }}
+          >
+            Connect a platform
+          </a>
+          <a
+            href="/repurpose/new"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "10px 20px",
+              borderRadius: 8,
+              background: "#fff",
+              color: "#374151",
+              fontWeight: 600,
+              fontSize: 14,
+              textDecoration: "none",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            Paste text to repurpose
+          </a>
+        </div>
       </div>
     );
   }

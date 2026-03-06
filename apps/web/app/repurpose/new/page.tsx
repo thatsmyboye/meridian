@@ -93,9 +93,8 @@ export default function NewTextImportPage() {
     <main
       style={{
         maxWidth: 680,
-        margin: "64px auto",
-        padding: "0 24px 64px",
-        fontFamily: "system-ui, sans-serif",
+        margin: "0 auto",
+        padding: "32px 24px 64px",
       }}
     >
       {/* Header */}

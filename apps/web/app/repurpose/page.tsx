@@ -107,9 +107,8 @@ export default async function RepurposeQueuePage() {
     <main
       style={{
         maxWidth: 960,
-        margin: "64px auto",
-        padding: "0 24px",
-        fontFamily: "system-ui, sans-serif",
+        margin: "0 auto",
+        padding: "32px 24px 64px",
       }}
     >
       {/* Header */}
@@ -123,18 +122,6 @@ export default async function RepurposeQueuePage() {
         }}
       >
         <div>
-          <Link
-            href="/"
-            style={{
-              color: "#6b7280",
-              fontSize: 14,
-              textDecoration: "none",
-              display: "inline-block",
-              marginBottom: 8,
-            }}
-          >
-            ← Back to dashboard
-          </Link>
           <h1
             style={{
               fontSize: 24,
