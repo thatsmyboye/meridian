@@ -147,10 +147,11 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+site_url = "env(SITE_URL)"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 # Supports wildcards: ** matches any sequence. Expo Go uses 127.0.0.1 for emulator, LAN IPs for devices.
 additional_redirect_urls = [
+  "http://127.0.0.1:3000",
   "https://127.0.0.1:3000",
   "meridian://auth/callback",
   "exp://127.0.0.1:**",
@@ -327,7 +328,7 @@ client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 # DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 # If enabled, the nonce check will be skipped. Only use for strictly-local development; otherwise weakens OIDC verification.
-skip_nonce_check = true
+skip_nonce_check = false
 
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.
 # You can configure "web3" rate limit in the [auth.rate_limit] section and set up [auth.captcha] if self-hosting.
