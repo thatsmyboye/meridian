@@ -151,6 +151,19 @@ site_url = "env(SITE_URL)"
 additional_redirect_urls = [
   "http://127.0.0.1:3000",
   "https://127.0.0.1:3000",
+  "http://127.0.0.1:3000/auth/callback",
+  "https://127.0.0.1:3000/auth/callback",
+  "http://localhost:3000",
+  "https://localhost:3000",
+  "http://localhost:3000/auth/callback",
+  "https://localhost:3000/auth/callback",
+  # Vercel preview / production deployment
+  "https://meridian-web-psi.vercel.app",
+  "https://meridian-web-psi.vercel.app/auth/callback",
+  # Custom domain (production)
+  "https://app.meridian.so",
+  "https://app.meridian.so/auth/callback",
+  # React Native / Expo deep-link
   "meridian://auth/callback",
   "exp://127.0.0.1:**",
   "exp://192.168.**",
