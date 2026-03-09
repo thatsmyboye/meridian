@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { trackAiUsage, parseRateLimitHeaders } from "./trackAiUsage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,11 +73,21 @@ export async function narratePatternInsights(
     });
 
     try {
-      const response = await client.messages.create({
-        model: "claude-opus-4-6",
-        max_tokens: 512,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userContent }],
+      const { data: response, response: httpResponse } = await client.messages
+        .create({
+          model: "claude-opus-4-6",
+          max_tokens: 512,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: userContent }],
+        })
+        .withResponse();
+
+      // Track token usage — non-blocking, errors swallowed inside trackAiUsage
+      void trackAiUsage({
+        message: response,
+        functionName: "narrate-pattern-insights",
+        rateLimits: parseRateLimitHeaders(httpResponse),
+        metadata: { insight_type: insight.insight_type },
       });
 
       const textBlock = response.content.find((b) => b.type === "text");

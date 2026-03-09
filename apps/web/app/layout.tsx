@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import AppHeader from "./components/AppHeader";
+import { PostHogIdentifier } from "./components/PostHogIdentifier";
+import { PostHogPageView } from "./components/PostHogPageView";
+import { PostHogProvider } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,8 +19,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AppHeader />
-        {children}
+        <PostHogProvider>
+          {/* Fires $pageview on every client-side navigation */}
+          <Suspense fallback={null}>
+            <PostHogPageView />
+          </Suspense>
+          {/* Links Supabase auth user to PostHog profile */}
+          <PostHogIdentifier />
+          <AppHeader />
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   );

@@ -17,6 +17,7 @@
     "@supabase/ssr": "^0.8.0",
     "inngest": "^3.52.3",
     "next": "15.3.9",
+    "posthog-js": "^1.359.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.7.0",

@@ -1,8 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { inngest } from "@meridian/inngest";
+import { PostHog } from "posthog-node";
 import { createServerClient } from "@/lib/supabase/server";
 import { checkRepurposeMonthlyLimit } from "@/lib/subscription";
 import type { SubscriptionTier } from "@/lib/subscription";
+
+function getPostHog() {
+  const key = process.env.POSTHOG_KEY;
+  if (!key) return null;
+  return new PostHog(key, {
+    host: process.env.POSTHOG_HOST ?? "https://us.i.posthog.com",
+  });
+}
 
 const VALID_PLATFORMS = new Set([
   "youtube",
@@ -150,6 +159,23 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("[repurpose] inngest.send failed:", err);
     // Non-fatal: job row exists, pipeline can be retried separately
+  }
+
+  // ── 7. Track repurpose job creation in PostHog ────────────────────────────
+  const ph = getPostHog();
+  if (ph) {
+    ph.capture({
+      distinctId: user.id,
+      event: "repurpose_job_created",
+      properties: {
+        job_id: job.id,
+        target_platform,
+        selected_formats: selected_formats ?? [],
+        format_count: (selected_formats ?? []).length,
+        tier,
+      },
+    });
+    await ph.flush();
   }
 
   return NextResponse.json({ job_id: job.id }, { status: 201 });
