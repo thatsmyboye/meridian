@@ -6,6 +6,7 @@ import {
   fetchTopCreatorInsights,
   buildInsightContext,
 } from "../lib/fetchCreatorInsights";
+import { trackAiUsage, parseRateLimitHeaders } from "../lib/trackAiUsage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ async function generateSingleDerivative(
   contentTitle: string,
   format: DerivativeFormat,
   insightContext: string,
+  creatorId?: string,
 ): Promise<{ content: string; char_count: number }> {
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -36,16 +38,27 @@ async function generateSingleDerivative(
     ? `${format.systemPrompt}${insightContext}`
     : format.systemPrompt;
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2000,
-    system: systemPrompt,
-    messages: [
-      {
-        role: "user",
-        content: `Here is the transcript from "${contentTitle}":\n\n${transcript}`,
-      },
-    ],
+  const { data: message, response } = await anthropic.messages
+    .create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content: `Here is the transcript from "${contentTitle}":\n\n${transcript}`,
+        },
+      ],
+    })
+    .withResponse();
+
+  // Track usage — non-blocking, errors are swallowed inside trackAiUsage
+  void trackAiUsage({
+    message,
+    functionName: "generate-derivatives",
+    creatorId,
+    rateLimits: parseRateLimitHeaders(response),
+    metadata: { format: format.platform },
   });
 
   const textBlock = message.content.find((b) => b.type === "text");
@@ -150,7 +163,7 @@ export const generateDerivatives = inngest.createFunction(
       const format = DERIVATIVE_FORMATS[formatKey]!;
 
       const result = await step.run(`generate-${formatKey}`, async () => {
-        return generateSingleDerivative(transcript, contentTitle, format, insightContext);
+        return generateSingleDerivative(transcript, contentTitle, format, insightContext, creator_id);
       });
 
       derivatives.push({
@@ -254,6 +267,7 @@ export const regenerateDerivative = inngest.createFunction(
         jobData.contentTitle,
         format,
         insightContext,
+        jobData.creatorId,
       );
     });
 
