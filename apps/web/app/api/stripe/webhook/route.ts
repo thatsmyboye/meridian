@@ -62,7 +62,15 @@ async function handleCheckoutSessionCompleted(
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const tier = tierFromSubscription(subscription);
 
-  if (!tier || !isActiveStatus(subscription.status)) return;
+  if (!isActiveStatus(subscription.status)) return;
+
+  if (!tier) {
+    const priceId = subscription.items.data[0]?.price?.id ?? "(unknown)";
+    throw new Error(
+      `Unrecognized price ID "${priceId}" on new subscription ${subscription.id} — ` +
+        `verify STRIPE_CREATOR_PRICE_ID / STRIPE_PRO_PRICE_ID env vars`
+    );
+  }
 
   const { error } = await getAdminClient()
     .from("creators")
@@ -85,8 +93,23 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       : subscription.customer.id;
 
   const tier = tierFromSubscription(subscription);
-  const newTier: "free" | "creator" | "pro" =
-    tier && isActiveStatus(subscription.status) ? tier : "free";
+
+  let newTier: "free" | "creator" | "pro";
+  if (!isActiveStatus(subscription.status)) {
+    // Subscription cancelled, past_due, etc. — intentional downgrade to free.
+    newTier = "free";
+  } else if (!tier) {
+    // Subscription is active but the price ID is unrecognised — this is a
+    // configuration error, not a valid "free" state. Throw so the error is
+    // logged and Stripe can see the failure rather than silently downgrading.
+    const priceId = subscription.items.data[0]?.price?.id ?? "(unknown)";
+    throw new Error(
+      `Unrecognized price ID "${priceId}" on active subscription ${subscription.id} — ` +
+        `verify STRIPE_CREATOR_PRICE_ID / STRIPE_PRO_PRICE_ID env vars`
+    );
+  } else {
+    newTier = tier;
+  }
 
   const { error } = await getAdminClient()
     .from("creators")
