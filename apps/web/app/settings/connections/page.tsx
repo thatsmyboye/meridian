@@ -41,6 +41,24 @@ const PLATFORMS: Record<string, PlatformConfig> = {
     connectHref: "/connect/beehiiv",
     description: "Newsletter posts, open rates and clicks",
   },
+  twitter: {
+    label: "Twitter / X",
+    color: "#000000",
+    connectHref: "/api/connect/twitter",
+    description: "Publish tweet threads from repurposed content",
+  },
+  linkedin: {
+    label: "LinkedIn",
+    color: "#0a66c2",
+    connectHref: "/api/connect/linkedin",
+    description: "Share professional posts with your network",
+  },
+  tiktok: {
+    label: "TikTok",
+    color: "#010101",
+    connectHref: "/api/connect/tiktok",
+    description: "Generate scripts and draft TikTok video posts",
+  },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
