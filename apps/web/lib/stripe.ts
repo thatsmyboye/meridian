@@ -37,10 +37,21 @@ export const stripe = new Proxy({} as Stripe, {
  * Required env vars:
  *   STRIPE_CREATOR_PRICE_ID   – Price ID for Meridian Creator ($19/mo)
  *   STRIPE_PRO_PRICE_ID       – Price ID for Meridian Pro ($49/mo)
+ *
+ * Throws if either env var is absent — a missing mapping would cause active
+ * subscribers to be silently treated as free-tier users.
+ *
+ * Returns null when the priceId is set but doesn't match a known tier
+ * (e.g. a legacy or test price); callers must handle null explicitly.
  */
 export function tierFromPriceId(
   priceId: string
 ): "creator" | "pro" | null {
+  if (!process.env.STRIPE_CREATOR_PRICE_ID || !process.env.STRIPE_PRO_PRICE_ID) {
+    throw new Error(
+      "STRIPE_CREATOR_PRICE_ID and STRIPE_PRO_PRICE_ID environment variables must both be set"
+    );
+  }
   if (priceId === process.env.STRIPE_CREATOR_PRICE_ID) return "creator";
   if (priceId === process.env.STRIPE_PRO_PRICE_ID) return "pro";
   return null;
