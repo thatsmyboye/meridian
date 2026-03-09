@@ -5,9 +5,29 @@ import { useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { isSafeRedirectPath } from "@/lib/auth";
 
+const ERROR_MESSAGES: Record<string, string> = {
+  missing_code: "Sign-in failed — no authorisation code received. Please try again.",
+  auth_error: "Sign-in failed — could not verify your session. Please try again.",
+  server_error: "Sign-in failed — an unexpected error occurred. Please try again.",
+  access_denied: "Sign-in was cancelled.",
+};
+
+function getErrorMessage(error: string | null, description: string | null): string | null {
+  if (!error) return null;
+  if (error === "access_denied") return ERROR_MESSAGES.access_denied;
+  // Use the known friendly message if available, otherwise fall back to the
+  // raw description (which may be technical but is better than nothing).
+  return ERROR_MESSAGES[error] ?? description ?? "Sign-in failed. Please try again.";
+}
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const supabase = createBrowserClient();
+
+  const errorMessage = getErrorMessage(
+    searchParams.get("error"),
+    searchParams.get("error_description"),
+  );
 
   async function handleGoogleSignIn() {
     const nextRaw = searchParams.get("next") ?? "/";
@@ -127,6 +147,24 @@ function LoginForm() {
           >
             Use your Google account to get started
           </p>
+
+          {errorMessage && (
+            <div
+              role="alert"
+              style={{
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: 8,
+                padding: "10px 14px",
+                marginBottom: 20,
+                fontSize: 14,
+                color: "#b91c1c",
+                lineHeight: 1.5,
+              }}
+            >
+              {errorMessage}
+            </div>
+          )}
 
           <button
             onClick={handleGoogleSignIn}
