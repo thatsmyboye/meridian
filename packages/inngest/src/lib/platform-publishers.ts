@@ -174,13 +174,13 @@ export async function publishToInstagram(
     containerParams.set("image_url", imageUrl);
     containerParams.set("media_type", "IMAGE");
   } else {
-    // Attempt text-only post (requires instagram_manage_insights scope + text post feature)
+    // No creator-supplied image: fall back to the self-hosted 1080×1080 white
+    // placeholder served from the web app's /public directory so we never
+    // depend on a third-party placeholder service in production.
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ?? "https://app.meridian.so";
     containerParams.set("media_type", "IMAGE");
-    // Fallback: Use a 1x1 transparent pixel as a workaround
-    containerParams.set(
-      "image_url",
-      "https://via.placeholder.com/1080x1080.png?text=+"
-    );
+    containerParams.set("image_url", `${appUrl}/instagram-placeholder.png`);
   }
 
   const containerRes = await fetch(
