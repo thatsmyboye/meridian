@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { isSafeRedirectPath } from "@/lib/auth";
@@ -228,6 +229,37 @@ function LoginForm() {
           >
             By signing in, you agree to our Terms of Service and Privacy Policy.
           </p>
+        </div>
+
+        {/* Back to home */}
+        <div style={{ textAlign: "center", marginTop: 28 }}>
+          <Link
+            href="/"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 14,
+              color: "#6b7280",
+              textDecoration: "none",
+              padding: "6px 12px",
+              borderRadius: 8,
+              transition: "color 0.15s ease, background 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#111827";
+              e.currentTarget.style.background = "rgba(0,0,0,0.04)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "#6b7280";
+              e.currentTarget.style.background = "transparent";
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to home
+          </Link>
         </div>
 
         {/* Features */}
