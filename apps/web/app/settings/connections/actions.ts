@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 
-const VALID_PLATFORMS = new Set(["youtube", "instagram", "beehiiv", "tiktok"]);
+const VALID_PLATFORMS = new Set([
+  "youtube",
+  "instagram",
+  "beehiiv",
+  "tiktok",
+  "twitter",
+  "linkedin",
+]);
 
 /**
  * Disconnects a platform by clearing its tokens and marking status as

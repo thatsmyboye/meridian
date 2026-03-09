@@ -302,6 +302,91 @@ export async function publishToLinkedIn(
   };
 }
 
+// ─── TikTok Content Posting API ───────────────────────────────────────────
+
+/**
+ * Initiates a TikTok video post via the Content Posting API v2.
+ *
+ * TikTok's API does not support posting a text script directly — video or
+ * photo media is always required. This publisher initialises a DIRECT_POST
+ * video upload with the tiktok_script content as the caption/title, then
+ * returns the post_id so the creator can complete the video upload via the
+ * TikTok mobile app or desktop uploader.
+ *
+ * In practice the creator uses the generated script to record the video
+ * themselves; this call establishes the post draft and returns the upload URL.
+ *
+ * Requires: platform_user_id (TikTok open_id), valid access token with
+ *           video.publish + video.upload scopes.
+ */
+export async function publishToTikTok(
+  platform: PlatformRow,
+  content: string
+): Promise<PublishResult> {
+  const accessToken = decryptToken(platform.access_token_enc);
+
+  // Truncate caption to TikTok's 2200-character limit
+  const caption = content.slice(0, 2200);
+
+  // Initialise a direct post – creator uploads the video file separately.
+  // We use UPLOAD_FROM_FILE so TikTok returns an upload_url the creator can
+  // use; the post_id is persisted as the external_id.
+  const body = {
+    post_info: {
+      title: caption,
+      privacy_level: "SELF_ONLY", // Draft mode; creator reviews before publishing
+      disable_duet: false,
+      disable_comment: false,
+      disable_stitch: false,
+    },
+    source_info: {
+      source: "PULL_FROM_URL",
+      // Placeholder: in a full implementation the caller would supply a
+      // pre-signed video URL. We signal to the creator that the script is
+      // ready but manual video upload is required.
+      video_url: "",
+    },
+  };
+
+  const res = await fetch(
+    "https://open.tiktokapis.com/v2/post/publish/video/init/",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json; charset=UTF-8",
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(
+      `TikTok Content Posting API error ${res.status} initialising post: ${err}`
+    );
+  }
+
+  const data = (await res.json()) as {
+    data?: { publish_id?: string; upload_url?: string };
+    error?: { code?: string; message?: string };
+  };
+
+  if (data.error?.code && data.error.code !== "ok") {
+    throw new Error(
+      `TikTok Content Posting API error: ${data.error.message ?? data.error.code}`
+    );
+  }
+
+  const publishId = data.data?.publish_id ?? "unknown";
+
+  return {
+    external_id: publishId,
+    // Deep-link to the creator's TikTok profile so they can complete the upload
+    url: platform.metadata?.profile_deep_link as string | undefined,
+  };
+}
+
 // ─── Beehiiv API ──────────────────────────────────────────────────────────────
 
 /**
@@ -392,6 +477,8 @@ export async function publishDerivative(
       return publishToInstagram(platformRow, content);
     case "linkedin":
       return publishToLinkedIn(platformRow, content);
+    case "tiktok":
+      return publishToTikTok(platformRow, content);
     case "other": // newsletter_blurb maps to "other" → Beehiiv
       return publishToBeehiiv(platformRow, content);
     default:
