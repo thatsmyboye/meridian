@@ -23,7 +23,13 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
   pro: { platforms: Infinity, repurposeJobsPerMonth: Infinity, rosterSize: Infinity },
 };
 
-export type Platform = "youtube" | "instagram" | "tiktok" | "beehiiv";
+export type Platform =
+  | "youtube"
+  | "instagram"
+  | "tiktok"
+  | "beehiiv"
+  | "twitter"
+  | "linkedin";
 
 export type ContentType = "video" | "short" | "newsletter" | "podcast";
 
