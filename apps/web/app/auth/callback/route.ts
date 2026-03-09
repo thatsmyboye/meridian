@@ -19,10 +19,23 @@ import { isSafeRedirectPath } from "@/lib/auth";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const oauthError = searchParams.get("error");
   const nextRaw = searchParams.get("next") ?? "/";
 
   // Prevent open-redirect: only allow relative paths starting with a single "/".
   const next = isSafeRedirectPath(nextRaw) ? nextRaw : "/";
+
+  // Handle OAuth provider errors (e.g. user denied access, or Supabase failed to
+  // exchange the external code). Surface these to the user rather than silently
+  // dropping them.
+  if (oauthError) {
+    const errorDescription = searchParams.get("error_description") ?? oauthError;
+    console.error("[auth/callback] OAuth error:", oauthError, errorDescription);
+    const loginUrl = new URL("/login", origin);
+    loginUrl.searchParams.set("error", oauthError);
+    loginUrl.searchParams.set("error_description", errorDescription);
+    return NextResponse.redirect(loginUrl.toString());
+  }
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
