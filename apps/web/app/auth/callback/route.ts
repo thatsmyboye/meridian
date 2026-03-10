@@ -29,10 +29,16 @@ export async function GET(request: Request) {
   // exchange the external code). Surface these to the user rather than silently
   // dropping them.
   if (oauthError) {
-    const errorDescription = searchParams.get("error_description") ?? oauthError;
-    console.error("[auth/callback] OAuth error:", oauthError, errorDescription);
+    const rawDescription = searchParams.get("error_description") ?? oauthError;
+    const errorCode = searchParams.get("error_code");
+    // Supabase sometimes includes the raw Google auth code in the description
+    // (e.g. "Unable to exchange external code: 4/0Afr..."). Strip it to avoid
+    // leaking short-lived credentials into browser history and server logs.
+    const errorDescription = rawDescription.replace(/:\s*[A-Za-z0-9/_\-+.]{20,}$/, "");
+    console.error("[auth/callback] OAuth error:", oauthError, errorCode, rawDescription);
     const loginUrl = new URL("/login", origin);
     loginUrl.searchParams.set("error", oauthError);
+    if (errorCode) loginUrl.searchParams.set("error_code", errorCode);
     loginUrl.searchParams.set("error_description", errorDescription);
     return NextResponse.redirect(loginUrl.toString());
   }

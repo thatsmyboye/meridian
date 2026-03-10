@@ -340,6 +340,13 @@ client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 # If enabled, the nonce check will be skipped. Only use for strictly-local development; otherwise weakens OIDC verification.
 skip_nonce_check = false
+# ⚠️  Google Cloud Console setup required — omitting this causes "Unable to exchange external code" errors:
+#   1. Go to https://console.cloud.google.com/apis/credentials and open your OAuth 2.0 Client ID.
+#   2. Under "Authorised redirect URIs" add the Supabase Auth callback URL for each environment:
+#        Local dev : http://127.0.0.1:54321/auth/v1/callback
+#        Production: https://<project-ref>.supabase.co/auth/v1/callback
+#      (find your project-ref in the Supabase dashboard URL or Project Settings → General)
+#   3. Save, then copy the Client ID and Client Secret into the env vars above.
 
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.
 # You can configure "web3" rate limit in the [auth.rate_limit] section and set up [auth.captcha] if self-hosting.
