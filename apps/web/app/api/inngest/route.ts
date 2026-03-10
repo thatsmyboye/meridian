@@ -20,6 +20,7 @@ import {
   regenerateDerivative,
   publishScheduledDerivative,
   handlePublishFailure,
+  linkedinTokenExpiryCron,
 } from "@meridian/inngest";
 
 /**
@@ -57,5 +58,6 @@ export const { GET, POST, PUT } = serve({
     regenerateDerivative,
     publishScheduledDerivative,
     handlePublishFailure,
+    linkedinTokenExpiryCron,
   ],
 });
