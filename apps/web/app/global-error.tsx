@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 interface GlobalErrorProps {
@@ -104,7 +105,7 @@ export default function RootError({ error, reset }: GlobalErrorProps) {
             >
               Try again
             </button>
-            <a
+            <Link
               href="/"
               style={{
                 background: "#f3f4f6",
@@ -119,7 +120,7 @@ export default function RootError({ error, reset }: GlobalErrorProps) {
               }}
             >
               Go home
-            </a>
+            </Link>
           </div>
         </main>
       </body>

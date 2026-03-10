@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 interface ErrorProps {
@@ -74,7 +75,7 @@ export default function GlobalError({ error, reset }: ErrorProps) {
         >
           Try again
         </button>
-        <a
+        <Link
           href="/"
           style={{
             background: "#f3f4f6",
@@ -89,7 +90,7 @@ export default function GlobalError({ error, reset }: ErrorProps) {
           }}
         >
           Go home
-        </a>
+        </Link>
       </div>
     </main>
   );
