@@ -131,8 +131,8 @@ export default function PrivacyPage() {
 
         <div style={sectionStyle}>
           <p style={pStyle}>
-            Banton Digital ("we," "us," or "our") operates Meridian (the
-            "Service"). This Privacy Policy explains what information we collect,
+            Banton Digital (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates Meridian (the
+            &quot;Service&quot;). This Privacy Policy explains what information we collect,
             how we use it, and the choices you have. By using the Service, you
             agree to the practices described here.
           </p>
@@ -147,7 +147,7 @@ export default function PrivacyPage() {
           </p>
           <p style={pStyle}>
             When you sign in with Google, we receive your name, email address,
-            and profile picture from Google's OAuth service. We store your email
+            and profile picture from Google&apos;s OAuth service. We store your email
             and display name to identify your account.
           </p>
 
@@ -266,7 +266,7 @@ export default function PrivacyPage() {
             </li>
             <li style={liStyle}>
               <strong>Third-party platforms</strong> — when you authorize a
-              connection (e.g., YouTube), we interact with that platform's API
+              connection (e.g., YouTube), we interact with that platform&apos;s API
               on your behalf.
             </li>
             <li style={liStyle}>
@@ -325,9 +325,9 @@ export default function PrivacyPage() {
           <h2 style={h2Style}>7. Your Choices</h2>
           <ul style={ulStyle}>
             <li style={liStyle}>
-              <strong>Disconnect a platform:</strong> You can revoke Meridian's
+              <strong>Disconnect a platform:</strong> You can revoke Meridian&apos;s
               access to any connected platform at any time from the Settings &gt;
-              Connections page or directly from the third-party platform's
+              Connections page or directly from the third-party platform&apos;s
               settings.
             </li>
             <li style={liStyle}>
@@ -352,7 +352,7 @@ export default function PrivacyPage() {
 
         {/* 8 */}
         <div style={sectionStyle}>
-          <h2 style={h2Style}>8. Children's Privacy</h2>
+          <h2 style={h2Style}>8. Children&apos;s Privacy</h2>
           <p style={pStyle}>
             The Service is not directed to children under 13. We do not
             knowingly collect personal information from children under 13. If

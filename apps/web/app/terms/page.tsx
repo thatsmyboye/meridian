@@ -109,9 +109,9 @@ export default function TermsPage() {
 
         <div style={sectionStyle}>
           <p style={pStyle}>
-            These Terms of Service ("Terms") govern your access to and use of
-            Meridian (the "Service"), operated by Banton Digital ("we," "us," or
-            "our"), located in West Orange, NJ, USA. By creating an account or
+            These Terms of Service (&quot;Terms&quot;) govern your access to and use of
+            Meridian (the &quot;Service&quot;), operated by Banton Digital (&quot;we,&quot; &quot;us,&quot; or
+            &quot;our&quot;), located in West Orange, NJ, USA. By creating an account or
             using the Service, you agree to be bound by these Terms. If you do
             not agree, do not use the Service.
           </p>
@@ -179,7 +179,7 @@ export default function TermsPage() {
               billing cycle.
             </li>
             <li style={liStyle}>
-              We reserve the right to change pricing with at least 30 days'
+              We reserve the right to change pricing with at least 30 days&apos;
               notice to active subscribers.
             </li>
           </ul>
@@ -270,7 +270,7 @@ export default function TermsPage() {
         <div style={sectionStyle}>
           <h2 style={h2Style}>9. Disclaimers</h2>
           <p style={pStyle}>
-            THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT
+            THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT
             WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
             LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
             PURPOSE, OR NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE
