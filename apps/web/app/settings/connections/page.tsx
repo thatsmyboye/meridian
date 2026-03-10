@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
-import { disconnectPlatform } from "./actions";
+import DisconnectButton from "./DisconnectButton";
 
 /**
  * /settings/connections – Platform connection status page
@@ -297,29 +297,7 @@ export default async function ConnectionsPage() {
 
                 {/* Disconnect — only shown when connected */}
                 {isConnected && (
-                  <form
-                    action={async () => {
-                      "use server";
-                      await disconnectPlatform(key);
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      style={{
-                        background: "transparent",
-                        color: "#ef4444",
-                        padding: "7px 16px",
-                        borderRadius: 6,
-                        border: "1px solid #fca5a5",
-                        fontWeight: 600,
-                        fontSize: 13,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Disconnect
-                    </button>
-                  </form>
+                  <DisconnectButton platform={key} platformLabel={cfg.label} />
                 )}
               </div>
             </div>
