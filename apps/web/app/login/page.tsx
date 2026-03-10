@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { isSafeRedirectPath } from "@/lib/auth";
+import { provisionCreator } from "@meridian/api";
 
 const ERROR_MESSAGES: Record<string, string> = {
   missing_code: "Sign-in failed — no authorisation code received. Please try again.",
@@ -28,17 +29,29 @@ function getErrorMessage(error: string | null, errorCode: string | null, descrip
 
 function LoginForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const supabase = createBrowserClient();
 
-  const errorMessage = getErrorMessage(
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const oauthErrorMessage = getErrorMessage(
     searchParams.get("error"),
     searchParams.get("error_code"),
     searchParams.get("error_description"),
   );
 
+  const errorMessage = localError ?? oauthErrorMessage;
+
+  const nextRaw = searchParams.get("next") ?? "/";
+  const next = isSafeRedirectPath(nextRaw) ? nextRaw : "/";
+
   async function handleGoogleSignIn() {
-    const nextRaw = searchParams.get("next") ?? "/";
-    const next = isSafeRedirectPath(nextRaw) ? nextRaw : "/";
+    setLocalError(null);
     const callbackUrl = new URL("/auth/callback", window.location.origin);
     if (next !== "/") {
       callbackUrl.searchParams.set("next", next);
@@ -50,6 +63,59 @@ function LoginForm() {
         redirectTo: callbackUrl.toString(),
       },
     });
+  }
+
+  async function handleEmailAuth(e: React.FormEvent) {
+    e.preventDefault();
+    setLocalError(null);
+    setSuccessMessage(null);
+    setIsLoading(true);
+
+    try {
+      if (mode === "signin") {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          setLocalError(
+            error.message === "Invalid login credentials"
+              ? "Invalid email or password."
+              : error.message
+          );
+          return;
+        }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          try { await provisionCreator(supabase, user); } catch { /* non-fatal */ }
+        }
+        router.push(next);
+      } else {
+        const callbackUrl = new URL("/auth/callback", window.location.origin);
+        if (next !== "/") callbackUrl.searchParams.set("next", next);
+
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: callbackUrl.toString() },
+        });
+        if (error) {
+          setLocalError(error.message);
+          return;
+        }
+        // If session is null, Supabase sent a confirmation email.
+        if (!data.session) {
+          setSuccessMessage("Check your email and click the confirmation link, then sign in.");
+          setMode("signin");
+          return;
+        }
+        // Email confirmation is disabled — user is signed in immediately.
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          try { await provisionCreator(supabase, user); } catch { /* non-fatal */ }
+        }
+        router.push(next);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -142,7 +208,7 @@ function LoginForm() {
               textAlign: "center",
             }}
           >
-            Sign in to your account
+            {mode === "signin" ? "Sign in to your account" : "Create your account"}
           </h2>
           <p
             style={{
@@ -152,7 +218,7 @@ function LoginForm() {
               textAlign: "center",
             }}
           >
-            Use your Google account to get started
+            Use Google or your email to get started
           </p>
 
           {errorMessage && (
@@ -173,6 +239,25 @@ function LoginForm() {
             </div>
           )}
 
+          {successMessage && (
+            <div
+              role="status"
+              style={{
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: 8,
+                padding: "10px 14px",
+                marginBottom: 20,
+                fontSize: 14,
+                color: "#15803d",
+                lineHeight: 1.5,
+              }}
+            >
+              {successMessage}
+            </div>
+          )}
+
+          {/* Google button */}
           <button
             onClick={handleGoogleSignIn}
             style={{
@@ -224,6 +309,134 @@ function LoginForm() {
             Continue with Google
           </button>
 
+          {/* Divider */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              margin: "20px 0",
+            }}
+          >
+            <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
+            <span style={{ fontSize: 13, color: "#9ca3af", whiteSpace: "nowrap" }}>or</span>
+            <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
+          </div>
+
+          {/* Email / password form */}
+          <form onSubmit={handleEmailAuth} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "11px 14px",
+                borderRadius: 10,
+                border: "1.5px solid #e5e7eb",
+                fontSize: 15,
+                color: "#111827",
+                background: "#fff",
+                outline: "none",
+                boxSizing: "border-box",
+                transition: "border-color 0.15s ease",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "#2563eb"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              style={{
+                width: "100%",
+                padding: "11px 14px",
+                borderRadius: 10,
+                border: "1.5px solid #e5e7eb",
+                fontSize: 15,
+                color: "#111827",
+                background: "#fff",
+                outline: "none",
+                boxSizing: "border-box",
+                transition: "border-color 0.15s ease",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "#2563eb"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
+            />
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                width: "100%",
+                padding: "12px 20px",
+                borderRadius: 10,
+                border: "none",
+                background: isLoading ? "#93c5fd" : "linear-gradient(135deg, #2563eb, #7c3aed)",
+                color: "#fff",
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: isLoading ? "not-allowed" : "pointer",
+                transition: "opacity 0.15s ease",
+              }}
+              onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.opacity = "0.9"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+            >
+              {isLoading
+                ? "Please wait…"
+                : mode === "signin"
+                  ? "Sign in with Email"
+                  : "Create account"}
+            </button>
+          </form>
+
+          {/* Mode toggle */}
+          <p style={{ fontSize: 14, color: "#6b7280", textAlign: "center", marginTop: 16, marginBottom: 0 }}>
+            {mode === "signin" ? (
+              <>
+                Don&apos;t have an account?{" "}
+                <button
+                  onClick={() => { setMode("signup"); setLocalError(null); setSuccessMessage(null); }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "#2563eb",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  onClick={() => { setMode("signin"); setLocalError(null); setSuccessMessage(null); }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "#2563eb",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Sign in
+                </button>
+              </>
+            )}
+          </p>
+
           <p
             style={{
               fontSize: 12,
@@ -233,7 +446,7 @@ function LoginForm() {
               lineHeight: 1.5,
             }}
           >
-            By signing in, you agree to our{" "}
+            By continuing, you agree to our{" "}
             <Link href="/terms" style={{ color: "#6b7280", textDecoration: "underline" }}>
               Terms of Service
             </Link>{" "}
