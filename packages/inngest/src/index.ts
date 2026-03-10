@@ -53,3 +53,4 @@ export {
   publishScheduledDerivative,
   handlePublishFailure,
 } from "./functions/publish-scheduled-derivative";
+export { linkedinTokenExpiryCron } from "./functions/linkedin-token-expiry-cron";

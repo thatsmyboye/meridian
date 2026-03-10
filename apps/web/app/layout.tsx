@@ -4,6 +4,7 @@ import AppHeader from "./components/AppHeader";
 import { PostHogIdentifier } from "./components/PostHogIdentifier";
 import { PostHogPageView } from "./components/PostHogPageView";
 import { PostHogProvider } from "./providers";
+import { createServerClient } from "@/lib/supabase/server";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,11 +12,16 @@ export const metadata: Metadata = {
   description: "Know what works. Ship it everywhere.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html lang="en">
       <body>
@@ -26,7 +32,7 @@ export default function RootLayout({
           </Suspense>
           {/* Links Supabase auth user to PostHog profile */}
           <PostHogIdentifier />
-          <AppHeader />
+          <AppHeader isLoggedIn={!!user} />
           {children}
         </PostHogProvider>
       </body>
