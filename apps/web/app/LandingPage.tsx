@@ -548,9 +548,27 @@ export default function LandingPage() {
           textAlign: "center",
           fontSize: 13,
           color: "#9ca3af",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 10,
         }}
       >
-        © {new Date().getFullYear()} Meridian. All rights reserved.
+        <span>© {new Date().getFullYear()} Meridian by Banton Digital. All rights reserved.</span>
+        <div style={{ display: "flex", gap: 20 }}>
+          <Link
+            href="/terms"
+            style={{ color: "#9ca3af", textDecoration: "none" }}
+          >
+            Terms of Service
+          </Link>
+          <Link
+            href="/privacy"
+            style={{ color: "#9ca3af", textDecoration: "none" }}
+          >
+            Privacy Policy
+          </Link>
+        </div>
       </footer>
     </main>
   );
