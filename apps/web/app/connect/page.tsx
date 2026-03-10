@@ -4,8 +4,8 @@
  * Server component: fetches the creator's subscription tier and current
  * platform count, then renders ConnectPageClient with that data.
  *
- * Supports YouTube, Instagram, and Beehiiv. Shows success/error feedback via
- * query params set by the connection routes.
+ * Supports YouTube, Instagram, Beehiiv, Twitter/X, TikTok, and LinkedIn.
+ * Shows success/error feedback via query params set by the connection routes.
  */
 
 import { createServerClient } from "@/lib/supabase/server";
