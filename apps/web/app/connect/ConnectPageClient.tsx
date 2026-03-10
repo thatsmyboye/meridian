@@ -32,6 +32,9 @@ const SUCCESS_MESSAGES: Record<string, string> = {
   youtube: "YouTube connected successfully. Your content will be imported shortly.",
   instagram: "Instagram connected successfully. Your posts will be imported shortly.",
   beehiiv: "Beehiiv connected successfully. Your newsletter posts will be imported shortly.",
+  twitter: "X (Twitter) connected successfully. Your tweets will be imported shortly.",
+  tiktok: "TikTok connected successfully. Your videos will be imported shortly.",
+  linkedin: "LinkedIn connected successfully. Your posts will be imported shortly.",
 };
 
 // ─── Connect button ───────────────────────────────────────────────────────────
@@ -134,6 +137,30 @@ export default function ConnectPageClient({
       note: "Requires a Beehiiv API key and publication ID",
       href: "/connect/beehiiv",
       color: "#f97316",
+    },
+    {
+      id: "twitter",
+      label: "X (Twitter)",
+      description: "Import tweets and engagement metrics",
+      note: null,
+      href: "/api/connect/twitter",
+      color: "#000000",
+    },
+    {
+      id: "tiktok",
+      label: "TikTok",
+      description: "Import videos and performance analytics",
+      note: null,
+      href: "/api/connect/tiktok",
+      color: "#010101",
+    },
+    {
+      id: "linkedin",
+      label: "LinkedIn",
+      description: "Import posts and professional engagement data",
+      note: null,
+      href: "/api/connect/linkedin",
+      color: "#0a66c2",
     },
   ];
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "@/app/auth/actions";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
@@ -110,21 +111,41 @@ export default function AppHeader() {
           })}
         </nav>
 
-        {/* Settings */}
-        <Link
-          href="/settings/connections"
-          style={{
-            padding: "6px 14px",
-            borderRadius: 6,
-            fontSize: 13,
-            fontWeight: 500,
-            color: "#6b7280",
-            textDecoration: "none",
-            transition: "all 0.15s ease",
-          }}
-        >
-          Settings
-        </Link>
+        {/* Settings + Sign out */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Link
+            href="/settings/connections"
+            style={{
+              padding: "6px 14px",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 500,
+              color: "#6b7280",
+              textDecoration: "none",
+              transition: "all 0.15s ease",
+            }}
+          >
+            Settings
+          </Link>
+          <form action={signOut}>
+            <button
+              type="submit"
+              style={{
+                padding: "6px 14px",
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#6b7280",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
     </header>
   );
