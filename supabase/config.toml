@@ -161,6 +161,8 @@ additional_redirect_urls = [
   "https://meridian-web-psi.vercel.app",
   "https://meridian-web-psi.vercel.app/auth/callback",
   "https://paul-boyes-projects.vercel.app/auth/callback",
+  "https://meridian.banton-digital.com",
+  "https://meridian.banton-digital.com/auth/callback",
   # Custom domain (production)
   "https://app.meridian.so",
   "https://app.meridian.so/auth/callback",
