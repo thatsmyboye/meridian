@@ -10,12 +10,17 @@ const ERROR_MESSAGES: Record<string, string> = {
   missing_code: "Sign-in failed — no authorisation code received. Please try again.",
   auth_error: "Sign-in failed — could not verify your session. Please try again.",
   server_error: "Sign-in failed — an unexpected error occurred. Please try again.",
+  // Supabase error_code returned when it cannot complete the Google token exchange,
+  // typically due to a misconfigured OAuth redirect URI or mismatched credentials.
+  unexpected_failure: "Sign-in failed — Google could not complete the request. Please try again or contact support if the issue persists.",
   access_denied: "Sign-in was cancelled.",
 };
 
-function getErrorMessage(error: string | null, description: string | null): string | null {
+function getErrorMessage(error: string | null, errorCode: string | null, description: string | null): string | null {
   if (!error) return null;
   if (error === "access_denied") return ERROR_MESSAGES.access_denied;
+  // A more specific message is available for known error codes (e.g. unexpected_failure).
+  if (errorCode && ERROR_MESSAGES[errorCode]) return ERROR_MESSAGES[errorCode];
   // Use the known friendly message if available, otherwise fall back to the
   // raw description (which may be technical but is better than nothing).
   return ERROR_MESSAGES[error] ?? description ?? "Sign-in failed. Please try again.";
@@ -27,6 +32,7 @@ function LoginForm() {
 
   const errorMessage = getErrorMessage(
     searchParams.get("error"),
+    searchParams.get("error_code"),
     searchParams.get("error_description"),
   );
 
