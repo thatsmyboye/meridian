@@ -59,6 +59,7 @@ create index if not exists idx_publish_notifications_creator_unread
 alter table publish_notifications enable row level security;
 
 -- Creators can only see their own notifications
+drop policy if exists "publish_notifications: owner select" on publish_notifications;
 create policy "publish_notifications: owner select"
   on publish_notifications for select
   using (
@@ -69,6 +70,7 @@ create policy "publish_notifications: owner select"
 
 -- The service-role key (used by Inngest) bypasses RLS for inserts.
 -- The authenticated client can mark its own notifications as read.
+drop policy if exists "publish_notifications: owner update" on publish_notifications;
 create policy "publish_notifications: owner update"
   on publish_notifications for update
   using (
