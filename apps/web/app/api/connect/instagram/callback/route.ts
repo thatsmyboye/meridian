@@ -59,6 +59,22 @@ export async function GET(request: NextRequest) {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
+  // ── Meta webhook verification challenge ─────────────────────────────────
+  // When a webhook callback URL is saved in the Meta App Dashboard, Meta sends
+  // a GET request with hub.mode=subscribe, hub.verify_token, and hub.challenge.
+  // We must echo back hub.challenge to prove ownership of the endpoint.
+  const hubMode = searchParams.get("hub.mode");
+  const hubVerifyToken = searchParams.get("hub.verify_token");
+  const hubChallenge = searchParams.get("hub.challenge");
+
+  if (hubMode === "subscribe" && hubChallenge !== null) {
+    const expectedToken = process.env.META_WEBHOOK_VERIFY_TOKEN;
+    if (expectedToken && hubVerifyToken === expectedToken) {
+      return new Response(hubChallenge, { status: 200 });
+    }
+    return new Response("Forbidden", { status: 403 });
+  }
+
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
