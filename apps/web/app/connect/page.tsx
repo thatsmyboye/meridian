@@ -61,7 +61,8 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       const { data: platforms, count } = await supabase
         .from("connected_platforms")
         .select("platform", { count: "exact" })
-        .eq("creator_id", creator.id);
+        .eq("creator_id", creator.id)
+        .neq("status", "disconnected");
 
       platformCount = count ?? 0;
       connectedPlatforms = (platforms ?? []) as { platform: string }[];

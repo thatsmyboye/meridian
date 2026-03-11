@@ -81,7 +81,8 @@ export async function checkPlatformLimit(creatorId: string, tier: SubscriptionTi
   const { count } = await supabase
     .from("connected_platforms")
     .select("id", { count: "exact", head: true })
-    .eq("creator_id", creatorId);
+    .eq("creator_id", creatorId)
+    .neq("status", "disconnected");
 
   const current = count ?? 0;
   const limit = TIER_LIMITS[tier].platforms;
