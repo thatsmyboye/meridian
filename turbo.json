@@ -5,7 +5,24 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "POSTGRES_URL",
+        "POSTGRES_PRISMA_URL",
+        "POSTGRES_URL_NON_POOLING",
+        "POSTGRES_USER",
+        "POSTGRES_HOST",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DATABASE",
+        "SUPABASE_ANON_KEY",
+        "SUPABASE_URL",
+        "SUPABASE_JWT_SECRET",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_SECRET_KEY",
+        "INNGEST_SIGNING_KEY",
+        "INNGEST_EVENT_KEY"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
