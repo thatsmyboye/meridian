@@ -81,13 +81,12 @@ export interface ContentItem {
   id: string;
   creator_id: string;
   platform: Platform;
-  platform_content_id: string;
+  external_id: string;
   title: string;
-  description: string | null;
+  body: string | null;
   thumbnail_url: string | null;
   published_at: string;
   duration_seconds: number | null;
-  url: string | null;
   created_at: string;
   updated_at: string;
 }
