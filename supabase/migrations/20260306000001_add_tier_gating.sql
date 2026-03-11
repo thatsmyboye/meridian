@@ -58,6 +58,7 @@ create policy "connected_platforms: owner insert"
       select count(*)
       from connected_platforms cp
       where cp.creator_id = creator_id
+        and cp.status != 'disconnected'
     ) < (
       select get_platform_limit(c.subscription_tier)
       from creators c

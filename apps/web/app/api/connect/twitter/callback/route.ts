@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
       {
         creator_id: creator.id,
         platform: "twitter",
-        platform_user_id: twitterUser.username, // used to build tweet URLs
+        platform_user_id: twitterUser.id,
         platform_username: `@${twitterUser.username}`,
         access_token_enc: accessTokenEnc,
         refresh_token_enc: refreshTokenEnc,

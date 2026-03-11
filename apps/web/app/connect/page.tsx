@@ -29,6 +29,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   access_denied: "You cancelled the authorisation request.",
   invalid_credentials: "The API key or publication ID you entered is not valid. Please check and try again.",
   unauthenticated: "You must be signed in to connect a platform.",
+  oauth_not_configured: "This platform is not yet configured. Please contact support.",
 };
 
 interface ConnectPageProps {
@@ -61,7 +62,8 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       const { data: platforms, count } = await supabase
         .from("connected_platforms")
         .select("platform", { count: "exact" })
-        .eq("creator_id", creator.id);
+        .eq("creator_id", creator.id)
+        .neq("status", "disconnected");
 
       platformCount = count ?? 0;
       connectedPlatforms = (platforms ?? []) as { platform: string }[];

@@ -64,11 +64,16 @@ export async function GET(request: Request) {
     }
   }
 
+  if (!process.env.LINKEDIN_CLIENT_ID) {
+    console.error("[linkedin] LINKEDIN_CLIENT_ID env var is not set");
+    return NextResponse.redirect(`${siteUrl}/connect?error=oauth_not_configured`);
+  }
+
   const state = randomBytes(16).toString("hex");
 
   const params = new URLSearchParams({
     response_type: "code",
-    client_id: process.env.LINKEDIN_CLIENT_ID!,
+    client_id: process.env.LINKEDIN_CLIENT_ID,
     redirect_uri: `${siteUrl}/api/connect/linkedin/callback`,
     scope: LINKEDIN_SCOPES,
     state,
