@@ -229,7 +229,7 @@ export async function publishToInstagram(
     containerParams.set("image_url", imageUrl);
   } else {
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? "https://app.meridian.so";
+      process.env.NEXT_PUBLIC_APP_URL ?? "https://meridian.banton-digital.com";
     containerParams.set("image_url", `${appUrl}/instagram-placeholder.png`);
   }
 

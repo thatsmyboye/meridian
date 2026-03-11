@@ -16,7 +16,7 @@ import { getCreatorSubscription, checkPlatformLimit } from "@/lib/subscription";
  *
  * Required env vars:
  *   META_APP_ID           – Meta app ID (from developers.facebook.com)
- *   NEXT_PUBLIC_SITE_URL  – Production base URL (e.g. https://app.meridian.so)
+ *   NEXT_PUBLIC_SITE_URL  – Production base URL (e.g. https://meridian.banton-digital.com)
  */
 
 const META_GRAPH_VERSION = "v21.0";

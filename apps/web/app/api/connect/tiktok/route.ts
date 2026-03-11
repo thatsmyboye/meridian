@@ -19,7 +19,7 @@ import { getCreatorSubscription, checkPlatformLimit } from "@/lib/subscription";
  *
  * Required env vars:
  *   TIKTOK_CLIENT_KEY     – TikTok app client key (from developers.tiktok.com)
- *   NEXT_PUBLIC_SITE_URL  – Production base URL (e.g. https://app.meridian.so)
+ *   NEXT_PUBLIC_SITE_URL  – Production base URL (e.g. https://meridian.banton-digital.com)
  */
 
 const TIKTOK_SCOPES = [
