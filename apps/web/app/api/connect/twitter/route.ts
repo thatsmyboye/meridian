@@ -67,6 +67,11 @@ export async function GET(request: Request) {
     }
   }
 
+  if (!process.env.TWITTER_CLIENT_ID) {
+    console.error("[twitter] TWITTER_CLIENT_ID env var is not set");
+    return NextResponse.redirect(`${siteUrl}/connect?error=oauth_not_configured`);
+  }
+
   // ── PKCE: generate code_verifier and code_challenge ───────────────────────
   const codeVerifier = randomBytes(32).toString("base64url");
   const codeChallenge = createHash("sha256")
@@ -77,7 +82,7 @@ export async function GET(request: Request) {
 
   const params = new URLSearchParams({
     response_type: "code",
-    client_id: process.env.TWITTER_CLIENT_ID!,
+    client_id: process.env.TWITTER_CLIENT_ID,
     redirect_uri: `${siteUrl}/api/connect/twitter/callback`,
     scope: TWITTER_SCOPES,
     state,

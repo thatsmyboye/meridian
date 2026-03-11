@@ -76,10 +76,15 @@ export async function GET(request: Request) {
     }
   }
 
+  if (!process.env.META_APP_ID) {
+    console.error("[instagram] META_APP_ID env var is not set");
+    return NextResponse.redirect(`${siteUrl}/connect?error=oauth_not_configured`);
+  }
+
   const state = randomBytes(16).toString("hex");
 
   const params = new URLSearchParams({
-    client_id: process.env.META_APP_ID!,
+    client_id: process.env.META_APP_ID,
     redirect_uri: `${siteUrl}/api/connect/instagram/callback`,
     response_type: "code",
     scope: INSTAGRAM_SCOPES,

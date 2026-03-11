@@ -67,6 +67,11 @@ export async function GET(request: Request) {
     }
   }
 
+  if (!process.env.TIKTOK_CLIENT_KEY) {
+    console.error("[tiktok] TIKTOK_CLIENT_KEY env var is not set");
+    return NextResponse.redirect(`${siteUrl}/connect?error=oauth_not_configured`);
+  }
+
   // ── PKCE: generate code_verifier and code_challenge ───────────────────────
   const codeVerifier = randomBytes(32).toString("base64url");
   const codeChallenge = createHash("sha256")
@@ -76,7 +81,7 @@ export async function GET(request: Request) {
   const state = randomBytes(16).toString("hex");
 
   const params = new URLSearchParams({
-    client_key: process.env.TIKTOK_CLIENT_KEY!,
+    client_key: process.env.TIKTOK_CLIENT_KEY,
     response_type: "code",
     scope: TIKTOK_SCOPES,
     redirect_uri: `${siteUrl}/api/connect/tiktok/callback`,
