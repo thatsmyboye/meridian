@@ -19,6 +19,7 @@ create index if not exists push_tokens_creator_id_idx on public.push_tokens(crea
 -- RLS: creators can only read/write their own tokens
 alter table public.push_tokens enable row level security;
 
+drop policy if exists "Creators manage their own push tokens" on public.push_tokens;
 create policy "Creators manage their own push tokens"
   on public.push_tokens
   for all
@@ -42,6 +43,6 @@ begin
 end;
 $$;
 
-create trigger push_tokens_updated_at
+create or replace trigger push_tokens_updated_at
   before update on public.push_tokens
   for each row execute function public.set_push_tokens_updated_at();

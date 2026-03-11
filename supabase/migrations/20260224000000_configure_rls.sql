@@ -13,6 +13,10 @@
 --
 -- This is semantically identical to the template: only the row
 -- owner's JWT can satisfy the condition.
+--
+-- All CREATE POLICY statements are preceded by DROP POLICY IF EXISTS
+-- so this migration is idempotent and safe to re-run (e.g. after a
+-- db reset or on Supabase preview branches).
 -- =============================================================
 
 -- ===========================================================================
@@ -21,19 +25,23 @@
 -- ===========================================================================
 alter table creators enable row level security;
 
+drop policy if exists "creators: owner select" on creators;
 create policy "creators: owner select"
   on creators for select
   using (auth.uid() = auth_user_id);
 
+drop policy if exists "creators: owner insert" on creators;
 create policy "creators: owner insert"
   on creators for insert
   with check (auth.uid() = auth_user_id);
 
+drop policy if exists "creators: owner update" on creators;
 create policy "creators: owner update"
   on creators for update
   using (auth.uid() = auth_user_id)
   with check (auth.uid() = auth_user_id);
 
+drop policy if exists "creators: owner delete" on creators;
 create policy "creators: owner delete"
   on creators for delete
   using (auth.uid() = auth_user_id);
@@ -43,6 +51,7 @@ create policy "creators: owner delete"
 -- ===========================================================================
 alter table connected_platforms enable row level security;
 
+drop policy if exists "connected_platforms: owner select" on connected_platforms;
 create policy "connected_platforms: owner select"
   on connected_platforms for select
   using (
@@ -51,6 +60,7 @@ create policy "connected_platforms: owner select"
     )
   );
 
+drop policy if exists "connected_platforms: owner insert" on connected_platforms;
 create policy "connected_platforms: owner insert"
   on connected_platforms for insert
   with check (
@@ -59,6 +69,7 @@ create policy "connected_platforms: owner insert"
     )
   );
 
+drop policy if exists "connected_platforms: owner update" on connected_platforms;
 create policy "connected_platforms: owner update"
   on connected_platforms for update
   using (
@@ -67,6 +78,7 @@ create policy "connected_platforms: owner update"
     )
   );
 
+drop policy if exists "connected_platforms: owner delete" on connected_platforms;
 create policy "connected_platforms: owner delete"
   on connected_platforms for delete
   using (
@@ -82,6 +94,7 @@ create policy "connected_platforms: owner delete"
 -- ===========================================================================
 alter table content_items enable row level security;
 
+drop policy if exists "content_items: owner select" on content_items;
 create policy "content_items: owner select"
   on content_items for select
   using (
@@ -90,6 +103,7 @@ create policy "content_items: owner select"
     )
   );
 
+drop policy if exists "content_items: owner insert" on content_items;
 create policy "content_items: owner insert"
   on content_items for insert
   with check (
@@ -106,6 +120,7 @@ create policy "content_items: owner insert"
     )
   );
 
+drop policy if exists "content_items: owner update" on content_items;
 create policy "content_items: owner update"
   on content_items for update
   using (
@@ -127,6 +142,7 @@ create policy "content_items: owner update"
     )
   );
 
+drop policy if exists "content_items: owner delete" on content_items;
 create policy "content_items: owner delete"
   on content_items for delete
   using (
@@ -142,6 +158,7 @@ create policy "content_items: owner delete"
 -- ===========================================================================
 alter table performance_snapshots enable row level security;
 
+drop policy if exists "performance_snapshots: owner select" on performance_snapshots;
 create policy "performance_snapshots: owner select"
   on performance_snapshots for select
   using (
@@ -150,6 +167,7 @@ create policy "performance_snapshots: owner select"
     )
   );
 
+drop policy if exists "performance_snapshots: owner insert" on performance_snapshots;
 create policy "performance_snapshots: owner insert"
   on performance_snapshots for insert
   with check (
@@ -163,6 +181,7 @@ create policy "performance_snapshots: owner insert"
     )
   );
 
+drop policy if exists "performance_snapshots: owner update" on performance_snapshots;
 create policy "performance_snapshots: owner update"
   on performance_snapshots for update
   using (
@@ -181,6 +200,7 @@ create policy "performance_snapshots: owner update"
     )
   );
 
+drop policy if exists "performance_snapshots: owner delete" on performance_snapshots;
 create policy "performance_snapshots: owner delete"
   on performance_snapshots for delete
   using (
@@ -194,6 +214,7 @@ create policy "performance_snapshots: owner delete"
 -- ===========================================================================
 alter table pattern_insights enable row level security;
 
+drop policy if exists "pattern_insights: owner select" on pattern_insights;
 create policy "pattern_insights: owner select"
   on pattern_insights for select
   using (
@@ -202,6 +223,7 @@ create policy "pattern_insights: owner select"
     )
   );
 
+drop policy if exists "pattern_insights: owner insert" on pattern_insights;
 create policy "pattern_insights: owner insert"
   on pattern_insights for insert
   with check (
@@ -210,6 +232,7 @@ create policy "pattern_insights: owner insert"
     )
   );
 
+drop policy if exists "pattern_insights: owner update" on pattern_insights;
 create policy "pattern_insights: owner update"
   on pattern_insights for update
   using (
@@ -218,6 +241,7 @@ create policy "pattern_insights: owner update"
     )
   );
 
+drop policy if exists "pattern_insights: owner delete" on pattern_insights;
 create policy "pattern_insights: owner delete"
   on pattern_insights for delete
   using (
@@ -233,6 +257,7 @@ create policy "pattern_insights: owner delete"
 -- ===========================================================================
 alter table repurpose_jobs enable row level security;
 
+drop policy if exists "repurpose_jobs: owner select" on repurpose_jobs;
 create policy "repurpose_jobs: owner select"
   on repurpose_jobs for select
   using (
@@ -241,6 +266,7 @@ create policy "repurpose_jobs: owner select"
     )
   );
 
+drop policy if exists "repurpose_jobs: owner insert" on repurpose_jobs;
 create policy "repurpose_jobs: owner insert"
   on repurpose_jobs for insert
   with check (
@@ -254,6 +280,7 @@ create policy "repurpose_jobs: owner insert"
     )
   );
 
+drop policy if exists "repurpose_jobs: owner update" on repurpose_jobs;
 create policy "repurpose_jobs: owner update"
   on repurpose_jobs for update
   using (
@@ -272,6 +299,7 @@ create policy "repurpose_jobs: owner update"
     )
   );
 
+drop policy if exists "repurpose_jobs: owner delete" on repurpose_jobs;
 create policy "repurpose_jobs: owner delete"
   on repurpose_jobs for delete
   using (
