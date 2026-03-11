@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase/client";
@@ -49,6 +49,16 @@ function LoginForm() {
 
   const nextRaw = searchParams.get("next") ?? "/";
   const next = isSafeRedirectPath(nextRaw) ? nextRaw : "/";
+
+  // Supabase sometimes sends OAuth errors via the URL hash fragment as well as query
+  // params (e.g. "#error=server_error&error_description=Unable to exchange external
+  // code: 4/0Afr..."). The raw Google auth code in the hash sits in browser history
+  // and could be captured by extensions or shared screenshots. Strip it immediately.
+  useEffect(() => {
+    if (window.location.hash.includes("error=")) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, []);
 
   async function handleGoogleSignIn() {
     setLocalError(null);
