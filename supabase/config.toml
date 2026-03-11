@@ -163,9 +163,6 @@ additional_redirect_urls = [
   "https://paul-boyes-projects.vercel.app/auth/callback",
   "https://meridian.banton-digital.com",
   "https://meridian.banton-digital.com/auth/callback",
-  # Custom domain (production)
-  "https://app.meridian.so",
-  "https://app.meridian.so/auth/callback",
   # React Native / Expo deep-link
   "meridian://auth/callback",
   "exp://127.0.0.1:**",

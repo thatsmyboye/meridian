@@ -15,7 +15,7 @@ import { getCreatorSubscription, checkPlatformLimit } from "@/lib/subscription";
  *
  * Required env vars:
  *   YOUTUBE_CLIENT_ID     – Google OAuth client ID
- *   NEXT_PUBLIC_SITE_URL  – Production base URL (e.g. https://app.meridian.so)
+ *   NEXT_PUBLIC_SITE_URL  – Production base URL (e.g. https://meridian.banton-digital.com)
  */
 
 const YOUTUBE_SCOPES = [
