@@ -29,13 +29,13 @@ export async function disconnectPlatform(platform: string) {
 
   if (!user) return;
 
-  const { data: creator } = await supabase
+  const { data: creator, error: creatorErr } = await supabase
     .from("creators")
     .select("id")
     .eq("auth_user_id", user.id)
     .single();
 
-  if (!creator) return;
+  if (creatorErr || !creator) return;
 
   await supabase
     .from("connected_platforms")
