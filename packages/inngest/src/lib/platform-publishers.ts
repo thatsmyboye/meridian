@@ -24,6 +24,17 @@ export interface PublishResult {
   url?: string;
 }
 
+/**
+ * A single item in an Instagram carousel post.
+ * Supports both image and video media types.
+ */
+export interface CarouselItem {
+  /** Publicly accessible URL for the image or video. */
+  url: string;
+  /** Media type of the item. Defaults to IMAGE if omitted. */
+  media_type?: "IMAGE" | "VIDEO";
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -129,20 +140,64 @@ export async function publishToTwitter(
 
 // ─── Instagram Graph API ──────────────────────────────────────────────────────
 
+const IG_GRAPH_BASE = "https://graph.facebook.com/v21.0";
+
 /**
- * Posts a caption to Instagram via the Graph API.
+ * Polls an Instagram media container until its status_code is FINISHED or
+ * until the timeout is reached. Required before creating a CAROUSEL container
+ * when one or more carousel items are videos (videos need processing time).
+ *
+ * Throws if the container enters an ERROR/EXPIRED state or times out.
+ */
+async function pollContainerUntilFinished(
+  containerId: string,
+  accessToken: string,
+  timeoutMs = 120_000,
+  intervalMs = 5_000
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const res = await fetch(
+      `${IG_GRAPH_BASE}/${containerId}?fields=status_code&access_token=${accessToken}`
+    );
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(
+        `Instagram: failed to poll container ${containerId} status: ${err}`
+      );
+    }
+
+    const data = (await res.json()) as { status_code?: string };
+    const statusCode = data.status_code;
+
+    if (statusCode === "FINISHED") return;
+    if (statusCode === "ERROR" || statusCode === "EXPIRED") {
+      throw new Error(
+        `Instagram: carousel item container ${containerId} entered ${statusCode} state`
+      );
+    }
+
+    // IN_PROGRESS — wait and retry
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+
+  throw new Error(
+    `Instagram: timed out waiting for container ${containerId} to finish processing`
+  );
+}
+
+/**
+ * Posts a single-image caption to Instagram via the Graph API.
  *
  * Uses the two-step process:
  *  1. Create media container (image required — uses image_url from metadata or
- *     a fallback placeholder approach)
+ *     a fallback placeholder)
  *  2. Publish the container
  *
  * Requires: instagram_business_account_id in platform.metadata,
  *           valid access token with instagram_content_publish scope.
- *
- * NOTE: Instagram requires at least one image. If no image_url is provided in
- * the platform metadata, this will throw. The creator must connect an account
- * that has a default image configured.
  */
 export async function publishToInstagram(
   platform: PlatformRow,
@@ -161,36 +216,28 @@ export async function publishToInstagram(
 
   // Step 1: Create media container
   // Instagram requires an image for feed posts. We use the image_url from
-  // metadata if available; otherwise this is a caption-only text post attempt
-  // via the newer text post endpoint (requires appropriate permissions).
+  // metadata if available; otherwise fall back to the self-hosted placeholder.
   const imageUrl = platform.metadata?.default_image_url as string | undefined;
 
   const containerParams = new URLSearchParams({
     caption: content,
     access_token: accessToken,
+    media_type: "IMAGE",
   });
 
   if (imageUrl) {
     containerParams.set("image_url", imageUrl);
-    containerParams.set("media_type", "IMAGE");
   } else {
-    // No creator-supplied image: fall back to the self-hosted 1080×1080 white
-    // placeholder served from the web app's /public directory so we never
-    // depend on a third-party placeholder service in production.
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ?? "https://app.meridian.so";
-    containerParams.set("media_type", "IMAGE");
     containerParams.set("image_url", `${appUrl}/instagram-placeholder.png`);
   }
 
-  const containerRes = await fetch(
-    `https://graph.facebook.com/v19.0/${igUserId}/media`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: containerParams.toString(),
-    }
-  );
+  const containerRes = await fetch(`${IG_GRAPH_BASE}/${igUserId}/media`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: containerParams.toString(),
+  });
 
   if (!containerRes.ok) {
     const err = await containerRes.text();
@@ -203,22 +250,161 @@ export async function publishToInstagram(
   const creationId = containerData.id;
 
   // Step 2: Publish the container
-  const publishRes = await fetch(
-    `https://graph.facebook.com/v19.0/${igUserId}/media_publish`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        creation_id: creationId,
-        access_token: accessToken,
-      }).toString(),
-    }
-  );
+  const publishRes = await fetch(`${IG_GRAPH_BASE}/${igUserId}/media_publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      creation_id: creationId,
+      access_token: accessToken,
+    }).toString(),
+  });
 
   if (!publishRes.ok) {
     const err = await publishRes.text();
     throw new Error(
       `Instagram Graph API error ${publishRes.status} publishing media: ${err}`
+    );
+  }
+
+  const publishData = (await publishRes.json()) as { id: string };
+
+  return {
+    external_id: publishData.id,
+    url: `https://www.instagram.com/p/${publishData.id}/`,
+  };
+}
+
+/**
+ * Posts a carousel (multi-image/video) post to Instagram via the Graph API.
+ *
+ * The three-step process:
+ *  1. Create individual item containers for each media item
+ *     (POST /{ig-user-id}/media with is_carousel_item=true per item)
+ *  2. Wait for video item containers to finish processing (if any)
+ *  3. Create the carousel container referencing all child container IDs
+ *     (POST /{ig-user-id}/media with media_type=CAROUSEL)
+ *  4. Publish the carousel container
+ *     (POST /{ig-user-id}/media_publish)
+ *
+ * Requires:
+ *   - instagram_business_account_id in platform.metadata
+ *   - valid access token with instagram_content_publish scope
+ *   - 2–10 publicly accessible image/video URLs in carouselItems
+ *
+ * Instagram carousel limits:
+ *   - Minimum 2 items, maximum 10 items per carousel
+ *   - Images: JPEG only (JPEGs with extended formats not allowed)
+ *   - Videos: must be in a supported format (MP4 recommended)
+ */
+export async function publishInstagramCarousel(
+  platform: PlatformRow,
+  caption: string,
+  carouselItems: CarouselItem[]
+): Promise<PublishResult> {
+  if (carouselItems.length < 2) {
+    throw new Error(
+      "Instagram carousel requires at least 2 media items"
+    );
+  }
+  if (carouselItems.length > 10) {
+    throw new Error(
+      "Instagram carousel supports a maximum of 10 media items"
+    );
+  }
+
+  const accessToken = decryptToken(platform.access_token_enc);
+  const igUserId =
+    (platform.metadata?.instagram_business_account_id as string | undefined) ??
+    platform.platform_user_id;
+
+  if (!igUserId) {
+    throw new Error(
+      "Instagram: missing instagram_business_account_id in platform metadata"
+    );
+  }
+
+  // Step 1: Create individual item containers
+  const itemContainerIds: string[] = [];
+  const videoContainerIds: string[] = [];
+
+  for (const item of carouselItems) {
+    const mediaType = item.media_type ?? "IMAGE";
+    const itemParams = new URLSearchParams({
+      is_carousel_item: "true",
+      media_type: mediaType,
+      access_token: accessToken,
+    });
+
+    if (mediaType === "VIDEO") {
+      itemParams.set("video_url", item.url);
+    } else {
+      itemParams.set("image_url", item.url);
+    }
+
+    const itemRes = await fetch(`${IG_GRAPH_BASE}/${igUserId}/media`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: itemParams.toString(),
+    });
+
+    if (!itemRes.ok) {
+      const err = await itemRes.text();
+      throw new Error(
+        `Instagram Graph API error ${itemRes.status} creating carousel item container: ${err}`
+      );
+    }
+
+    const itemData = (await itemRes.json()) as { id: string };
+    itemContainerIds.push(itemData.id);
+
+    if (mediaType === "VIDEO") {
+      videoContainerIds.push(itemData.id);
+    }
+  }
+
+  // Step 2: Wait for video containers to finish processing
+  for (const videoContainerId of videoContainerIds) {
+    await pollContainerUntilFinished(videoContainerId, accessToken);
+  }
+
+  // Step 3: Create the carousel container
+  const carouselParams = new URLSearchParams({
+    media_type: "CAROUSEL",
+    children: itemContainerIds.join(","),
+    caption,
+    access_token: accessToken,
+  });
+
+  const carouselRes = await fetch(`${IG_GRAPH_BASE}/${igUserId}/media`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: carouselParams.toString(),
+  });
+
+  if (!carouselRes.ok) {
+    const err = await carouselRes.text();
+    throw new Error(
+      `Instagram Graph API error ${carouselRes.status} creating carousel container: ${err}`
+    );
+  }
+
+  const carouselData = (await carouselRes.json()) as { id: string };
+  const carouselContainerId = carouselData.id;
+
+  // Step 4: Publish the carousel
+  const publishRes = await fetch(`${IG_GRAPH_BASE}/${igUserId}/media_publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      creation_id: carouselContainerId,
+      access_token: accessToken,
+    }).toString(),
+  });
+
+  if (!publishRes.ok) {
+    const err = await publishRes.text();
+    throw new Error(
+      `Instagram Graph API error ${publishRes.status} publishing carousel: ${err}`
     );
   }
 
@@ -464,17 +650,27 @@ export async function publishToBeehiiv(
 /**
  * Routes publishing to the correct platform publisher.
  * `platform_name` matches the `platform` field in the derivative object.
+ *
+ * `carouselItems` is only used when `platform_name` is "instagram_carousel".
  */
 export async function publishDerivative(
   platformName: string,
   platformRow: PlatformRow,
-  content: string
+  content: string,
+  carouselItems?: CarouselItem[]
 ): Promise<PublishResult> {
   switch (platformName) {
     case "twitter":
       return publishToTwitter(platformRow, content);
     case "instagram":
       return publishToInstagram(platformRow, content);
+    case "instagram_carousel":
+      if (!carouselItems || carouselItems.length < 2) {
+        throw new Error(
+          "instagram_carousel publish requires at least 2 carousel_items on the derivative"
+        );
+      }
+      return publishInstagramCarousel(platformRow, content, carouselItems);
     case "linkedin":
       return publishToLinkedIn(platformRow, content);
     case "tiktok":

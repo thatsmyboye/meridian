@@ -163,8 +163,20 @@ export type DerivativeFormatKey =
   | "twitter_thread"
   | "linkedin_post"
   | "instagram_caption"
+  | "instagram_carousel"
   | "newsletter_blurb"
   | "tiktok_script";
+
+/**
+ * A single media item in an Instagram carousel post.
+ * Carousels support 2–10 items (images and/or videos).
+ */
+export interface CarouselItem {
+  /** Publicly accessible URL for the image or video file. */
+  url: string;
+  /** Media type. Defaults to IMAGE when omitted. */
+  media_type?: "IMAGE" | "VIDEO";
+}
 
 export interface Derivative {
   format: DerivativeFormatKey;
@@ -173,6 +185,11 @@ export interface Derivative {
   char_count: number;
   status: DerivativeStatus;
   previous_drafts: string[];
+  /**
+   * Media items for an instagram_carousel derivative.
+   * Must contain 2–10 items. Not used for other formats.
+   */
+  carousel_items?: CarouselItem[];
   /** ISO 8601 datetime when this derivative is scheduled to publish. Null if not scheduled. */
   scheduled_at: string | null;
   /** Unique ID used to cancel this schedule via Inngest cancelOn. Null if not scheduled. */

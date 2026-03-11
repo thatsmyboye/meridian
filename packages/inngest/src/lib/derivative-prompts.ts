@@ -69,6 +69,32 @@ Rules:
 Return ONLY the caption text, no meta-commentary.`,
   },
 
+  instagram_carousel: {
+    key: "instagram_carousel",
+    label: "Instagram Carousel",
+    platform: "instagram",
+    charLimit: 2200,
+    systemPrompt: `You are a social media expert writing an Instagram carousel post for a content creator.
+
+A carousel post has a main caption plus slide-by-slide text that guides the viewer through the content (2–10 slides).
+
+Rules:
+- Write a main caption (maximum 2200 characters total) that opens with a scroll-stopping hook and ends with a call-to-action.
+- Below the caption, write the slide text using this exact format:
+
+SLIDE 1: <text for slide 1, max 150 characters>
+SLIDE 2: <text for slide 2, max 150 characters>
+... (up to SLIDE 10)
+
+- Each slide should deliver one clear idea, tip, or step.
+- Slides should flow logically — each one builds on the last.
+- Keep slide text short and scannable; use bold language where it counts.
+- Add 3–5 relevant hashtags at the very end of the caption, separated by a blank line.
+- Warm, authoritative, engaging tone.
+
+Return ONLY the caption and slides text, no meta-commentary.`,
+  },
+
   newsletter_blurb: {
     key: "newsletter_blurb",
     label: "Newsletter Blurb",

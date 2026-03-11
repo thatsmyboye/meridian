@@ -32,11 +32,17 @@ const FORMAT_LABELS: Record<string, string> = {
   twitter_thread: "Twitter / X Thread",
   linkedin_post: "LinkedIn Post",
   instagram_caption: "Instagram Caption",
+  instagram_carousel: "Instagram Carousel",
   newsletter_blurb: "Newsletter Blurb",
   tiktok_script: "TikTok Script",
 };
 
 // ─── Derivative shape stored in repurpose_jobs.derivatives ───────────────────
+
+interface CarouselItem {
+  url: string;
+  media_type?: "IMAGE" | "VIDEO";
+}
 
 interface Derivative {
   format: string;
@@ -44,6 +50,7 @@ interface Derivative {
   platform: string;
   char_count: number;
   status: string;
+  carousel_items?: CarouselItem[];
   scheduled_at: string | null;
   schedule_id: string | null;
   published_at: string | null;
@@ -60,6 +67,7 @@ const FORMAT_TO_PLATFORM_DB: Record<string, string> = {
   twitter_thread: "twitter",
   linkedin_post: "linkedin",
   instagram_caption: "instagram",
+  instagram_carousel: "instagram",
   newsletter_blurb: "other", // Beehiiv is stored as 'other'
   tiktok_script: "tiktok",
 };
@@ -104,7 +112,7 @@ export const publishScheduledDerivative = inngest.createFunction(
     // ── Step 2: load job, derivative, and platform credentials ─────────────
     type LoadJobResult =
       | { skip: true; reason: string }
-      | { skip: false; content: string; platformName: string; platform: PlatformRow };
+      | { skip: false; content: string; platformName: string; platform: PlatformRow; carouselItems?: CarouselItem[] };
 
     const jobData = await step.run("load-job", async (): Promise<LoadJobResult> => {
       const supabase = getSupabaseAdmin();
@@ -147,9 +155,14 @@ export const publishScheduledDerivative = inngest.createFunction(
         throw new Error(`No platform mapping for format: ${format_key}`);
       }
 
-      // Load the connected platform for this creator
-      // For newsletter_blurb (beehiiv) we look up 'beehiiv'; 'other' is the platform_name
-      const platformLookup = format_key === "newsletter_blurb" ? "beehiiv" : dbPlatform;
+      // Load the connected platform for this creator.
+      // newsletter_blurb → look up 'beehiiv'; instagram_carousel → look up 'instagram'
+      const platformLookup =
+        format_key === "newsletter_blurb"
+          ? "beehiiv"
+          : format_key === "instagram_carousel"
+            ? "instagram"
+            : dbPlatform;
 
       const { data: platform, error: platformErr } = await supabase
         .from("connected_platforms")
@@ -168,7 +181,16 @@ export const publishScheduledDerivative = inngest.createFunction(
       return {
         skip: false,
         content: derivative.content,
-        platformName: format_key === "newsletter_blurb" ? "other" : dbPlatform,
+        // newsletter_blurb → "other" (Beehiiv publisher); instagram_carousel keeps its own
+        // name so publishDerivative routes to the carousel publisher; everything else uses
+        // the DB platform name directly.
+        platformName:
+          format_key === "newsletter_blurb"
+            ? "other"
+            : format_key === "instagram_carousel"
+              ? "instagram_carousel"
+              : dbPlatform,
+        carouselItems: derivative.carousel_items,
         platform: {
           platform_user_id: platform.platform_user_id,
           access_token_enc: platform.access_token_enc,
@@ -189,11 +211,11 @@ export const publishScheduledDerivative = inngest.createFunction(
     }
 
     // TypeScript now knows jobData is the non-skip branch
-    const { content, platformName, platform: platformRow } = jobData;
+    const { content, platformName, platform: platformRow, carouselItems } = jobData;
 
     // ── Step 3: publish to the platform ───────────────────────────────────
     const publishResult = await step.run("publish", async () => {
-      return publishDerivative(platformName, platformRow, content);
+      return publishDerivative(platformName, platformRow, content, carouselItems);
     });
 
     // ── Step 4: mark derivative as published ──────────────────────────────
