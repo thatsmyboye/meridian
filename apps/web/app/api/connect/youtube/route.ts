@@ -62,10 +62,15 @@ export async function GET(request: Request) {
     }
   }
 
+  if (!process.env.YOUTUBE_CLIENT_ID) {
+    console.error("[youtube] YOUTUBE_CLIENT_ID env var is not set");
+    return NextResponse.redirect(`${siteUrl}/connect?error=oauth_not_configured`);
+  }
+
   const state = randomBytes(16).toString("hex");
 
   const params = new URLSearchParams({
-    client_id: process.env.YOUTUBE_CLIENT_ID!,
+    client_id: process.env.YOUTUBE_CLIENT_ID,
     redirect_uri: `${siteUrl}/api/connect/youtube/callback`,
     response_type: "code",
     scope: YOUTUBE_SCOPES,
