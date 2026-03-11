@@ -23,15 +23,18 @@ const META_GRAPH_VERSION = "v21.0";
 
 /**
  * Scopes required for Instagram Business/Creator accounts:
- *   instagram_basic           – read profile, media list and metadata
- *   instagram_manage_insights – read media and account-level insights
- *   pages_show_list           – enumerate Facebook Pages to find the
- *                               linked Instagram Business account
- *   pages_read_engagement     – required alongside pages_show_list to
- *                               access page-scoped Instagram data
+ *   instagram_basic             – read profile, media list and metadata
+ *   instagram_content_publish   – create and publish feed posts, reels, and
+ *                                 carousels (single image/video + multi-item)
+ *   instagram_manage_insights   – read media and account-level insights
+ *   pages_show_list             – enumerate Facebook Pages to find the
+ *                                 linked Instagram Business account
+ *   pages_read_engagement       – required alongside pages_show_list to
+ *                                 access page-scoped Instagram data
  */
 const INSTAGRAM_SCOPES = [
   "instagram_basic",
+  "instagram_content_publish",
   "instagram_manage_insights",
   "pages_show_list",
   "pages_read_engagement",
