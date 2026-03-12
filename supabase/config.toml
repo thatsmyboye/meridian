@@ -157,10 +157,7 @@ additional_redirect_urls = [
   "https://localhost:3000",
   "http://localhost:3000/auth/callback",
   "https://localhost:3000/auth/callback",
-  # Vercel preview / production deployment
-  "https://meridian-web-psi.vercel.app",
-  "https://meridian-web-psi.vercel.app/auth/callback",
-  "https://paul-boyes-projects.vercel.app/auth/callback",
+  # Production deployment
   "https://meridian.banton-digital.com",
   "https://meridian.banton-digital.com/auth/callback",
   # React Native / Expo deep-link
@@ -344,8 +341,7 @@ skip_nonce_check = false
 #   1. Go to https://console.cloud.google.com/apis/credentials and open your OAuth 2.0 Client ID.
 #   2. Under "Authorised redirect URIs" add the Supabase Auth callback URL for each environment:
 #        Local dev : http://127.0.0.1:54321/auth/v1/callback
-#        Production: https://<project-ref>.supabase.co/auth/v1/callback
-#      (find your project-ref in the Supabase dashboard URL or Project Settings → General)
+#        Production: https://ijtgwkdizngdssnnmrmw.supabase.co/auth/v1/callback
 #   3. Save, then copy the Client ID and Client Secret into the env vars above.
 
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.
