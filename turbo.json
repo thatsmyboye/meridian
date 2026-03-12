@@ -21,7 +21,10 @@
         "SUPABASE_PUBLISHABLE_KEY",
         "SUPABASE_SECRET_KEY",
         "INNGEST_SIGNING_KEY",
-        "INNGEST_EVENT_KEY"
+        "INNGEST_EVENT_KEY",
+        "YOUTUBE_CLIENT_ID",
+        "YOUTUBE_CLIENT_SECRET",
+        "META_WEBHOOK_VERIFY_TOKEN"
       ]
     },
     "lint": {
