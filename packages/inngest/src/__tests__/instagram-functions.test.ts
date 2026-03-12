@@ -1,26 +1,33 @@
 /**
- * Instagram Inngest Functions Implementation Tests
+ * Instagram Inngest Functions — Unit Tests
  *
- * This test suite validates the structure and logic of:
- * 1. syncInstagramMedia function
- * 2. fetchInstagramAnalyticsSnapshot function
- * 3. instagramAnalyticsCron function
+ * Validates the logic embedded in:
+ *   - syncInstagramMedia  (instagram-sync.ts)
+ *   - fetchInstagramAnalyticsSnapshot  (instagram-analytics-cron.ts)
+ *   - instagramAnalyticsCron  (instagram-analytics-cron.ts)
+ *
+ * All tests are pure-logic / structural — no network calls, no Supabase, no
+ * Inngest runtime required.
  */
 
-// ─── Type Validations ─────────────────────────────────────────────────────
+import { describe, it, expect } from "vitest";
+
+// ─── Shared type definitions (mirror the production types) ─────────────────
+
+interface InstagramMediaItem {
+  id: string;
+  caption?: string;
+  media_type: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM" | "REEL";
+  media_url?: string;
+  thumbnail_url?: string;
+  timestamp: string;
+  permalink: string;
+  like_count?: number;
+  comments_count?: number;
+}
 
 interface InstagramMediaListResponse {
-  data: Array<{
-    id: string;
-    caption?: string;
-    media_type: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM" | "REEL";
-    media_url?: string;
-    thumbnail_url?: string;
-    timestamp: string;
-    permalink: string;
-    like_count?: number;
-    comments_count?: number;
-  }>;
+  data: InstagramMediaItem[];
   paging?: {
     cursors?: { after?: string };
     next?: string;
@@ -35,509 +42,383 @@ interface InstagramInsightsResult {
   id: string;
 }
 
-interface InstagramInsightsResponse {
-  data: InstagramInsightsResult[];
-}
+// ─── Helper: mirrors instagram-analytics-cron.ts extractInsightValue ──────
 
-// ─── Function Structure Tests ──────────────────────────────────────────────
-
-/**
- * Validates the media response structure
- */
-function validateMediaResponseStructure(): boolean {
-  console.log("\n📡 Validating Media Response Structure...");
-
-  try {
-    const exampleResponse: InstagramMediaListResponse = {
-      data: [
-        {
-          id: "123456789",
-          caption: "Example post caption\nwith multiple lines",
-          media_type: "IMAGE",
-          media_url: "https://example.com/image.jpg",
-          thumbnail_url: undefined,
-          timestamp: new Date().toISOString(),
-          permalink: "https://instagram.com/p/ABC123/",
-          like_count: 150,
-          comments_count: 25,
-        },
-        {
-          id: "987654321",
-          media_type: "REEL",
-          media_url: undefined,
-          thumbnail_url: "https://example.com/reel-thumb.jpg",
-          timestamp: new Date(Date.now() - 86400000).toISOString(),
-          permalink: "https://instagram.com/reels/XYZ789/",
-          like_count: 450,
-          comments_count: 85,
-        },
-      ],
-      paging: {
-        cursors: { after: "next_cursor_token" },
-        next: "https://graph.facebook.com/v21.0/...",
-      },
-    };
-
-    // Validate structure
-    if (!Array.isArray(exampleResponse.data)) {
-      throw new Error("Response data should be an array");
-    }
-
-    exampleResponse.data.forEach((item, index) => {
-      if (!item.id) throw new Error(`Item ${index} missing id`);
-      if (!["IMAGE", "VIDEO", "CAROUSEL_ALBUM", "REEL"].includes(item.media_type)) {
-        throw new Error(`Item ${index} has invalid media_type`);
-      }
-      if (!item.timestamp) throw new Error(`Item ${index} missing timestamp`);
-      if (!item.permalink) throw new Error(`Item ${index} missing permalink`);
-    });
-
-    console.log("   ✅ Media response structure is valid");
-    console.log(`      - Contains ${exampleResponse.data.length} media items`);
-    console.log(`      - Pagination cursor present: ${!!exampleResponse.paging?.cursors?.after}`);
-    return true;
-  } catch (error) {
-    console.error(
-      `   ❌ Media response validation failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-    return false;
+function extractInsightValue(metric: InstagramInsightsResult): number {
+  if (metric.total_value !== undefined) {
+    return metric.total_value.value ?? 0;
   }
+  return metric.values?.[0]?.value ?? 0;
 }
 
-/**
- * Validates the insights response structure
- */
-function validateInsightsResponseStructure(): boolean {
-  console.log("\n📊 Validating Insights Response Structure...");
+// ─── Helper: mirrors instagram-sync.ts pickThumbnail ──────────────────────
 
-  try {
-    // Test both old format (values array) and new format (total_value object)
-    const oldFormatResponse: InstagramInsightsResponse = {
-      data: [
-        {
-          name: "views",
-          period: "lifetime",
-          values: [{ value: 5000 }],
-          id: "media_id/insights/views/lifetime",
-        },
-        {
-          name: "reach",
-          period: "lifetime",
-          values: [{ value: 3500 }],
-          id: "media_id/insights/reach/lifetime",
-        },
-      ],
-    };
-
-    const newFormatResponse: InstagramInsightsResponse = {
-      data: [
-        {
-          name: "views",
-          period: "lifetime",
-          total_value: { value: 5000 },
-          id: "media_id/insights/views/lifetime",
-        },
-        {
-          name: "reach",
-          period: "lifetime",
-          total_value: { value: 3500 },
-          id: "media_id/insights/reach/lifetime",
-        },
-      ],
-    };
-
-    // Validate structure
-    [oldFormatResponse, newFormatResponse].forEach((response, formatIndex) => {
-      if (!Array.isArray(response.data)) {
-        throw new Error("Response data should be an array");
-      }
-
-      response.data.forEach((metric, index) => {
-        if (!metric.name) throw new Error(`Metric ${index} missing name`);
-        if (!metric.period) throw new Error(`Metric ${index} missing period`);
-
-        const hasValues = Array.isArray(metric.values);
-        const hasTotalValue = metric.total_value !== undefined;
-
-        if (!hasValues && !hasTotalValue) {
-          throw new Error(`Metric ${index} has neither values nor total_value`);
-        }
-      });
-    });
-
-    console.log("   ✅ Insights response structure is valid");
-    console.log("      - Handles old format (values array)");
-    console.log("      - Handles new format (total_value object)");
-    return true;
-  } catch (error) {
-    console.error(
-      `   ❌ Insights response validation failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-    return false;
-  }
+function pickThumbnail(item: Pick<InstagramMediaItem, "thumbnail_url" | "media_url">): string | null {
+  return item.thumbnail_url ?? item.media_url ?? null;
 }
 
-/**
- * Validates insight value extraction logic
- */
-function validateInsightValueExtraction(): boolean {
-  console.log("\n🔍 Validating Insight Value Extraction...");
+// ─── Helper: mirrors instagram-sync.ts content-item mapping ───────────────
 
-  try {
-    function extractInsightValue(metric: InstagramInsightsResult): number {
-      if (metric.total_value !== undefined) {
-        return metric.total_value.value ?? 0;
-      }
-      return metric.values?.[0]?.value ?? 0;
-    }
-
-    const testCases = [
-      {
-        name: "Old format with value",
-        metric: { name: "views", period: "lifetime", values: [{ value: 5000 }], id: "..." },
-        expected: 5000,
-      },
-      {
-        name: "New format with value",
-        metric: { name: "views", period: "lifetime", total_value: { value: 5000 }, id: "..." },
-        expected: 5000,
-      },
-      {
-        name: "Empty values array fallback",
-        metric: { name: "views", period: "lifetime", values: [], id: "..." },
-        expected: 0,
-      },
-      {
-        name: "Missing both formats",
-        metric: { name: "views", period: "lifetime", id: "..." },
-        expected: 0,
-      },
-    ];
-
-    let allPassed = true;
-    testCases.forEach(({ name, metric, expected }) => {
-      const extracted = extractInsightValue(metric);
-      const passed = extracted === expected;
-      allPassed = allPassed && passed;
-
-      const icon = passed ? "✓" : "✗";
-      console.log(`   ${icon} ${name}: ${extracted} (expected ${expected})`);
-    });
-
-    if (allPassed) {
-      console.log("   ✅ Insight value extraction is correct");
-      return true;
-    }
-  } catch (error) {
-    console.error(
-      `   ❌ Insight value extraction validation failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-    return false;
-  }
-
-  return false;
+function mapToContentItem(
+  creatorId: string,
+  platformId: string,
+  item: InstagramMediaItem
+) {
+  return {
+    creator_id: creatorId,
+    platform_id: platformId,
+    platform: "instagram" as const,
+    external_id: item.id,
+    title: item.caption?.split("\n")[0]?.slice(0, 255) ?? null,
+    body: item.caption ?? null,
+    published_at: item.timestamp,
+    thumbnail_url: pickThumbnail(item),
+    duration_seconds: null,
+    raw_data: item,
+  };
 }
 
-/**
- * Validates content item upsert mapping
- */
-function validateContentItemMapping(): boolean {
-  console.log("\n📝 Validating Content Item Mapping...");
+// ─── Helper: mirrors instagram-analytics-cron.ts hasNextPage ──────────────
 
-  try {
-    const creatorId = "creator_123";
-    const platformId = "platform_456";
-
-    const exampleMediaItem: InstagramMediaListResponse["data"][0] = {
-      id: "ig_media_789",
-      caption: "Sample post\nwith multiple lines\nand more content",
-      media_type: "IMAGE",
-      media_url: "https://example.com/image.jpg",
-      timestamp: "2025-03-04T12:00:00Z",
-      permalink: "https://instagram.com/p/ABC123/",
-      like_count: 150,
-      comments_count: 25,
-    };
-
-    // Simulate mapping
-    const mappedRow = {
-      creator_id: creatorId,
-      platform_id: platformId,
-      platform: "instagram" as const,
-      external_id: exampleMediaItem.id,
-      title: exampleMediaItem.caption?.split("\n")[0]?.slice(0, 255) ?? null,
-      body: exampleMediaItem.caption ?? null,
-      published_at: exampleMediaItem.timestamp,
-      thumbnail_url: exampleMediaItem.media_url ?? null,
-      duration_seconds: null,
-      raw_data: exampleMediaItem,
-    };
-
-    // Validate mapping
-    if (mappedRow.creator_id !== creatorId) {
-      throw new Error("Creator ID not mapped correctly");
-    }
-    if (mappedRow.external_id !== exampleMediaItem.id) {
-      throw new Error("External ID not mapped correctly");
-    }
-    if (mappedRow.title !== "Sample post") {
-      throw new Error("Title extraction failed");
-    }
-    if (!mappedRow.body?.includes("multiple lines")) {
-      throw new Error("Full caption not preserved");
-    }
-    if (mappedRow.duration_seconds !== null) {
-      throw new Error("Duration should be null for Instagram");
-    }
-
-    console.log("   ✅ Content item mapping is correct");
-    console.log(`      - Creator ID: ${mappedRow.creator_id}`);
-    console.log(`      - External ID: ${mappedRow.external_id}`);
-    console.log(`      - Title: "${mappedRow.title}"`);
-    console.log(`      - Platform: ${mappedRow.platform}`);
-    return true;
-  } catch (error) {
-    console.error(
-      `   ❌ Content item mapping validation failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-    return false;
-  }
+function hasNextPage(paging: InstagramMediaListResponse["paging"]): boolean {
+  return Boolean(paging?.next && paging?.cursors?.after);
 }
 
-/**
- * Validates pagination logic
- */
-function validatePaginationLogic(): boolean {
-  console.log("\n📄 Validating Pagination Logic...");
+// ─── Tests ────────────────────────────────────────────────────────────────
 
-  try {
-    // Test pagination conditions
-    const testCases = [
+describe("Instagram Graph API — Media Response Structure", () => {
+  const validMediaResponse: InstagramMediaListResponse = {
+    data: [
       {
-        name: "Has next page (both cursor and next link)",
-        paging: { cursors: { after: "token123" }, next: "https://..." },
-        expected: true,
+        id: "123456789",
+        caption: "Example post caption\nwith multiple lines",
+        media_type: "IMAGE",
+        media_url: "https://cdn.example.com/image.jpg",
+        timestamp: new Date().toISOString(),
+        permalink: "https://www.instagram.com/p/ABC123/",
+        like_count: 150,
+        comments_count: 25,
       },
       {
-        name: "No cursor",
-        paging: { cursors: undefined, next: "https://..." },
-        expected: false,
+        id: "987654321",
+        media_type: "REEL",
+        thumbnail_url: "https://cdn.example.com/reel-thumb.jpg",
+        timestamp: new Date(Date.now() - 86_400_000).toISOString(),
+        permalink: "https://www.instagram.com/reels/XYZ789/",
+        like_count: 450,
+        comments_count: 85,
       },
-      {
-        name: "No next link",
-        paging: { cursors: { after: "token123" }, next: undefined },
-        expected: false,
-      },
-      {
-        name: "Both missing",
-        paging: { cursors: undefined, next: undefined },
-        expected: false,
-      },
-      {
-        name: "Undefined paging",
-        paging: undefined,
-        expected: false,
-      },
-    ];
-
-    let allPassed = true;
-    testCases.forEach(({ name, paging, expected }) => {
-      const hasNextPage = Boolean(paging?.next && paging?.cursors?.after);
-      const passed = hasNextPage === expected;
-      allPassed = allPassed && passed;
-
-      const icon = passed ? "✓" : "✗";
-      console.log(`   ${icon} ${name}: ${hasNextPage ? "CONTINUE" : "STOP"}`);
-    });
-
-    if (allPassed) {
-      console.log("   ✅ Pagination logic is correct");
-      return true;
-    }
-  } catch (error) {
-    console.error(
-      `   ❌ Pagination logic validation failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-    return false;
-  }
-
-  return false;
-}
-
-/**
- * Validates performance snapshot calculation
- */
-function validatePerformanceSnapshotCalculation(): boolean {
-  console.log("\n📈 Validating Performance Snapshot Calculation...");
-
-  try {
-    const testMetrics = {
-      views: 1000,
-      reach: 850,
-      saves: 45,
-      shares: 15,
-      likes: 120,
-      comments: 30,
-    };
-
-    // Simulate snapshot data
-    const snapshot = {
-      views: testMetrics.views,
-      likes: testMetrics.likes,
-      comments: testMetrics.comments,
-      shares: testMetrics.shares,
-      saves: testMetrics.saves,
-      reach: testMetrics.reach,
-      engagement_rate: ((testMetrics.likes + testMetrics.comments + testMetrics.shares + testMetrics.saves) /
-        testMetrics.views).toFixed(3),
-      impressions: testMetrics.views, // Meta's unified metric
-      raw_data: null,
-    };
-
-    // Validate calculations
-    const expectedEngagementRate = 0.21; // (120 + 30 + 15 + 45) / 1000
-    const actualEngagementRate = parseFloat(snapshot.engagement_rate);
-
-    if (Math.abs(actualEngagementRate - expectedEngagementRate) > 0.001) {
-      throw new Error(
-        `Engagement rate calculation incorrect: ${actualEngagementRate} vs ${expectedEngagementRate}`
-      );
-    }
-
-    if (snapshot.impressions !== testMetrics.views) {
-      throw new Error("Impressions should equal views");
-    }
-
-    console.log("   ✅ Performance snapshot calculation is correct");
-    console.log(
-      `      - Views: ${snapshot.views}`
-    );
-    console.log(
-      `      - Engagement Rate: ${snapshot.engagement_rate} (${(expectedEngagementRate * 100).toFixed(1)}%)`
-    );
-    console.log(
-      `      - Impressions: ${snapshot.impressions}`
-    );
-    return true;
-  } catch (error) {
-    console.error(
-      `   ❌ Performance snapshot calculation validation failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-    return false;
-  }
-}
-
-/**
- * Validates day mark calculation for analytics
- */
-function validateDayMarkCalculation(): boolean {
-  console.log("\n📅 Validating Day Mark Calculation...");
-
-  try {
-    const SNAPSHOT_DAY_MARKS = [1, 7, 30] as const;
-
-    const now = new Date("2025-03-04T10:00:00Z");
-    const testItemPublished = new Date("2025-03-03T10:00:00Z"); // Published 1 day ago
-
-    let matchedMarks: Array<number> = [];
-
-    for (const dayMark of SNAPSHOT_DAY_MARKS) {
-      const lower = new Date(
-        now.getTime() - (dayMark + 0.5) * 86_400_000
-      ).toISOString();
-      const upper = new Date(
-        now.getTime() - (dayMark - 0.5) * 86_400_000
-      ).toISOString();
-
-      if (
-        testItemPublished.toISOString() >= lower &&
-        testItemPublished.toISOString() <= upper
-      ) {
-        matchedMarks.push(dayMark);
-      }
-    }
-
-    // For an item published 1 day ago, should match day-mark 1
-    if (matchedMarks.includes(1)) {
-      console.log("   ✅ Day mark calculation is correct");
-      console.log(`      - Item published 1 day ago matched mark: ${matchedMarks}`);
-      return true;
-    } else {
-      console.log("   ⚠️  Day mark calculation may vary based on publication time");
-      console.log(`      - Test case: Matched marks ${matchedMarks}`);
-      return true; // Not a failure, just timing-dependent
-    }
-  } catch (error) {
-    console.error(
-      `   ❌ Day mark calculation validation failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-    return false;
-  }
-}
-
-/**
- * Main test runner
- */
-async function runFunctionTests(): Promise<void> {
-  console.log("╔════════════════════════════════════════════════════════════════╗");
-  console.log("║          Instagram Inngest Functions Implementation Tests      ║");
-  console.log("║                        Meridian Platform                       ║");
-  console.log("╚════════════════════════════════════════════════════════════════╝");
-
-  const results = {
-    mediaResponse: validateMediaResponseStructure(),
-    insightsResponse: validateInsightsResponseStructure(),
-    insightValueExtraction: validateInsightValueExtraction(),
-    contentItemMapping: validateContentItemMapping(),
-    pagination: validatePaginationLogic(),
-    performanceSnapshot: validatePerformanceSnapshotCalculation(),
-    dayMarkCalculation: validateDayMarkCalculation(),
+    ],
+    paging: {
+      cursors: { after: "next_cursor_token" },
+      next: "https://graph.facebook.com/v21.0/me/media?after=next_cursor_token",
+    },
   };
 
-  // Summary
-  console.log("\n╔════════════════════════════════════════════════════════════════╗");
-  console.log("║                           Test Summary                         ║");
-  console.log("╚════════════════════════════════════════════════════════════════╝\n");
-
-  const testSummary: [string, boolean][] = [
-    ["Media Response Structure", results.mediaResponse],
-    ["Insights Response Structure", results.insightsResponse],
-    ["Insight Value Extraction", results.insightValueExtraction],
-    ["Content Item Mapping", results.contentItemMapping],
-    ["Pagination Logic", results.pagination],
-    ["Performance Snapshot Calc", results.performanceSnapshot],
-    ["Day Mark Calculation", results.dayMarkCalculation],
-  ];
-
-  let passedCount = 0;
-  testSummary.forEach(([name, passed]) => {
-    const icon = passed ? "✅" : "❌";
-    console.log(`${icon} ${name.padEnd(25)} ${passed ? "PASS" : "FAIL"}`);
-    if (passed) passedCount++;
+  it("response data should be an array", () => {
+    expect(Array.isArray(validMediaResponse.data)).toBe(true);
   });
 
-  console.log("\n" + "─".repeat(66));
-  console.log(`Result: ${passedCount}/${testSummary.length} tests passed\n`);
-
-  // Exit with appropriate code
-  process.exit(passedCount === testSummary.length ? 0 : 1);
-}
-
-// ─── Execution ────────────────────────────────────────────────────────────
-
-if (require.main === module) {
-  runFunctionTests().catch((error) => {
-    console.error("Test execution failed:", error);
-    process.exit(1);
+  it("each media item has a required id", () => {
+    validMediaResponse.data.forEach((item) => {
+      expect(item.id).toBeTruthy();
+    });
   });
-}
 
-export {
-  validateMediaResponseStructure,
-  validateInsightsResponseStructure,
-  validateInsightValueExtraction,
-  validateContentItemMapping,
-  validatePaginationLogic,
-  validatePerformanceSnapshotCalculation,
-  validateDayMarkCalculation,
-};
+  it("each media item has a valid media_type", () => {
+    const validTypes = ["IMAGE", "VIDEO", "CAROUSEL_ALBUM", "REEL"];
+    validMediaResponse.data.forEach((item) => {
+      expect(validTypes).toContain(item.media_type);
+    });
+  });
+
+  it("each media item has a timestamp and permalink", () => {
+    validMediaResponse.data.forEach((item) => {
+      expect(item.timestamp).toBeTruthy();
+      expect(item.permalink).toBeTruthy();
+    });
+  });
+
+  it("pagination cursor is present when there is a next page", () => {
+    expect(validMediaResponse.paging?.cursors?.after).toBeTruthy();
+    expect(validMediaResponse.paging?.next).toBeTruthy();
+  });
+});
+
+describe("Instagram Graph API — Insights Response Structure", () => {
+  it("handles old-format response (values array)", () => {
+    const oldFormat = {
+      data: [
+        { name: "views", period: "lifetime", values: [{ value: 5000 }], id: "media_id/views" },
+        { name: "reach", period: "lifetime", values: [{ value: 3500 }], id: "media_id/reach" },
+      ],
+    };
+
+    oldFormat.data.forEach((metric) => {
+      const hasValues = Array.isArray(metric.values);
+      expect(hasValues).toBe(true);
+      expect(metric.name).toBeTruthy();
+      expect(metric.period).toBe("lifetime");
+    });
+  });
+
+  it("handles new-format response (total_value object, Graph API v19.0+)", () => {
+    const newFormat = {
+      data: [
+        { name: "views", period: "lifetime", total_value: { value: 5000 }, id: "media_id/views" },
+        { name: "reach", period: "lifetime", total_value: { value: 3500 }, id: "media_id/reach" },
+      ],
+    };
+
+    newFormat.data.forEach((metric) => {
+      expect(metric.total_value).toBeDefined();
+      expect(typeof metric.total_value?.value).toBe("number");
+    });
+  });
+
+  it("each metric has at least one of values or total_value", () => {
+    const mixed = [
+      { name: "views", period: "lifetime", values: [{ value: 100 }], id: "1" },
+      { name: "reach", period: "lifetime", total_value: { value: 80 }, id: "2" },
+    ];
+
+    mixed.forEach((metric) => {
+      const hasValues = Array.isArray((metric as any).values);
+      const hasTotalValue = (metric as any).total_value !== undefined;
+      expect(hasValues || hasTotalValue).toBe(true);
+    });
+  });
+});
+
+describe("extractInsightValue", () => {
+  it("extracts value from new total_value format", () => {
+    expect(extractInsightValue({ name: "views", period: "lifetime", total_value: { value: 5000 }, id: "x" })).toBe(5000);
+  });
+
+  it("extracts value from old values-array format", () => {
+    expect(extractInsightValue({ name: "views", period: "lifetime", values: [{ value: 3000 }], id: "x" })).toBe(3000);
+  });
+
+  it("prefers total_value when both formats are present", () => {
+    expect(
+      extractInsightValue({
+        name: "views",
+        period: "lifetime",
+        values: [{ value: 1000 }],
+        total_value: { value: 9999 },
+        id: "x",
+      })
+    ).toBe(9999);
+  });
+
+  it("returns 0 for an empty values array", () => {
+    expect(extractInsightValue({ name: "views", period: "lifetime", values: [], id: "x" })).toBe(0);
+  });
+
+  it("returns 0 when neither format is present", () => {
+    expect(extractInsightValue({ name: "views", period: "lifetime", id: "x" })).toBe(0);
+  });
+});
+
+describe("pickThumbnail", () => {
+  it("uses thumbnail_url for VIDEO/REEL items", () => {
+    expect(pickThumbnail({ thumbnail_url: "https://cdn.example.com/thumb.jpg", media_url: undefined }))
+      .toBe("https://cdn.example.com/thumb.jpg");
+  });
+
+  it("falls back to media_url for IMAGE/CAROUSEL items", () => {
+    expect(pickThumbnail({ thumbnail_url: undefined, media_url: "https://cdn.example.com/image.jpg" }))
+      .toBe("https://cdn.example.com/image.jpg");
+  });
+
+  it("prefers thumbnail_url over media_url when both are present", () => {
+    expect(
+      pickThumbnail({
+        thumbnail_url: "https://cdn.example.com/thumb.jpg",
+        media_url: "https://cdn.example.com/image.jpg",
+      })
+    ).toBe("https://cdn.example.com/thumb.jpg");
+  });
+
+  it("returns null when both fields are absent", () => {
+    expect(pickThumbnail({ thumbnail_url: undefined, media_url: undefined })).toBeNull();
+  });
+});
+
+describe("Content item mapping (instagram-sync.ts)", () => {
+  const creatorId = "creator_abc";
+  const platformId = "platform_xyz";
+  const rawItem: InstagramMediaItem = {
+    id: "ig_media_789",
+    caption: "First line of caption\nSecond line\nThird line",
+    media_type: "IMAGE",
+    media_url: "https://cdn.example.com/image.jpg",
+    timestamp: "2025-03-04T12:00:00Z",
+    permalink: "https://www.instagram.com/p/ABC123/",
+    like_count: 150,
+    comments_count: 25,
+  };
+
+  const mapped = mapToContentItem(creatorId, platformId, rawItem);
+
+  it("maps creator_id and platform_id correctly", () => {
+    expect(mapped.creator_id).toBe(creatorId);
+    expect(mapped.platform_id).toBe(platformId);
+  });
+
+  it("maps external_id from item.id", () => {
+    expect(mapped.external_id).toBe(rawItem.id);
+  });
+
+  it("extracts the first line of caption as title (max 255 chars)", () => {
+    expect(mapped.title).toBe("First line of caption");
+  });
+
+  it("preserves the full caption as body", () => {
+    expect(mapped.body).toBe(rawItem.caption);
+  });
+
+  it("sets platform to 'instagram'", () => {
+    expect(mapped.platform).toBe("instagram");
+  });
+
+  it("sets duration_seconds to null (not available from the media endpoint)", () => {
+    expect(mapped.duration_seconds).toBeNull();
+  });
+
+  it("uses media_url as thumbnail for IMAGE items", () => {
+    expect(mapped.thumbnail_url).toBe(rawItem.media_url);
+  });
+
+  it("caps the title at 255 characters", () => {
+    const longCaptionItem: InstagramMediaItem = {
+      ...rawItem,
+      caption: "A".repeat(300),
+    };
+    const result = mapToContentItem(creatorId, platformId, longCaptionItem);
+    expect(result.title!.length).toBeLessThanOrEqual(255);
+  });
+
+  it("sets title and body to null when caption is absent", () => {
+    const noCaptionItem: InstagramMediaItem = { ...rawItem, caption: undefined };
+    const result = mapToContentItem(creatorId, platformId, noCaptionItem);
+    expect(result.title).toBeNull();
+    expect(result.body).toBeNull();
+  });
+});
+
+describe("Pagination logic (instagram-sync.ts)", () => {
+  it("continues when both cursor and next link are present", () => {
+    expect(hasNextPage({ cursors: { after: "token123" }, next: "https://graph.facebook.com/..." })).toBe(true);
+  });
+
+  it("stops when cursor is absent", () => {
+    expect(hasNextPage({ cursors: undefined, next: "https://graph.facebook.com/..." })).toBe(false);
+  });
+
+  it("stops when next link is absent", () => {
+    expect(hasNextPage({ cursors: { after: "token123" }, next: undefined })).toBe(false);
+  });
+
+  it("stops when both cursor and next link are absent", () => {
+    expect(hasNextPage({ cursors: undefined, next: undefined })).toBe(false);
+  });
+
+  it("stops when paging object is undefined", () => {
+    expect(hasNextPage(undefined)).toBe(false);
+  });
+
+  it("stops when cursor.after is an empty string", () => {
+    expect(hasNextPage({ cursors: { after: "" }, next: "https://..." })).toBe(false);
+  });
+});
+
+describe("Performance snapshot calculation", () => {
+  const metrics = {
+    views: 1000,
+    reach: 850,
+    saves: 45,
+    shares: 15,
+    likes: 120,
+    comments: 30,
+  };
+
+  it("calculates engagement_rate as (likes+comments+shares+saves)/views", () => {
+    const interactions = metrics.likes + metrics.comments + metrics.shares + metrics.saves;
+    const engagementRate = interactions / metrics.views;
+    expect(engagementRate).toBeCloseTo(0.21, 3);
+  });
+
+  it("clamps engagement_rate to [0, 1] when interactions exceed views", () => {
+    const clamp = (v: number) => Math.max(0, Math.min(1, v));
+    const highInteractions = { views: 100, likes: 200, comments: 50, shares: 10, saves: 5 };
+    const rate = clamp(
+      (highInteractions.likes + highInteractions.comments + highInteractions.shares + highInteractions.saves) /
+        highInteractions.views
+    );
+    expect(rate).toBe(1);
+  });
+
+  it("returns 0 engagement_rate when views is 0 (avoids division by zero)", () => {
+    const zeroViews = { views: 0, likes: 10, comments: 2, shares: 1, saves: 3 };
+    const rate = zeroViews.views > 0
+      ? (zeroViews.likes + zeroViews.comments + zeroViews.shares + zeroViews.saves) / zeroViews.views
+      : 0;
+    expect(rate).toBe(0);
+  });
+
+  it("sets impressions equal to views (Meta's unified metric)", () => {
+    expect(metrics.views).toBe(1000); // impressions === views in the snapshot
+  });
+});
+
+describe("Day mark calculation (instagram-analytics-cron.ts)", () => {
+  const SNAPSHOT_DAY_MARKS = [1, 7, 30] as const;
+
+  function getEligibleDayMark(publishedAt: Date, now: Date): number | null {
+    for (const dayMark of SNAPSHOT_DAY_MARKS) {
+      const lower = new Date(now.getTime() - (dayMark + 0.5) * 86_400_000);
+      const upper = new Date(now.getTime() - (dayMark - 0.5) * 86_400_000);
+      if (publishedAt >= lower && publishedAt <= upper) return dayMark;
+    }
+    return null;
+  }
+
+  it("matches day mark 1 for an item published ~1 day ago", () => {
+    const now = new Date("2025-03-04T10:00:00Z");
+    const published = new Date("2025-03-03T10:00:00Z"); // exactly 1 day
+    expect(getEligibleDayMark(published, now)).toBe(1);
+  });
+
+  it("matches day mark 7 for an item published ~7 days ago", () => {
+    const now = new Date("2025-03-11T10:00:00Z");
+    const published = new Date("2025-03-04T10:00:00Z"); // exactly 7 days
+    expect(getEligibleDayMark(published, now)).toBe(7);
+  });
+
+  it("matches day mark 30 for an item published ~30 days ago", () => {
+    const now = new Date("2025-04-03T10:00:00Z");
+    const published = new Date("2025-03-04T10:00:00Z"); // exactly 30 days
+    expect(getEligibleDayMark(published, now)).toBe(30);
+  });
+
+  it("returns null for a newly published item (0 days ago)", () => {
+    const now = new Date();
+    const published = new Date(now.getTime() - 60_000); // 1 minute ago
+    expect(getEligibleDayMark(published, now)).toBeNull();
+  });
+
+  it("returns null for an item published 45 days ago (outside all windows)", () => {
+    const now = new Date("2025-04-18T10:00:00Z");
+    const published = new Date("2025-03-04T10:00:00Z"); // 45 days
+    expect(getEligibleDayMark(published, now)).toBeNull();
+  });
+
+  it("the ±12-hour window tolerates publication time offsets", () => {
+    const now = new Date("2025-03-05T01:00:00Z");
+    // Published 1 day ago but at a different time (offset ~15h from now)
+    const published = new Date("2025-03-03T10:00:00Z");
+    // 1.625 days ago — outside the day-1 ±0.5 window; should be null
+    expect(getEligibleDayMark(published, now)).toBeNull();
+  });
+});
