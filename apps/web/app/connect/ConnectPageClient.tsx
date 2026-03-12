@@ -274,7 +274,25 @@ export default function ConnectPageClient({
             }}
           >
             <div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>{p.label}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                {p.id === "youtube" && (
+                  /* YouTube icon — required by YouTube API Branding Guidelines */
+                  <svg
+                    height="16"
+                    viewBox="0 0 28 20"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-label="YouTube"
+                    role="img"
+                  >
+                    <path
+                      d="M27.976 3.14A3.514 3.514 0 0 0 25.5.648C23.28 0 14 0 14 0S4.72 0 2.5.648A3.514 3.514 0 0 0 .024 3.14C-.648 5.373 0 10 0 10s-.648 4.627.024 6.86A3.514 3.514 0 0 0 2.5 19.352C4.72 20 14 20 14 20s9.28 0 11.5-.648a3.514 3.514 0 0 0 2.476-2.492C28.648 14.627 28 10 28 10s.648-4.627-.024-6.86z"
+                      fill="#FF0000"
+                    />
+                    <path d="M11.2 14.286 18.4 10l-7.2-4.286v8.572z" fill="#fff" />
+                  </svg>
+                )}
+                <span style={{ fontWeight: 600 }}>{p.label}</span>
+              </div>
               <div style={{ fontSize: 14, color: "#6b7280" }}>{p.description}</div>
               {p.note && (
                 <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
@@ -292,6 +310,27 @@ export default function ConnectPageClient({
           </div>
         ))}
       </div>
+
+      {/* YouTube API attribution — required by YouTube API Branding Guidelines */}
+      <p
+        style={{
+          marginTop: 32,
+          fontSize: 12,
+          color: "#9ca3af",
+          textAlign: "center",
+        }}
+      >
+        YouTube features are powered by the YouTube API Services.{" "}
+        <a
+          href="https://www.youtube.com/t/terms"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#9ca3af", textDecoration: "underline" }}
+        >
+          YouTube Terms of Service
+        </a>
+        .
+      </p>
 
       {/* Upgrade modal */}
       {modalOpen && (

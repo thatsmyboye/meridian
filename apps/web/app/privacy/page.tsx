@@ -277,6 +277,81 @@ export default function PrivacyPage() {
           </ul>
         </div>
 
+        {/* 3b */}
+        <div style={sectionStyle}>
+          <h2 style={h2Style}>YouTube API Services</h2>
+          <p style={pStyle}>
+            When you connect your YouTube account, Meridian uses the YouTube
+            Data API v3 and the YouTube Analytics API v2 to access the
+            following data on your behalf:
+          </p>
+          <ul style={ulStyle}>
+            <li style={liStyle}>
+              <strong>Channel metadata</strong> — your channel ID, title, and
+              uploads playlist, used to identify and retrieve your content.
+            </li>
+            <li style={liStyle}>
+              <strong>Video metadata</strong> — titles, publish dates,
+              durations, and thumbnail URLs for your uploaded videos, displayed
+              in the Meridian dashboard.
+            </li>
+            <li style={liStyle}>
+              <strong>Video captions and transcripts</strong> — caption tracks
+              associated with your videos, accessed only to enable AI content
+              repurposing features. If captions are unavailable, an audio
+              transcript may be generated using OpenAI Whisper.
+            </li>
+            <li style={liStyle}>
+              <strong>Analytics metrics</strong> — views, estimated watch time,
+              likes, comments, and shares per video, retrieved from the YouTube
+              Analytics API and stored as periodic snapshots to power the
+              performance dashboard.
+            </li>
+          </ul>
+          <p style={pStyle}>
+            All YouTube API access is <strong>read-only</strong>. Meridian
+            never modifies, uploads, or deletes any YouTube content on your
+            behalf.
+          </p>
+          <p style={pStyle}>
+            Data obtained through the YouTube API is subject to the{" "}
+            <a
+              href="https://www.youtube.com/t/terms"
+              style={linkStyle}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              YouTube Terms of Service
+            </a>
+            . By connecting your YouTube account you agree that your use of
+            YouTube data within Meridian is also governed by those terms.
+            Google&apos;s collection and use of data is described in the{" "}
+            <a
+              href="https://policies.google.com/privacy"
+              style={linkStyle}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google Privacy Policy
+            </a>
+            .
+          </p>
+          <p style={pStyle}>
+            You can revoke Meridian&apos;s access to your YouTube data at any
+            time by disconnecting YouTube from Settings &gt; Connections, or by
+            removing Meridian from your{" "}
+            <a
+              href="https://myaccount.google.com/permissions"
+              style={linkStyle}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google account permissions
+            </a>
+            .
+          </p>
+        </div>
+
         {/* 4 */}
         <div style={sectionStyle}>
           <h2 style={h2Style}>4. Data Retention</h2>
