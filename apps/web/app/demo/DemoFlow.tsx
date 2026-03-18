@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   BarChart,
   Bar,
@@ -11,7 +12,6 @@ import {
   CartesianGrid,
   LineChart,
   Line,
-  Legend,
 } from "recharts";
 import {
   DEMO_CONTENT,
@@ -146,12 +146,12 @@ export default function DemoFlow() {
             · All data is sample/fictional — no real user data is shown
           </span>
         </div>
-        <a
+        <Link
           href="/"
           style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontSize: 12 }}
         >
           ← Back to live app
-        </a>
+        </Link>
       </div>
 
       {/* ── Step navigator ── */}
@@ -221,8 +221,6 @@ export default function DemoFlow() {
         {step === "oauth-consent" && <StepOAuthConsent onNext={next} onBack={back} />}
         {step === "dashboard" && (
           <StepDashboard
-            onNext={next}
-            onBack={back}
             onSelectContent={(c) => { setSelectedContent(c); next(); }}
           />
         )}
@@ -242,7 +240,7 @@ export default function DemoFlow() {
             onBack={back}
           />
         )}
-        {step === "publish-calendar" && <StepPublishCalendar derivatives={derivatives} onBack={back} />}
+        {step === "publish-calendar" && <StepPublishCalendar derivatives={derivatives} />}
       </div>
 
       {/* ── Bottom nav ── */}
@@ -383,7 +381,7 @@ function StepLogin({ onNext }: { onNext: () => void }) {
 
 // ─── Step 2: Connect platforms ────────────────────────────────────────────────
 
-function StepConnect({ onNext, onBack }: NavProps) {
+function StepConnect({ onNext }: NavProps) {
   return (
     <DemoCard
       title="Step 2 — Connect platforms"
@@ -597,21 +595,19 @@ function StepOAuthConsent({ onNext, onBack }: NavProps) {
 // ─── Step 4: Dashboard ────────────────────────────────────────────────────────
 
 function StepDashboard({
-  onNext,
-  onBack,
   onSelectContent,
-}: NavProps & { onSelectContent: (c: DemoContentItem) => void }) {
+}: { onSelectContent: (c: DemoContentItem) => void }) {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("30d");
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(new Set());
 
   const PERIOD_DAYS = { "7d": 7, "30d": 30, "90d": 90 };
-  const cutoff = Date.now() - PERIOD_DAYS[period] * 86_400_000;
 
-  const filtered = useMemo(
-    () => DEMO_CONTENT.filter((c) => new Date(c.publishedAt).getTime() >= cutoff),
-    [period, cutoff],
-  );
+  const filtered = useMemo(() => {
+    const cutoff = Date.now() - PERIOD_DAYS[period] * 86_400_000;
+    return DEMO_CONTENT.filter((c) => new Date(c.publishedAt).getTime() >= cutoff);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period]);
 
   const totalViews = filtered.reduce((s, c) => s + c.totalViews, 0);
   const avgEng =
@@ -826,7 +822,7 @@ function InsightCard({
 
 // ─── Step 5: Content detail ───────────────────────────────────────────────────
 
-function StepContentDetail({ content, onNext, onBack }: NavProps & { content: DemoContentItem }) {
+function StepContentDetail({ content, onNext: _onNext, onBack }: NavProps & { content: DemoContentItem }) {
   const [metric, setMetric] = useState<"views" | "engagement">("views");
   const badge = PLATFORM_BADGE[content.platform] ?? { bg: "#f3f4f6", color: "#374151" };
 
@@ -958,7 +954,7 @@ function StepContentDetail({ content, onNext, onBack }: NavProps & { content: De
 
 // ─── Step 6: Repurpose new ────────────────────────────────────────────────────
 
-function StepRepurposeNew({ onNext, onBack }: NavProps) {
+function StepRepurposeNew({ onNext, onBack: _onBack }: NavProps) {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -1061,7 +1057,7 @@ function StepRepurposeReview({
   derivatives,
   onApprove,
   onNext,
-  onBack,
+  onBack: _onBack,
 }: NavProps & {
   derivatives: DemoDerivative[];
   onApprove: (format: string) => void;
@@ -1185,7 +1181,7 @@ function StepRepurposeReview({
 
 // ─── Step 8: Publish calendar ─────────────────────────────────────────────────
 
-function StepPublishCalendar({ derivatives, onBack }: { derivatives: DemoDerivative[]; onBack: () => void }) {
+function StepPublishCalendar({ derivatives }: { derivatives: DemoDerivative[] }) {
   const approved = derivatives.filter((d) => d.status === "approved");
   const now = new Date();
 
