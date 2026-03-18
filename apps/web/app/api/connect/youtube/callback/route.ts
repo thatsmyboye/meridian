@@ -138,10 +138,17 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 6. Encrypt tokens and upsert connected_platforms ─────────────────────
-  const accessTokenEnc = encryptToken(tokens.access_token);
-  const refreshTokenEnc = tokens.refresh_token
-    ? encryptToken(tokens.refresh_token)
-    : null;
+  let accessTokenEnc: string;
+  let refreshTokenEnc: string | null;
+  try {
+    accessTokenEnc = encryptToken(tokens.access_token);
+    refreshTokenEnc = tokens.refresh_token
+      ? encryptToken(tokens.refresh_token)
+      : null;
+  } catch (err) {
+    console.error("[youtube/callback] Token encryption failed:", err);
+    return NextResponse.redirect(`${siteUrl}/connect?error=token_encryption_failed`);
+  }
   const tokenExpiresAt = new Date(
     Date.now() + tokens.expires_in * 1000
   ).toISOString();
