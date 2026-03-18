@@ -1041,7 +1041,7 @@ function StepRepurposeNew({ onNext }: { onNext: () => void }) {
   );
 }
 
-function ProgressStep({ label, done, active }: { label: string; done: boolean; active: boolean }) {
+function ProgressStep({ label, done, active = false }: { label: string; done: boolean; active?: boolean }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <span style={{ fontSize: 14 }}>{done ? "✅" : active ? "⟳" : "○"}</span>
