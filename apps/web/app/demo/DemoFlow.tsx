@@ -225,9 +225,9 @@ export default function DemoFlow() {
           />
         )}
         {step === "content-detail" && (
-          <StepContentDetail content={selectedContent} onNext={next} onBack={back} />
+          <StepContentDetail content={selectedContent} onBack={back} />
         )}
-        {step === "repurpose-new" && <StepRepurposeNew onNext={next} onBack={back} />}
+        {step === "repurpose-new" && <StepRepurposeNew onNext={next} />}
         {step === "repurpose-review" && (
           <StepRepurposeReview
             derivatives={derivatives}
@@ -237,7 +237,6 @@ export default function DemoFlow() {
               )
             }
             onNext={next}
-            onBack={back}
           />
         )}
         {step === "publish-calendar" && <StepPublishCalendar derivatives={derivatives} />}
@@ -822,7 +821,7 @@ function InsightCard({
 
 // ─── Step 5: Content detail ───────────────────────────────────────────────────
 
-function StepContentDetail({ content, onNext: _onNext, onBack }: NavProps & { content: DemoContentItem }) {
+function StepContentDetail({ content, onBack }: { content: DemoContentItem; onBack: () => void }) {
   const [metric, setMetric] = useState<"views" | "engagement">("views");
   const badge = PLATFORM_BADGE[content.platform] ?? { bg: "#f3f4f6", color: "#374151" };
 
@@ -907,7 +906,7 @@ function StepContentDetail({ content, onNext: _onNext, onBack }: NavProps & { co
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={metric === "views" ? formatNumber : (v) => `${v}%`} tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={false} tickLine={false} width={48} />
-                <Tooltip formatter={(v: number) => [metric === "views" ? formatNumber(v) : `${v.toFixed(2)}%`, metric === "views" ? "Views" : "Engagement"]} />
+                <Tooltip formatter={(v: number | undefined) => [v == null ? "—" : metric === "views" ? formatNumber(v) : `${v.toFixed(2)}%`, metric === "views" ? "Views" : "Engagement"]} />
                 <Line type="monotone" dataKey={metric} stroke={PLATFORM_COLORS[content.platform] ?? "#2563eb"} strokeWidth={2.5} dot={{ r: 5 }} activeDot={{ r: 7 }} connectNulls />
               </LineChart>
             </ResponsiveContainer>
@@ -954,7 +953,7 @@ function StepContentDetail({ content, onNext: _onNext, onBack }: NavProps & { co
 
 // ─── Step 6: Repurpose new ────────────────────────────────────────────────────
 
-function StepRepurposeNew({ onNext, onBack: _onBack }: NavProps) {
+function StepRepurposeNew({ onNext }: { onNext: () => void }) {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -1057,8 +1056,8 @@ function StepRepurposeReview({
   derivatives,
   onApprove,
   onNext,
-  onBack: _onBack,
-}: NavProps & {
+}: {
+  onNext: () => void;
   derivatives: DemoDerivative[];
   onApprove: (format: string) => void;
 }) {
