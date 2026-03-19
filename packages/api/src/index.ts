@@ -8,7 +8,7 @@ export type { Creator, ConnectedPlatform, ContentItem } from "@meridian/types";
 
 // ─── Token encryption ─────────────────────────────────────────────────────────
 
-export { encryptToken, decryptToken } from "./crypto";
+export { encryptToken, decryptToken, validateEncryptionKey } from "./crypto";
 
 // ─── Supabase config ──────────────────────────────────────────────────────────
 

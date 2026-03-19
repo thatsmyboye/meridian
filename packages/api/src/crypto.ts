@@ -49,6 +49,17 @@ export function encryptToken(plaintext: string): string {
 }
 
 /**
+ * Validates that TOKEN_ENCRYPTION_KEY is present and correctly formatted.
+ * Call this at application startup to catch misconfiguration before any user
+ * traffic hits the encryption/decryption paths.
+ *
+ * Throws with a descriptive message if the key is missing or invalid.
+ */
+export function validateEncryptionKey(): void {
+  getEncryptionKey(); // throws with a clear message if misconfigured
+}
+
+/**
  * Decrypts a token string previously produced by encryptToken.
  * Throws if the key is wrong or the ciphertext has been tampered with.
  */
