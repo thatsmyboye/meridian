@@ -83,6 +83,22 @@ describe("encryptToken", () => {
     process.env.TOKEN_ENCRYPTION_KEY = TEST_KEY + "00"; // 66 chars = 33 bytes
     expect(() => encryptToken("token")).toThrow();
   });
+
+  it("accepts a key with leading/trailing whitespace (trims it)", () => {
+    process.env.TOKEN_ENCRYPTION_KEY = `  ${TEST_KEY}  `;
+    expect(() => encryptToken("token")).not.toThrow();
+  });
+
+  it("accepts a key with a trailing newline (trims it)", () => {
+    process.env.TOKEN_ENCRYPTION_KEY = `${TEST_KEY}\n`;
+    expect(() => encryptToken("token")).not.toThrow();
+  });
+
+  it("throws if TOKEN_ENCRYPTION_KEY contains non-hex characters", () => {
+    // Replace last 2 chars with 'zz' (not valid hex)
+    process.env.TOKEN_ENCRYPTION_KEY = TEST_KEY.slice(0, -2) + "zz";
+    expect(() => encryptToken("token")).toThrow(/non-hex/);
+  });
 });
 
 // ─── decryptToken ─────────────────────────────────────────────────────────────

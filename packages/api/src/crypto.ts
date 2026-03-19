@@ -19,17 +19,26 @@ const IV_LENGTH = 12; // bytes – recommended for GCM
 const KEY_LENGTH = 32; // bytes – AES-256
 
 function getEncryptionKey(): Buffer {
-  const keyHex = process.env.TOKEN_ENCRYPTION_KEY;
-  if (!keyHex) {
+  const raw = process.env.TOKEN_ENCRYPTION_KEY;
+  if (!raw) {
     throw new Error("TOKEN_ENCRYPTION_KEY environment variable is not set");
   }
-  const key = Buffer.from(keyHex, "hex");
-  if (key.length !== KEY_LENGTH) {
+  // Trim whitespace so that keys copy-pasted with a trailing newline or
+  // surrounding spaces (common in CI/CD dashboards) still work.
+  const keyHex = raw.trim();
+  if (keyHex.length !== KEY_LENGTH * 2) {
     throw new Error(
-      `TOKEN_ENCRYPTION_KEY must be ${KEY_LENGTH * 2} hex characters (${KEY_LENGTH} bytes)`
+      `TOKEN_ENCRYPTION_KEY must be exactly ${KEY_LENGTH * 2} hex characters ` +
+        `(${KEY_LENGTH} bytes). Received ${keyHex.length} characters after trimming.`
     );
   }
-  return key;
+  if (!/^[0-9a-fA-F]+$/.test(keyHex)) {
+    throw new Error(
+      "TOKEN_ENCRYPTION_KEY contains non-hex characters. " +
+        `Generate a valid key with: node -e "console.log(require('crypto').randomBytes(${KEY_LENGTH}).toString('hex'))"`
+    );
+  }
+  return Buffer.from(keyHex, "hex");
 }
 
 /**
