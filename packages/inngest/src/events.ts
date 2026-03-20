@@ -99,6 +99,11 @@ export type MeridianEvents = {
     };
   };
 
+  /** Triggers a one-time backfill of snapshots for all un-snapshotted content items. */
+    "analytics/backfill.requested": {
+      data: Record<string, never>;
+    };
+   
   /**
    * Fired when a creator cancels a scheduled derivative publish.
    * The Inngest function listening for `repurpose/derivative.scheduled`
