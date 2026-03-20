@@ -30,9 +30,13 @@ async function generateSingleDerivative(
   insightContext: string,
   creatorId?: string,
 ): Promise<{ content: string; char_count: number }> {
-  const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY!,
-  });
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "ANTHROPIC_API_KEY environment variable is not set. Cannot generate derivatives."
+    );
+  }
+  const anthropic = new Anthropic({ apiKey });
 
   const systemPrompt = insightContext
     ? `${format.systemPrompt}${insightContext}`

@@ -300,7 +300,14 @@ export const extractRepurposeTranscript = inngest.createFunction(
           type: ext === "mp3" ? "audio/mpeg" : "audio/mp4",
         });
 
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+        const openaiApiKey = process.env.OPENAI_API_KEY;
+        if (!openaiApiKey) {
+          console.warn(
+            `[transcript] OPENAI_API_KEY is not set; skipping Whisper fallback for content_item ${contentItem.id}`
+          );
+          return null;
+        }
+        const openai = new OpenAI({ apiKey: openaiApiKey });
         const result = await openai.audio.transcriptions.create({
           model: "whisper-1",
           file: audioFile,
