@@ -110,12 +110,12 @@ async function fetchDashboard(): Promise<DashboardData | null> {
 
   const { data: snapshots } = await supabase
     .from("performance_snapshots")
-    .select("content_item_id, views, engagement_rate, snapshot_date")
+    .select("content_item_id, views, engagement_rate, snapshot_at")
     .in(
       "content_item_id",
       contentItems.map((c) => c.id)
     )
-    .order("snapshot_date", { ascending: false });
+    .order("snapshot_at", { ascending: false });
 
   // Keep only the latest snapshot per content item
   const latest = new Map<string, { views: number; engagementRate: number }>();
