@@ -92,7 +92,10 @@ function pickCaptionTrackId(
  *                            YouTube Data API captions.list + captions.download.
  *  4. whisper-fallback     – If captions are unavailable, fetch the audio from
  *                            media_urls[0] and transcribe via OpenAI Whisper.
- *  5. store-transcript     – Persist the transcript (or empty string) to
+ *  5. description-fallback – (YouTube only) If captions + Whisper both fail,
+ *                            use the video description from raw_data as a
+ *                            minimal transcript so generation can still run.
+ *  6. store-transcript     – Persist the transcript (or empty string) to
  *                            repurpose_jobs.source_transcript.
  */
 export const extractRepurposeTranscript = inngest.createFunction(
@@ -123,7 +126,7 @@ export const extractRepurposeTranscript = inngest.createFunction(
 
       const { data: contentItem, error: contentErr } = await supabase
         .from("content_items")
-        .select("id, platform, content_type, body, external_id, media_urls, platform_id")
+        .select("id, platform, content_type, body, external_id, media_urls, platform_id, raw_data")
         .eq("id", job.source_item_id)
         .single();
 
@@ -312,7 +315,23 @@ export const extractRepurposeTranscript = inngest.createFunction(
       });
     }
 
-    // ── Step 5: Persist the transcript ────────────────────────────────────────
+    // ── Step 5: Description fallback for YouTube when captions + Whisper fail ─
+    // YouTube podcasts and videos without captions or direct audio URLs can
+    // still be repurposed using the video's description from the raw API data.
+    if (!transcript && contentItem.platform === "youtube") {
+      const rawData = contentItem.raw_data as {
+        snippet?: { description?: string };
+      } | null;
+      const description = rawData?.snippet?.description?.trim();
+      if (description) {
+        transcript = `Video description:\n${description}`;
+        console.info(
+          `[transcript] Using video description as transcript fallback for content_item ${contentItem.id} (${description.length} chars)`
+        );
+      }
+    }
+
+    // ── Step 6: Persist the transcript ────────────────────────────────────────
     await step.run("store-transcript", async () => {
       const supabase = getSupabaseAdmin();
 
@@ -328,7 +347,7 @@ export const extractRepurposeTranscript = inngest.createFunction(
       }
     });
 
-    // ── Step 6: Emit transcript.extracted event for downstream steps ──────────
+    // ── Step 7: Emit transcript.extracted event for downstream steps ──────────
     const transcriptLength = transcript?.length ?? 0;
 
     await step.sendEvent("emit-transcript-extracted", {

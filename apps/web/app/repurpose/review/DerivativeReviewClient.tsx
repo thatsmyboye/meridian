@@ -36,8 +36,10 @@ const FORMAT_LABELS: Record<string, string> = {
   twitter_thread: "Twitter / X Thread",
   linkedin_post: "LinkedIn Post",
   instagram_caption: "Instagram Caption",
+  instagram_carousel: "Instagram Carousel",
   newsletter_blurb: "Newsletter Blurb",
   tiktok_script: "TikTok Script",
+  podcast_show_notes: "Podcast Show Notes",
 };
 
 const PLATFORM_LIMITS: Record<string, number> = {
