@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
+import { TIER_LIMITS, type SubscriptionTier } from "@/lib/subscription";
 import ConnectionsClient, { type ConnectedPlatformRow } from "./ConnectionsClient";
 
 /**
@@ -21,16 +22,26 @@ export default async function ConnectionsPage() {
 
   const { data: creator } = await supabase
     .from("creators")
-    .select("id")
+    .select("id, subscription_tier")
     .eq("auth_user_id", user.id)
     .single();
 
   if (!creator) redirect("/login");
 
-  const { data } = await supabase
-    .from("connected_platforms")
-    .select("platform, platform_username, status, last_synced_at")
-    .eq("creator_id", creator.id);
+  const tier = ((creator.subscription_tier as SubscriptionTier) ?? "free");
+  const platformLimit = TIER_LIMITS[tier].platforms;
+
+  const [{ data }, { count: activePlatformCount }] = await Promise.all([
+    supabase
+      .from("connected_platforms")
+      .select("platform, platform_username, status, last_synced_at")
+      .eq("creator_id", creator.id),
+    supabase
+      .from("connected_platforms")
+      .select("*", { count: "exact", head: true })
+      .eq("creator_id", creator.id)
+      .neq("status", "disconnected"),
+  ]);
 
   const initialRows = (data ?? []) as ConnectedPlatformRow[];
 
@@ -77,7 +88,13 @@ export default async function ConnectionsPage() {
       </div>
 
       {/* ── Platform cards (client component — handles real-time sync progress) ── */}
-      <ConnectionsClient creatorId={creator.id} initialRows={initialRows} />
+      <ConnectionsClient
+        creatorId={creator.id}
+        initialRows={initialRows}
+        tier={tier}
+        activePlatformCount={activePlatformCount ?? 0}
+        platformLimit={platformLimit}
+      />
     </main>
   );
 }
