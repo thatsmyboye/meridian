@@ -43,10 +43,10 @@ export default async function PlatformsPage() {
         const { data: snapshots } = await supabase
           .from("performance_snapshots")
           .select(
-            "content_item_id, views, engagement_rate, likes, shares, comments, reach, open_rate, click_rate, snapshot_date",
+            "content_item_id, views, engagement_rate, likes, shares, comments, reach, open_rate, click_rate, snapshot_at",
           )
           .in("content_item_id", contentIds)
-          .order("snapshot_date", { ascending: false });
+          .order("snapshot_at", { ascending: false });
 
         // Keep only the latest snapshot per content item (snapshots already
         // ordered descending so first hit per content_item_id is latest).
