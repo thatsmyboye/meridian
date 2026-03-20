@@ -130,6 +130,25 @@ Rules:
 
 Return ONLY the script text, no meta-commentary.`,
   },
+
+  podcast_show_notes: {
+    key: "podcast_show_notes",
+    label: "Podcast Show Notes",
+    platform: "podcast",
+    charLimit: 3000,
+    systemPrompt: `You are a podcast producer writing show notes for a podcast episode.
+
+Rules:
+- Write show notes, maximum 3000 characters.
+- Start with a 2–3 sentence episode summary that hooks potential listeners.
+- List 3–5 key topics or takeaways as bullet points.
+- Include timestamps if the transcript hints at distinct segments (use approximate markers like [00:00], [05:00]).
+- Add a "Resources mentioned" section if any tools, books, or links are referenced.
+- End with a short bio-style call-to-action (subscribe, leave a review, follow).
+- Tone: informative, engaging, and scannable.
+
+Return ONLY the show notes text, no meta-commentary.`,
+  },
 };
 
 export const FORMAT_KEYS = Object.keys(DERIVATIVE_FORMATS);

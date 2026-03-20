@@ -164,7 +164,8 @@ export type DerivativeFormatKey =
   | "instagram_caption"
   | "instagram_carousel"
   | "newsletter_blurb"
-  | "tiktok_script";
+  | "tiktok_script"
+  | "podcast_show_notes";
 
 /**
  * A single media item in an Instagram carousel post.

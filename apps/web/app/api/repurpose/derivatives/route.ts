@@ -20,8 +20,10 @@ const DERIVATIVE_PLATFORM_MAP: Record<string, string> = {
   twitter_thread: "twitter",
   linkedin_post: "linkedin",
   instagram_caption: "instagram",
+  instagram_carousel: "instagram",
   newsletter_blurb: "other",
   tiktok_script: "tiktok",
+  podcast_show_notes: "podcast",
 };
 
 // Human-readable labels for each derivative format (used as content_item title)
@@ -29,8 +31,10 @@ const DERIVATIVE_FORMAT_LABELS: Record<string, string> = {
   twitter_thread: "Twitter / X Thread",
   linkedin_post: "LinkedIn Post",
   instagram_caption: "Instagram Caption",
+  instagram_carousel: "Instagram Carousel",
   newsletter_blurb: "Newsletter Blurb",
   tiktok_script: "TikTok Script",
+  podcast_show_notes: "Podcast Show Notes",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

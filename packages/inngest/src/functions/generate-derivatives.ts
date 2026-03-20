@@ -150,10 +150,13 @@ export const generateDerivatives = inngest.createFunction(
       return buildInsightContext(insights);
     });
 
-    // Determine which formats to generate
+    // Determine which formats to generate.
+    // instagram_carousel requires explicit carousel images from the user so it
+    // is never included in the "all formats" default — only when explicitly
+    // chosen.
     const formatsToGenerate = selectedFormats.length > 0
       ? selectedFormats.filter((f) => DERIVATIVE_FORMATS[f])
-      : Object.keys(DERIVATIVE_FORMATS);
+      : Object.keys(DERIVATIVE_FORMATS).filter((f) => f !== "instagram_carousel");
 
     // ── Step 3: Generate each derivative ─────────────────────────────────────
     const derivatives: Derivative[] = [];

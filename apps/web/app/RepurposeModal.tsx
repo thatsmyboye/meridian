@@ -31,6 +31,7 @@ const DERIVATIVE_FORMATS: { value: string; label: string }[] = [
   { value: "instagram_caption", label: "Instagram Caption" },
   { value: "newsletter_blurb", label: "Newsletter Blurb" },
   { value: "tiktok_script", label: "TikTok Script" },
+  { value: "podcast_show_notes", label: "Podcast Show Notes" },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
