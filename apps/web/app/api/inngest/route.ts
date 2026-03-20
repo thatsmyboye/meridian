@@ -22,6 +22,7 @@ import {
   handlePublishFailure,
   linkedinTokenExpiryCron,
   expireTrialsCron,
+  backfillSnapshots,
 } from "@meridian/inngest";
 
 /**
@@ -61,5 +62,6 @@ export const { GET, POST, PUT } = serve({
     handlePublishFailure,
     linkedinTokenExpiryCron,
     expireTrialsCron,
+    backfillSnapshots,
   ],
 });
