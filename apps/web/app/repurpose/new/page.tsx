@@ -37,7 +37,12 @@ export default function NewTextImportPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
+  function clearError() {
+    if (status === "error") setStatus("idle");
+  }
+
   function toggleFormat(value: string) {
+    clearError();
     setSelectedFormats((prev) => {
       const next = new Set(prev);
       if (next.has(value)) {
@@ -146,7 +151,7 @@ export default function NewTextImportPage() {
             id="title"
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => { setTitle(e.target.value); clearError(); }}
             placeholder="e.g. My Weekly Newsletter – Issue #42"
             maxLength={300}
             style={{
@@ -184,7 +189,7 @@ export default function NewTextImportPage() {
           <textarea
             id="body"
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => { setBody(e.target.value); clearError(); }}
             placeholder="Paste your text here…"
             rows={14}
             style={{
@@ -262,7 +267,7 @@ export default function NewTextImportPage() {
                     name="target_platform"
                     value={p.value}
                     checked={isSelected}
-                    onChange={() => setSelectedPlatform(p.value)}
+                    onChange={() => { setSelectedPlatform(p.value); clearError(); }}
                     style={{ accentColor: "#2563eb" }}
                   />
                   {p.label}

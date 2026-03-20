@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -14,10 +14,19 @@ interface ErrorProps {
  * and renders a branded fallback instead of Next.js's default error page.
  */
 export default function GlobalError({ error, reset }: ErrorProps) {
+  const router = useRouter();
+
   useEffect(() => {
     // Log to console in development; swap for an error-reporting service in prod
     console.error("[Meridian] Unhandled error:", error);
   }, [error]);
+
+  function handleGoHome() {
+    // Invalidate the router cache for the errored segment so navigating back
+    // to it fetches fresh data from the server instead of the cached error state.
+    router.refresh();
+    router.push("/");
+  }
 
   return (
     <main
@@ -75,8 +84,8 @@ export default function GlobalError({ error, reset }: ErrorProps) {
         >
           Try again
         </button>
-        <Link
-          href="/"
+        <button
+          onClick={handleGoHome}
           style={{
             background: "#f3f4f6",
             color: "#374151",
@@ -85,12 +94,11 @@ export default function GlobalError({ error, reset }: ErrorProps) {
             padding: "10px 22px",
             fontWeight: 600,
             fontSize: 14,
-            textDecoration: "none",
-            display: "inline-block",
+            cursor: "pointer",
           }}
         >
           Go home
-        </Link>
+        </button>
       </div>
     </main>
   );
