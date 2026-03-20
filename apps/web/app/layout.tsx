@@ -22,6 +22,12 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  const userDisplay =
+    (user?.user_metadata?.full_name as string | undefined) ??
+    (user?.user_metadata?.name as string | undefined) ??
+    user?.email ??
+    null;
+
   return (
     <html lang="en">
       <body>
@@ -32,7 +38,7 @@ export default async function RootLayout({
           </Suspense>
           {/* Links Supabase auth user to PostHog profile */}
           <PostHogIdentifier />
-          <AppHeader isLoggedIn={!!user} />
+          <AppHeader isLoggedIn={!!user} userDisplay={userDisplay} />
           {children}
         </PostHogProvider>
       </body>

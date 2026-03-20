@@ -17,7 +17,13 @@ function isActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
-export default function AppHeader({ isLoggedIn }: { isLoggedIn: boolean }) {
+export default function AppHeader({
+  isLoggedIn,
+  userDisplay,
+}: {
+  isLoggedIn: boolean;
+  userDisplay?: string | null;
+}) {
   const pathname = usePathname();
 
   // Don't show nav on login or auth pages
@@ -54,8 +60,18 @@ export default function AppHeader({ isLoggedIn }: { isLoggedIn: boolean }) {
           })}
         </nav>
 
-        {/* Settings + Sign out */}
+        {/* Account status + Settings + Sign out */}
         <div className={styles.actions}>
+          {!isLoggedIn && (
+            <Link href="/login" className={styles.loginLink}>
+              Log In
+            </Link>
+          )}
+          {isLoggedIn && userDisplay && (
+            <span className={styles.userStatus} title={userDisplay}>
+              {userDisplay}
+            </span>
+          )}
           <Link href="/settings/connections" className={styles.actionLink}>
             Settings
           </Link>
