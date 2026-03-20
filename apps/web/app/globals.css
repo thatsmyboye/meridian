@@ -93,3 +93,9 @@ body {
   animation: shimmer 1.5s infinite;
   border-radius: 6px;
 }
+ 
+/* ─── Repurpose queue ──────────────────────────────────────────────────────── */
+ 
+.repurpose-job-row:hover {
+  background: #f9fafb;
+}
