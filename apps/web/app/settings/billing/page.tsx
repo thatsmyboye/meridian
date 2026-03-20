@@ -26,13 +26,20 @@ export default async function BillingPage() {
 
   const { data: creator } = await supabase
     .from("creators")
-    .select("id, subscription_tier, stripe_customer_id, stripe_subscription_id")
+    .select("id, subscription_tier, stripe_customer_id, stripe_subscription_id, trial_ends_at")
     .eq("auth_user_id", user.id)
     .single();
 
   const currentTier =
     (creator?.subscription_tier as "free" | "creator" | "pro" | null) ?? "free";
   const hasStripeCustomer = Boolean(creator?.stripe_customer_id);
+
+  // Active trial — only expose the expiry if it's in the future.
+  const trialEndsAt: string | null = (() => {
+    const raw = creator?.trial_ends_at as string | null | undefined;
+    if (!raw) return null;
+    return new Date(raw) > new Date() ? raw : null;
+  })();
 
   // ── Next billing date from Stripe ──────────────────────────────────────────
   let nextBillingDate: string | null = null;
@@ -122,6 +129,7 @@ export default async function BillingPage() {
         repurposeJobsUsed={repurposeJobsUsed}
         repurposeJobsLimit={repurposeJobsLimit}
         nextBillingDate={nextBillingDate}
+        trialEndsAt={trialEndsAt}
       />
     </main>
   );

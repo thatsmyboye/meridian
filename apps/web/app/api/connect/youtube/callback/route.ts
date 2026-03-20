@@ -181,18 +181,19 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 7. Fire platform/connected event to kick off content sync ────────────
-  try {
-    await inngest.send({
-      name: "platform/connected",
-      data: {
-        creator_id: creator.id,
-        platform: "youtube",
-        connected_platform_id: platformData.id,
-      },
-    });
-  } catch (err) {
-    console.error("[youtube/callback] inngest.send failed:", err);
-  }
+  // NOTE: Do NOT wrap in try/catch here. If inngest.send() fails (e.g. missing
+  // INNGEST_EVENT_KEY, dev server not running), we need a visible 500 rather
+  // than silently succeeding while the sync never starts. The platform row was
+  // already saved above, so the developer can re-trigger the sync once Inngest
+  // is configured correctly.
+  await inngest.send({
+    name: "platform/connected",
+    data: {
+      creator_id: creator.id,
+      platform: "youtube",
+      connected_platform_id: platformData.id,
+    },
+  });
 
   // ── 8. Clear state cookie and redirect to success ────────────────────────
   const response = NextResponse.redirect(`${siteUrl}/connect?success=youtube`);

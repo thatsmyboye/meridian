@@ -1,3 +1,4 @@
+import { decryptToken } from "@meridian/api";
 import { inngest } from "../client";
 import { ensureValidYouTubeToken } from "../lib/refreshYouTubeToken";
 import { getSupabaseAdmin } from "../lib/supabaseAdmin";
@@ -121,8 +122,16 @@ export const syncYoutubeMetadata = inngest.createFunction(
     // Checks expiry (5-minute buffer) and refreshes via Google if needed.
     // On refresh failure, marks the platform as reauth_required and returns
     // early — we do NOT throw so Inngest skips retries that would burn quota.
+    //
+    // IMPORTANT: we deliberately do NOT return the decrypted access token from
+    // this step. Inngest serialises step results into its execution-state store,
+    // so returning a plaintext credential would expose it in Inngest's logs.
+    // Instead we return only a success/failure flag and re-read the (possibly
+    // refreshed) encrypted token from the database afterwards.
     const tokenResult = await step.run("ensure-valid-token", async () => {
-      return ensureValidYouTubeToken(platformRow, getSupabaseAdmin());
+      const result = await ensureValidYouTubeToken(platformRow, getSupabaseAdmin());
+      if (!result.ok) return { ok: false as const, reason: result.reason };
+      return { ok: true as const };
     });
 
     if (!tokenResult.ok) {
@@ -134,7 +143,23 @@ export const syncYoutubeMetadata = inngest.createFunction(
       };
     }
 
-    const accessToken = tokenResult.accessToken;
+    // Re-read the current access_token_enc from the DB. If the step above
+    // refreshed the token it will have written a new encrypted value; if not,
+    // this returns the same row as step 1. Decrypting here keeps the plaintext
+    // token in memory only — it is never written to Inngest's step state.
+    const { data: freshPlatform, error: freshErr } = await getSupabaseAdmin()
+      .from("connected_platforms")
+      .select("access_token_enc")
+      .eq("id", connected_platform_id)
+      .single();
+
+    if (freshErr || !freshPlatform) {
+      throw new Error(
+        `Failed to re-read platform row after token check: ${freshErr?.message}`
+      );
+    }
+
+    const accessToken = decryptToken(freshPlatform.access_token_enc);
 
     // ── Step 2: resolve the channel's uploads playlist ID ───────────────────
     const uploadsPlaylistId = await step.run(

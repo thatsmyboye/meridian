@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,11 +54,13 @@ function UsageSummaryCard({
   repurposeJobsUsed,
   repurposeJobsLimit,
   nextBillingDate,
+  trialEndsAt,
 }: {
   currentTier: "free" | "creator" | "pro";
   repurposeJobsUsed: number;
   repurposeJobsLimit: number | null;
   nextBillingDate: string | null;
+  trialEndsAt: string | null;
 }) {
   const tierColor = TIER_COLORS[currentTier];
   const tierLabel =
@@ -78,6 +80,14 @@ function UsageSummaryCard({
       ? 0
       : Math.min((repurposeJobsUsed / repurposeJobsLimit) * 100, 100);
 
+  const trialExpiryLabel = trialEndsAt
+    ? new Date(trialEndsAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+
   return (
     <div
       style={{
@@ -88,6 +98,32 @@ function UsageSummaryCard({
         background: "#f9fafb",
       }}
     >
+      {/* Trial banner */}
+      {trialEndsAt && trialExpiryLabel && (
+        <div
+          style={{
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: 8,
+            padding: "10px 14px",
+            marginBottom: 16,
+            fontSize: 13,
+            color: "#1d4ed8",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <span style={{ fontWeight: 700 }}>Trial active</span>
+          <span style={{ color: "#3b82f6" }}>·</span>
+          <span>
+            Your <strong>{tierLabel}</strong> trial ends on{" "}
+            <strong>{trialExpiryLabel}</strong>. Subscribe before then to keep
+            access.
+          </span>
+        </div>
+      )}
+
       <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 16px", color: "#111827" }}>
         Current usage
       </h2>
@@ -259,6 +295,153 @@ function PlanCard({
   );
 }
 
+// ─── Promo code redemption ────────────────────────────────────────────────────
+
+function PromoCodeSection({
+  onRedeemed,
+}: {
+  onRedeemed: (tier: string, trialEndsAt: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<
+    { ok: true; message: string } | { ok: false; message: string } | null
+  >(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleToggle() {
+    setOpen((v) => !v);
+    setResult(null);
+    setCode("");
+  }
+
+  async function handleRedeem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/promo/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await res.json() as { tier?: string; trialEndsAt?: string; durationDays?: number; error?: string };
+      if (!res.ok) {
+        setResult({ ok: false, message: data.error ?? "Failed to redeem code." });
+      } else {
+        const expiresLabel = new Date(data.trialEndsAt!).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+        const tierLabel =
+          data.tier === "pro" ? "Pro" : data.tier === "creator" ? "Creator" : data.tier!;
+        setResult({
+          ok: true,
+          message: `${tierLabel} trial activated — expires ${expiresLabel}. The page will refresh.`,
+        });
+        setCode("");
+        onRedeemed(data.tier!, data.trialEndsAt!);
+      }
+    } catch {
+      setResult({ ok: false, message: "An unexpected error occurred. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        borderTop: "1px solid #e5e7eb",
+        paddingTop: 24,
+        marginTop: 8,
+      }}
+    >
+      <button
+        onClick={handleToggle}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          fontSize: 14,
+          color: "#6b7280",
+          textDecoration: "underline",
+          textDecorationStyle: "dashed",
+          textUnderlineOffset: 3,
+        }}
+      >
+        {open ? "Hide promo code" : "Have a promo code?"}
+      </button>
+
+      {open && (
+        <form
+          onSubmit={handleRedeem}
+          style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Enter code"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            disabled={loading}
+            autoFocus
+            style={{
+              flex: "1 1 180px",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              padding: "9px 12px",
+              fontSize: 14,
+              fontFamily: "monospace",
+              letterSpacing: "0.08em",
+              outline: "none",
+              background: loading ? "#f9fafb" : "#fff",
+            }}
+          />
+          <button
+            type="submit"
+            disabled={loading || !code.trim()}
+            style={{
+              background: loading || !code.trim() ? "#d1d5db" : "#111827",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "9px 20px",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: loading || !code.trim() ? "not-allowed" : "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {loading ? "Redeeming…" : "Redeem"}
+          </button>
+        </form>
+      )}
+
+      {result && (
+        <div
+          role="alert"
+          style={{
+            marginTop: 12,
+            background: result.ok ? "#f0fdf4" : "#fef2f2",
+            border: `1px solid ${result.ok ? "#bbf7d0" : "#fca5a5"}`,
+            borderRadius: 8,
+            padding: "10px 14px",
+            color: result.ok ? "#15803d" : "#b91c1c",
+            fontSize: 13,
+          }}
+        >
+          {result.message}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface BillingClientProps {
@@ -267,15 +450,19 @@ interface BillingClientProps {
   repurposeJobsUsed: number;
   repurposeJobsLimit: number | null;
   nextBillingDate: string | null;
+  trialEndsAt: string | null;
 }
 
 export default function BillingClient({
-  currentTier,
+  currentTier: initialTier,
   hasStripeCustomer,
   repurposeJobsUsed,
   repurposeJobsLimit,
   nextBillingDate,
+  trialEndsAt: initialTrialEndsAt,
 }: BillingClientProps) {
+  const [currentTier, setCurrentTier] = useState(initialTier);
+  const [trialEndsAt, setTrialEndsAt] = useState(initialTrialEndsAt);
   const [checkoutLoading, setCheckoutLoading] = useState<Plan | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -330,6 +517,7 @@ export default function BillingClient({
         repurposeJobsUsed={repurposeJobsUsed}
         repurposeJobsLimit={repurposeJobsLimit}
         nextBillingDate={nextBillingDate}
+        trialEndsAt={trialEndsAt}
       />
 
       {/* Current tier banner for free users */}
@@ -398,6 +586,17 @@ export default function BillingClient({
           </button>
         </div>
       )}
+
+      {/* Promo code redemption */}
+      <PromoCodeSection
+        onRedeemed={(tier, endsAt) => {
+          setCurrentTier(tier as "free" | "creator" | "pro");
+          setTrialEndsAt(endsAt);
+          // Reload after a brief delay so the server-rendered tier data
+          // refreshes without jarring the success message.
+          setTimeout(() => window.location.reload(), 2500);
+        }}
+      />
 
       {/* Error message */}
       {error && (
