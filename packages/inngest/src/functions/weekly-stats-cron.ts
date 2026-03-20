@@ -232,7 +232,7 @@ export const computeCreatorPatterns = inngest.createFunction(
     retries: 2,
     // Allow up to 10 creators to be processed in parallel without overloading
     // the database with concurrent read/write bursts.
-    concurrency: { limit: 10 },
+    concurrency: { limit: 5 },
   },
   { event: "patterns/analysis.requested" },
   async ({ event, step }) => {

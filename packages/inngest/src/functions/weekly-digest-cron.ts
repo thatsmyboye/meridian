@@ -145,7 +145,7 @@ export const sendWeeklyDigest = inngest.createFunction(
     id: "send-weekly-digest",
     name: "Send Weekly Digest Email",
     retries: 2,
-    concurrency: { limit: 10 },
+    concurrency: { limit: 5 },
   },
   { event: "digest/weekly.send" },
   async ({ event, step }) => {
