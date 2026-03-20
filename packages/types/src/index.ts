@@ -96,7 +96,7 @@ export interface PerformanceSnapshot {
   content_item_id: string;
   creator_id: string;
   day_mark: string;
-  snapshot_date: string;
+  snapshot_at: string;
   views: number | null;
   likes: number | null;
   comments: number | null;
