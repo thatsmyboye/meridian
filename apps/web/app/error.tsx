@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -14,18 +13,17 @@ interface ErrorProps {
  * and renders a branded fallback instead of Next.js's default error page.
  */
 export default function GlobalError({ error, reset }: ErrorProps) {
-  const router = useRouter();
-
-  useEffect(() => {
+    useEffect(() => {
     // Log to console in development; swap for an error-reporting service in prod
     console.error("[Meridian] Unhandled error:", error);
   }, [error]);
 
   function handleGoHome() {
-    // Invalidate the router cache for the errored segment so navigating back
-    // to it fetches fresh data from the server instead of the cached error state.
-    router.refresh();
-    router.push("/");
+    // Hard navigation clears the Next.js router cache and all error boundary
+    // state — soft navigation (router.push/refresh) re-fetches the errored
+    // route first, producing a second error digest and causing the page to
+    // cycle between two error IDs.
+    window.location.href = "/";
   }
 
   return (
