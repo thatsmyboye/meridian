@@ -234,6 +234,7 @@ export default async function RepurposeQueuePage() {
               <Link
                 key={job.id}
                 href={`/repurpose/review?job_id=${job.id}`}
+                className="repurpose-job-row"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 220px 160px 140px 32px",
@@ -244,14 +245,6 @@ export default async function RepurposeQueuePage() {
                   alignItems: "center",
                   gap: 0,
                   transition: "background 0.1s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.background =
-                    "#f9fafb";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.background =
-                    "transparent";
                 }}
               >
                 {/* Source title */}
