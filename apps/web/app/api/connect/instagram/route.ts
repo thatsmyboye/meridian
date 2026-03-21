@@ -76,8 +76,12 @@ export async function GET(request: Request) {
     }
   }
 
-  if (!process.env.META_APP_ID) {
-    console.error("[instagram] META_APP_ID env var is not set");
+  if (!process.env.META_APP_ID || !process.env.META_APP_SECRET) {
+    console.error(
+      "[instagram] Missing env vars:",
+      !process.env.META_APP_ID ? "META_APP_ID" : "",
+      !process.env.META_APP_SECRET ? "META_APP_SECRET" : ""
+    );
     return NextResponse.redirect(`${siteUrl}/connect?error=oauth_not_configured`);
   }
 
