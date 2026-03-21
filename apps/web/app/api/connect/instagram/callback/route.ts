@@ -106,9 +106,12 @@ export async function GET(request: NextRequest) {
   });
 
   if (!shortLivedRes.ok) {
+    const metaError = await shortLivedRes.text();
     console.error(
-      "[instagram/callback] Short-lived token exchange failed:",
-      await shortLivedRes.text()
+      "[instagram/callback] Short-lived token exchange failed" +
+        ` (HTTP ${shortLivedRes.status}):`,
+      metaError,
+      `| redirect_uri used: ${siteUrl}/api/connect/instagram/callback`
     );
     return NextResponse.redirect(
       `${siteUrl}/connect?error=token_exchange_failed`
@@ -132,9 +135,11 @@ export async function GET(request: NextRequest) {
   );
 
   if (!longLivedRes.ok) {
+    const metaError = await longLivedRes.text();
     console.error(
-      "[instagram/callback] Long-lived token exchange failed:",
-      await longLivedRes.text()
+      "[instagram/callback] Long-lived token exchange (fb_exchange_token) failed" +
+        ` (HTTP ${longLivedRes.status}):`,
+      metaError
     );
     return NextResponse.redirect(
       `${siteUrl}/connect?error=token_exchange_failed`
