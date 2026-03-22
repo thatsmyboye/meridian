@@ -48,6 +48,7 @@ interface MetaPageAccount {
 
 interface MetaPagesResponse {
   data: MetaPageAccount[];
+  paging?: { next?: string };
 }
 
 interface InstagramUserResponse {
@@ -155,26 +156,48 @@ export async function GET(request: NextRequest) {
   // ── 5a. Get Facebook Pages with linked Instagram Business Accounts ────────
   // We need pages_show_list scope to enumerate the creator's pages, then
   // read the instagram_business_account field to get the IG user ID.
-  const pagesRes = await fetch(
-    `${META_GRAPH_BASE}/me/accounts?fields=id,name,access_token,instagram_business_account`,
-    { headers: { Authorization: `Bearer ${longLivedTokens.access_token}` } }
-  );
+  // Meta paginates /me/accounts at 25 items per page, so we must follow
+  // paging.next cursors until we find a linked Instagram account or exhaust all pages.
+  let pageWithInstagram: MetaPageAccount | undefined;
+  let nextUrl: string | undefined =
+    `${META_GRAPH_BASE}/me/accounts?fields=id,name,access_token,instagram_business_account`;
+  let totalPages = 0;
+  let totalPagesChecked = 0;
+  const MAX_PAGE_FETCHES = 10; // safety cap: 10 × 25 = 250 pages
 
-  if (!pagesRes.ok) {
-    console.error(
-      "[instagram/callback] Pages fetch failed:",
-      await pagesRes.text()
+  while (nextUrl && totalPagesChecked < MAX_PAGE_FETCHES) {
+    const pagesRes: Response = await fetch(nextUrl, {
+      headers: { Authorization: `Bearer ${longLivedTokens.access_token}` },
+    });
+
+    if (!pagesRes.ok) {
+      console.error(
+        "[instagram/callback] Pages fetch failed:",
+        await pagesRes.text()
+      );
+      return NextResponse.redirect(
+        `${siteUrl}/connect?error=instagram_account_fetch_failed`
+      );
+    }
+
+    const pagesData: MetaPagesResponse = await pagesRes.json();
+    totalPages += pagesData.data.length;
+    totalPagesChecked++;
+
+    pageWithInstagram = pagesData.data.find(
+      (page) => page.instagram_business_account?.id
     );
-    return NextResponse.redirect(
-      `${siteUrl}/connect?error=instagram_account_fetch_failed`
-    );
+
+    if (pageWithInstagram) break;
+
+    nextUrl = pagesData.paging?.next;
   }
 
-  const pagesData: MetaPagesResponse = await pagesRes.json();
-
-  // Find the first Page that has a linked Instagram Business Account
-  const pageWithInstagram = pagesData.data.find(
-    (page) => page.instagram_business_account?.id
+  console.info(
+    `[instagram/callback] Scanned ${totalPages} Facebook page(s) across ${totalPagesChecked} API call(s).`,
+    pageWithInstagram
+      ? `Found Instagram Business Account: ${pageWithInstagram.instagram_business_account!.id}`
+      : "No linked Instagram Business Account found."
   );
 
   if (!pageWithInstagram?.instagram_business_account?.id) {
