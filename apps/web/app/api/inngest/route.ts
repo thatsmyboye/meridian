@@ -21,6 +21,7 @@ import {
   publishScheduledDerivative,
   handlePublishFailure,
   linkedinTokenExpiryCron,
+  twitterTokenRefreshCron,
   expireTrialsCron,
   backfillSnapshots,
 } from "@meridian/inngest";
@@ -61,6 +62,7 @@ export const { GET, POST, PUT } = serve({
     publishScheduledDerivative,
     handlePublishFailure,
     linkedinTokenExpiryCron,
+    twitterTokenRefreshCron,
     expireTrialsCron,
     backfillSnapshots,
   ],

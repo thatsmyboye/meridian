@@ -26,6 +26,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     "Connected to Meta but could not retrieve your Instagram account details.",
   creator_not_found: "Your creator profile was not found. Please sign out and back in.",
   save_failed: "Connected successfully but could not save credentials. Please try again.",
+  missing_verifier: "Session expired during authorisation. Please try again.",
+  user_fetch_failed: "Connected to X but could not retrieve your account details. Please try again.",
   access_denied: "You cancelled the authorisation request.",
   invalid_credentials: "The API key or publication ID you entered is not valid. Please check and try again.",
   unauthenticated: "You must be signed in to connect a platform.",

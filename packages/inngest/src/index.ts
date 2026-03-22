@@ -54,5 +54,6 @@ export {
   handlePublishFailure,
 } from "./functions/publish-scheduled-derivative";
 export { linkedinTokenExpiryCron } from "./functions/linkedin-token-expiry-cron";
+export { twitterTokenRefreshCron } from "./functions/twitter-token-refresh-cron";
 export { expireTrialsCron } from "./functions/expire-trials-cron";
 export { backfillSnapshots } from "./functions/backfill-snapshots";
