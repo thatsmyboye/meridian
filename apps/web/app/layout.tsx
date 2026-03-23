@@ -10,6 +10,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Meridian",
   description: "Know what works. Ship it everywhere.",
+  icons: {
+    icon: "/Meridian.jpg",
+    shortcut: "/Meridian.jpg",
+    apple: "/Meridian.jpg",
+  },
 };
 
 export default async function RootLayout({

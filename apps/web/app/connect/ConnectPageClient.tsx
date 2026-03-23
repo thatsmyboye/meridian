@@ -31,6 +31,7 @@ interface ConnectPageClientProps {
 const SUCCESS_MESSAGES: Record<string, string> = {
   youtube: "YouTube connected successfully. Your content will be imported shortly.",
   instagram: "Instagram connected successfully. Your posts will be imported shortly.",
+  substack: "Substack connected successfully. Your posts will be imported shortly.",
   beehiiv: "Beehiiv connected successfully. Your newsletter posts will be imported shortly.",
   twitter: "X (Twitter) connected successfully. Your tweets will be imported shortly.",
   tiktok: "TikTok connected successfully. Your videos will be imported shortly.",
@@ -129,6 +130,14 @@ export default function ConnectPageClient({
       note: "Requires a Business or Creator account linked to a Facebook Page",
       href: "/api/connect/instagram",
       color: "#7c3aed",
+    },
+    {
+      id: "substack",
+      label: "Substack",
+      description: "Import newsletter posts from your public RSS feed",
+      note: "Only public posts are available — Substack does not offer a developer API",
+      href: "/connect/substack",
+      color: "#FF6719",
     },
     {
       id: "beehiiv",
