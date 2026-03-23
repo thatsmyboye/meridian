@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
@@ -36,7 +37,13 @@ export default function AppHeader({
       <div className={styles.inner}>
         {/* Logo / Brand */}
         <Link href="/" className={styles.logo}>
-          <span className={styles.logoBadge}>M</span>
+          <Image
+            src="/Meridian.jpg"
+            alt="Meridian"
+            width={28}
+            height={28}
+            className={styles.logoBadge}
+          />
           Meridian
         </Link>
 
