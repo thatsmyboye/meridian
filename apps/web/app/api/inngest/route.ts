@@ -22,6 +22,7 @@ import {
   handlePublishFailure,
   linkedinTokenExpiryCron,
   twitterTokenRefreshCron,
+  tiktokTokenRefreshCron,
   expireTrialsCron,
   backfillSnapshots,
 } from "@meridian/inngest";
@@ -63,6 +64,7 @@ export const { GET, POST, PUT } = serve({
     handlePublishFailure,
     linkedinTokenExpiryCron,
     twitterTokenRefreshCron,
+    tiktokTokenRefreshCron,
     expireTrialsCron,
     backfillSnapshots,
   ],
