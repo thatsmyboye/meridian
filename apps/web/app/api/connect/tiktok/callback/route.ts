@@ -93,6 +93,11 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 3. Exchange authorization code + PKCE verifier for tokens ───────────
+  if (!process.env.TIKTOK_CLIENT_KEY || !process.env.TIKTOK_CLIENT_SECRET) {
+    console.error("[tiktok/callback] TIKTOK_CLIENT_KEY or TIKTOK_CLIENT_SECRET env var is not set");
+    return NextResponse.redirect(`${siteUrl}/connect?error=oauth_not_configured`);
+  }
+
   const tokenRes = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
