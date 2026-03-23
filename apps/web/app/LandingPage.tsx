@@ -31,6 +31,10 @@ const PLATFORMS = [
   { name: "YouTube", color: "#dc2626" },
   { name: "Instagram", color: "#7c3aed" },
   { name: "Beehiiv", color: "#f97316" },
+  { name: "TikTok", color: "#010101" },
+  { name: "LinkedIn", color: "#0a66c2" },
+  { name: "Twitter / X", color: "#1d9bf0" },
+  { name: "Substack", color: "#ff6719" },
 ];
 
 export default function LandingPage() {
@@ -257,8 +261,10 @@ export default function LandingPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gridTemplateColumns: "repeat(2, 1fr)",
             gap: 16,
+            maxWidth: 680,
+            margin: "0 auto",
           }}
         >
           {FEATURES.map((feature) => (

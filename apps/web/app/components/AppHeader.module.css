@@ -30,16 +30,10 @@
 }
 
 .logoBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 28px;
   height: 28px;
   border-radius: 7px;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 800;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
