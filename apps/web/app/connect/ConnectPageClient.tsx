@@ -135,7 +135,7 @@ export default function ConnectPageClient({
       id: "substack",
       label: "Substack",
       description: "Import newsletter posts from your public RSS feed",
-      note: "Only public posts are available — Substack does not offer a developer API",
+      note: "Only public posts are available",
       href: "/connect/substack",
       color: "#FF6719",
     },
