@@ -30,6 +30,7 @@ export {
   fetchInstagramAnalyticsSnapshot,
 } from "./functions/instagram-analytics-cron";
 export { syncBeehiivPosts } from "./functions/beehiiv-sync";
+export { syncSubstackPosts } from "./functions/substack-sync";
 export {
   beehiivAnalyticsCron,
   fetchBeehiivAnalyticsSnapshot,

@@ -26,8 +26,9 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
 export type Platform =
   | "youtube"
   | "instagram"
-  | "tiktok"
+  | "substack"
   | "beehiiv"
+  | "tiktok"
   | "twitter"
   | "linkedin";
 
@@ -37,7 +38,7 @@ export type ContentType = "video" | "short" | "newsletter" | "podcast";
 export const CONTENT_TYPE_PLATFORMS: Record<ContentType, Platform[]> = {
   video: ["youtube"],
   short: ["instagram", "tiktok"],
-  newsletter: ["beehiiv"],
+  newsletter: ["beehiiv", "substack"],
   podcast: ["youtube"],
 };
 
