@@ -6,15 +6,17 @@ import { disconnectPlatform } from "./actions";
 interface DisconnectButtonProps {
   platform: string;
   platformLabel: string;
+  onDisconnect?: () => void;
 }
 
-export default function DisconnectButton({ platform, platformLabel }: DisconnectButtonProps) {
+export default function DisconnectButton({ platform, platformLabel, onDisconnect }: DisconnectButtonProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleConfirm() {
     startTransition(async () => {
       await disconnectPlatform(platform);
+      onDisconnect?.();
       setShowConfirm(false);
     });
   }
