@@ -120,7 +120,7 @@ export const syncLinkedInPosts = inngest.createFunction(
 
         const url = new URL("https://api.linkedin.com/v2/ugcPosts");
         url.searchParams.set("q", "authors");
-        url.searchParams.set("authors", `List(${encodeURIComponent(personUrn)})`);
+        url.searchParams.set("authors", `List(${personUrn})`);
         url.searchParams.set("start", String(start));
         url.searchParams.set("count", String(PAGE_SIZE));
 
