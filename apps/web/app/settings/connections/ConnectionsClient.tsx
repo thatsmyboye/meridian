@@ -450,7 +450,17 @@ export default function ConnectionsClient({
                     </a>
 
                     {isConnected && (
-                      <DisconnectButton platform={key} platformLabel={cfg.label} />
+                      <DisconnectButton
+                        platform={key}
+                        platformLabel={cfg.label}
+                        onDisconnect={() =>
+                          setRows((prev) =>
+                            prev.map((r) =>
+                              r.platform === key ? { ...r, status: "disconnected" } : r
+                            )
+                          )
+                        }
+                      />
                     )}
                   </>
                 )}

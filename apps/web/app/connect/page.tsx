@@ -2,16 +2,16 @@
  * /connect – Platform connection page
  *
  * Server component: fetches the creator's subscription tier and current
- * platform count, then renders ConnectPageClient with that data.
+ * platform connections, then renders ConnectPageClient with that data.
  *
- * Supports YouTube, Instagram, Beehiiv, Twitter/X, TikTok, and LinkedIn.
+ * Supports YouTube, Instagram, Substack, Beehiiv, Twitter/X, TikTok, and LinkedIn.
  * Shows success/error feedback via query params set by the connection routes.
  */
 
 import { createServerClient } from "@/lib/supabase/server";
 import { TIER_LIMITS } from "@/lib/subscription";
 import type { SubscriptionTier } from "@/lib/subscription";
-import ConnectPageClient from "./ConnectPageClient";
+import ConnectPageClient, { type ConnectedPlatformRow } from "./ConnectPageClient";
 
 const ERROR_MESSAGES: Record<string, string> = {
   missing_params: "The OAuth response was incomplete. Please try again.",
@@ -48,8 +48,9 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
   } = await supabase.auth.getUser();
 
   let tier: SubscriptionTier = "free";
-  let platformCount = 0;
-  let connectedPlatforms: { platform: string }[] = [];
+  let creatorId = "";
+  let initialRows: ConnectedPlatformRow[] = [];
+  let activePlatformCount = 0;
 
   if (user) {
     const { data: creator } = await supabase
@@ -60,15 +61,22 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
 
     if (creator) {
       tier = (creator.subscription_tier as SubscriptionTier) ?? "free";
+      creatorId = creator.id;
 
-      const { data: platforms, count } = await supabase
-        .from("connected_platforms")
-        .select("platform", { count: "exact" })
-        .eq("creator_id", creator.id)
-        .neq("status", "disconnected");
+      const [{ data: rows }, { count }] = await Promise.all([
+        supabase
+          .from("connected_platforms")
+          .select("platform, platform_username, status, last_synced_at")
+          .eq("creator_id", creator.id),
+        supabase
+          .from("connected_platforms")
+          .select("*", { count: "exact", head: true })
+          .eq("creator_id", creator.id)
+          .neq("status", "disconnected"),
+      ]);
 
-      platformCount = count ?? 0;
-      connectedPlatforms = (platforms ?? []) as { platform: string }[];
+      initialRows = (rows ?? []) as ConnectedPlatformRow[];
+      activePlatformCount = count ?? 0;
     }
   }
 
@@ -83,11 +91,12 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
 
   return (
     <ConnectPageClient
+      creatorId={creatorId}
+      initialRows={initialRows}
       showLimitModal={showLimitModal}
       tier={tier}
-      platformCount={platformCount}
+      activePlatformCount={activePlatformCount}
       platformLimit={platformLimit === Infinity ? 999 : platformLimit}
-      connectedPlatforms={connectedPlatforms}
       errorMessage={errorMessage}
       successPlatform={success ?? null}
     />
