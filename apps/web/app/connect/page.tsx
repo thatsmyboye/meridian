@@ -66,7 +66,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       const [{ data: rows }, { count }] = await Promise.all([
         supabase
           .from("connected_platforms")
-          .select("platform, platform_username, status, last_synced_at")
+          .select("platform, platform_username, status, last_synced_at, last_sync_count")
           .eq("creator_id", creator.id),
         supabase
           .from("connected_platforms")
