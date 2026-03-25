@@ -19,9 +19,15 @@ const ERROR_MESSAGES: Record<string, string> = {
   token_exchange_failed: "Could not complete authentication. Please try again.",
   channel_fetch_failed: "Connected to Google but could not retrieve your YouTube channel.",
   no_youtube_channel: "No YouTube channel is associated with that Google account.",
+  no_facebook_pages_granted:
+    "Meridian wasn't granted access to any of your Facebook Pages. " +
+    "Please click Connect again and, when Meta asks which Pages to give access to, " +
+    "make sure to select the Facebook Page that has your Instagram account linked.",
   no_instagram_business_account:
-    "No Instagram Business or Creator account was found linked to your Facebook Page. " +
-    "Make sure your Instagram account is set to Business or Creator and is connected to a Facebook Page.",
+    "Your Facebook Pages were found but none have an Instagram Business or Creator account linked. " +
+    "To fix this: go to your Facebook Page → Settings → Linked accounts → Instagram and connect " +
+    "your Instagram account from there. Also confirm your Instagram account type is set to " +
+    "Business or Creator (not Personal), then click Connect again.",
   instagram_account_fetch_failed:
     "Connected to Meta but could not retrieve your Instagram account details.",
   creator_not_found: "Your creator profile was not found. Please sign out and back in.",
@@ -89,6 +95,18 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       ? (ERROR_MESSAGES[error] ?? "An unexpected error occurred. Please try again.")
       : null;
 
+  // Derive which platform the error originated from so the UI can show a
+  // platform-specific "Try again" link alongside the error banner.
+  const INSTAGRAM_ERRORS = new Set([
+    "no_facebook_pages_granted",
+    "no_instagram_business_account",
+    "instagram_account_fetch_failed",
+    "token_exchange_failed",
+    "missing_params",
+    "state_mismatch",
+  ]);
+  const errorPlatform = error && INSTAGRAM_ERRORS.has(error) ? "instagram" : null;
+
   return (
     <ConnectPageClient
       creatorId={creatorId}
@@ -98,6 +116,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       activePlatformCount={activePlatformCount}
       platformLimit={platformLimit === Infinity ? 999 : platformLimit}
       errorMessage={errorMessage}
+      errorPlatform={errorPlatform}
       successPlatform={success ?? null}
     />
   );

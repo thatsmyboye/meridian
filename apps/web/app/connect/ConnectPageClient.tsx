@@ -32,6 +32,8 @@ interface ConnectPageClientProps {
   platformLimit: number;
   /** Any non-limit error message to show. */
   errorMessage: string | null;
+  /** Platform the error originated from (used to show a "Try again" link). */
+  errorPlatform: string | null;
   /** Success message to show. */
   successPlatform: string | null;
 }
@@ -264,6 +266,7 @@ export default function ConnectPageClient({
   activePlatformCount,
   platformLimit,
   errorMessage,
+  errorPlatform,
   successPlatform,
 }: ConnectPageClientProps) {
   const [rows, setRows] = useState<ConnectedPlatformRow[]>(initialRows);
@@ -421,6 +424,17 @@ export default function ConnectPageClient({
           }}
         >
           {errorMessage}
+          {errorPlatform && PLATFORMS[errorPlatform] && (
+            <>
+              {" "}
+              <a
+                href={PLATFORMS[errorPlatform].connectHref}
+                style={{ color: "#991b1b", fontWeight: 600, whiteSpace: "nowrap" }}
+              >
+                Try connecting again →
+              </a>
+            </>
+          )}
         </div>
       )}
 
