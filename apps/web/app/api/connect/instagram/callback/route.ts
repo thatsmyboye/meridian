@@ -228,6 +228,14 @@ export async function GET(request: NextRequest) {
   );
 
   if (!pageWithInstagram?.instagram_business_account?.id) {
+    if (totalPages === 0) {
+      // /me/accounts returned no pages — the user likely did not grant Meridian
+      // access to any Facebook Pages during the Meta OAuth consent screen.
+      return NextResponse.redirect(
+        `${siteUrl}/connect?error=no_facebook_pages_granted`
+      );
+    }
+    // Pages were found but none had an Instagram Business/Creator Account linked.
     return NextResponse.redirect(
       `${siteUrl}/connect?error=no_instagram_business_account`
     );
