@@ -17,6 +17,7 @@ export interface PlatformRow {
   access_token_enc: string;
   refresh_token_enc: string | null;
   metadata: Record<string, unknown> | null;
+  scopes: string[] | null;
 }
 
 export interface PublishResult {
@@ -509,6 +510,16 @@ export async function publishToTikTok(
   platform: PlatformRow,
   content: string
 ): Promise<PublishResult> {
+  // Sandbox-connected accounts only have user.info.basic/profile scopes.
+  // Fail fast with a clear message rather than getting a cryptic 4xx from TikTok.
+  const grantedScopes: string[] = platform.scopes ?? [];
+  if (!grantedScopes.includes("video.publish")) {
+    throw new Error(
+      "TikTok publish skipped: video.publish scope not granted. " +
+      "Reconnect TikTok with a production-approved app to enable publishing."
+    );
+  }
+
   const accessToken = decryptToken(platform.access_token_enc);
 
   // Truncate caption to TikTok's 2200-character limit

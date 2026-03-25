@@ -22,12 +22,22 @@ import { getCreatorSubscription, checkPlatformLimit } from "@/lib/subscription";
  *   NEXT_PUBLIC_SITE_URL  – Production base URL (e.g. https://meridian.banton-digital.com)
  */
 
-const TIKTOK_SCOPES = [
+// video.publish and video.upload require TikTok app approval and are unavailable
+// in Sandbox mode. Set TIKTOK_SANDBOX=true to omit them during pre-approval testing.
+const SANDBOX_SCOPES = [
   "user.info.basic",     // Access display name and avatar
   "user.info.profile",   // Access profile URL
-  "video.publish",       // Upload and publish videos on behalf of user
-  "video.upload",        // Upload video files
-].join(",");
+];
+
+const PRODUCTION_SCOPES = [
+  "user.info.basic",     // Access display name and avatar
+  "user.info.profile",   // Access profile URL
+  "video.publish",       // Upload and publish videos on behalf of user (requires approval)
+  "video.upload",        // Upload video files (requires approval)
+];
+
+const isSandbox = process.env.TIKTOK_SANDBOX === "true";
+const TIKTOK_SCOPES = (isSandbox ? SANDBOX_SCOPES : PRODUCTION_SCOPES).join(",");
 
 export async function GET(request: Request) {
   const siteUrl =
@@ -79,6 +89,13 @@ export async function GET(request: Request) {
     .digest("base64url");
 
   const state = randomBytes(16).toString("hex");
+
+  if (isSandbox) {
+    console.warn(
+      "[tiktok] SANDBOX mode: video.publish and video.upload scopes omitted — " +
+      "publishing will be unavailable until the app is approved for production."
+    );
+  }
 
   const params = new URLSearchParams({
     client_key: process.env.TIKTOK_CLIENT_KEY,
