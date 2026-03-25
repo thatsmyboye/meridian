@@ -196,6 +196,7 @@ export const publishScheduledDerivative = inngest.createFunction(
           access_token_enc: platform.access_token_enc,
           refresh_token_enc: platform.refresh_token_enc,
           metadata: platform.metadata as Record<string, unknown> | null,
+          scopes: platform.scopes as string[] | null,
         } satisfies PlatformRow,
       };
     });
