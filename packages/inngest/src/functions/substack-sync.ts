@@ -181,11 +181,19 @@ export const syncSubstackPosts = inngest.createFunction(
       return parseRssItems(xml);
     });
 
+    // ── Step 3: upsert items into content_items ───────────────────────────
     if (parsedItems.length === 0) {
+      await step.run("mark-synced", async () => {
+        const supabase = getSupabaseAdmin();
+        const { error } = await supabase
+          .from("connected_platforms")
+          .update({ last_synced_at: new Date().toISOString() })
+          .eq("id", connected_platform_id);
+        if (error) throw new Error(`mark-synced failed: ${error.message}`);
+      });
       return { creator_id, connected_platform_id, totalUpserted: 0 };
     }
 
-    // ── Step 3: upsert items into content_items ───────────────────────────
     const totalUpserted = await step.run("upsert-items", async () => {
       const supabase = getSupabaseAdmin();
 
