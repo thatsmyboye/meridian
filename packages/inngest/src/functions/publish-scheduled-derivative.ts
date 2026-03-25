@@ -166,7 +166,7 @@ export const publishScheduledDerivative = inngest.createFunction(
 
       const { data: platform, error: platformErr } = await supabase
         .from("connected_platforms")
-        .select("platform_user_id, access_token_enc, refresh_token_enc, metadata, status")
+        .select("platform_user_id, access_token_enc, refresh_token_enc, metadata, status, scopes")
         .eq("creator_id", creator_id)
         .eq("platform", platformLookup)
         .eq("status", "active")

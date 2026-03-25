@@ -17,6 +17,7 @@ export interface PlatformRow {
   access_token_enc: string;
   refresh_token_enc: string | null;
   metadata: Record<string, unknown> | null;
+  scopes: string[] | null;
 }
 
 export interface PublishResult {
