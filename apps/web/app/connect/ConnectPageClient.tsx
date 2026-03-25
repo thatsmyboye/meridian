@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { createBrowserClient } from "@/lib/supabase/client";
 import DisconnectButton from "@/app/settings/connections/DisconnectButton";
 import UpgradeLimitModal from "@/app/UpgradeLimitModal";
+import { requestPlatformSync } from "@/app/settings/connections/actions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -12,7 +13,11 @@ export interface ConnectedPlatformRow {
   platform_username: string | null;
   status: string;
   last_synced_at: string | null;
+  last_sync_count: number | null;
 }
+
+/** Platforms that have a dedicated content sync function. */
+const SYNCABLE_PLATFORMS = new Set(["youtube", "instagram", "beehiiv", "substack", "linkedin"]);
 
 interface ConnectPageClientProps {
   creatorId: string;
@@ -263,9 +268,12 @@ export default function ConnectPageClient({
 }: ConnectPageClientProps) {
   const [rows, setRows] = useState<ConnectedPlatformRow[]>(initialRows);
   const [modalOpen, setModalOpen] = useState(initialShowLimitModal);
+  // Tracks platforms currently undergoing a manually triggered refresh.
+  const [refreshingPlatforms, setRefreshingPlatforms] = useState<Set<string>>(new Set());
+  const [, startTransition] = useTransition();
 
-  // Subscribe to real-time updates so the sync spinner and last_synced_at
-  // update without a page refresh.
+  // Subscribe to real-time updates so the sync spinner, last_synced_at, and
+  // last_sync_count update without a page refresh.
   useEffect(() => {
     if (!creatorId) return;
 
@@ -291,10 +299,18 @@ export default function ConnectPageClient({
                     platform_username: updated.platform_username ?? r.platform_username,
                     status: updated.status,
                     last_synced_at: updated.last_synced_at,
+                    last_sync_count: updated.last_sync_count ?? r.last_sync_count,
                   }
                 : r
             )
           );
+          // Clear the manual refresh spinner once the sync completes.
+          setRefreshingPlatforms((prev) => {
+            if (!prev.has(updated.platform)) return prev;
+            const next = new Set(prev);
+            next.delete(updated.platform);
+            return next;
+          });
         }
       )
       .subscribe();
@@ -303,6 +319,13 @@ export default function ConnectPageClient({
       supabase.removeChannel(channel);
     };
   }, [creatorId]);
+
+  function handleRefresh(platform: string) {
+    setRefreshingPlatforms((prev) => new Set(prev).add(platform));
+    startTransition(async () => {
+      await requestPlatformSync(platform);
+    });
+  }
 
   const byPlatform = Object.fromEntries(rows.map((r) => [r.platform, r]));
   const atLimit = activePlatformCount >= platformLimit;
@@ -408,7 +431,10 @@ export default function ConnectPageClient({
           const status = conn?.status ?? "disconnected";
           const isConnected = status !== "disconnected";
           const needsReauth = status === "reauth_required";
-          const isSyncing = status === "active" && !conn?.last_synced_at;
+          const isSyncing =
+            (status === "active" && !conn?.last_synced_at) ||
+            refreshingPlatforms.has(key);
+          const canRefresh = status === "active" && SYNCABLE_PLATFORMS.has(key) && !isSyncing;
           const isLocked = atLimit && !isConnected;
 
           return (
@@ -491,6 +517,11 @@ export default function ConnectPageClient({
                   ) : (
                     <span style={{ fontSize: 13, color: "#9ca3af" }}>
                       Last synced: {formatRelativeTime(conn?.last_synced_at ?? null)}
+                      {conn?.last_sync_count != null && (
+                        <span style={{ marginLeft: 6 }}>
+                          &middot; {conn.last_sync_count.toLocaleString()} item{conn.last_sync_count !== 1 ? "s" : ""}
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>
@@ -534,6 +565,26 @@ export default function ConnectPageClient({
                     >
                       {needsReauth || isConnected ? "Reconnect" : "Connect"}
                     </a>
+
+                    {canRefresh && (
+                      <button
+                        onClick={() => handleRefresh(key)}
+                        style={{
+                          display: "inline-block",
+                          background: "#fff",
+                          color: "#374151",
+                          padding: "7px 16px",
+                          borderRadius: 6,
+                          border: "1px solid #d1d5db",
+                          fontWeight: 600,
+                          fontSize: 13,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Refresh
+                      </button>
+                    )}
 
                     {isConnected && (
                       <DisconnectButton

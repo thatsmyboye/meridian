@@ -296,7 +296,7 @@ export const syncYoutubeMetadata = inngest.createFunction(
       const supabase = getSupabaseAdmin();
       const { error } = await supabase
         .from("connected_platforms")
-        .update({ last_synced_at: new Date().toISOString() })
+        .update({ last_synced_at: new Date().toISOString(), last_sync_count: totalUpserted })
         .eq("id", connected_platform_id);
       if (error) throw new Error(`mark-synced failed: ${error.message}`);
     });
