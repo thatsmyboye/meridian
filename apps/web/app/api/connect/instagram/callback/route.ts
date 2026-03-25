@@ -158,14 +158,20 @@ export async function GET(request: NextRequest) {
   // read the instagram_business_account field to get the IG user ID.
   // Meta paginates /me/accounts at 25 items per page, so we must follow
   // paging.next cursors until we find a linked Instagram account or exhaust all pages.
+  //
+  // IMPORTANT: instagram_business_account must be queried with the *page's*
+  // own access token, not the user access token. When requested via the user
+  // token in /me/accounts, Meta silently omits the field even if the account
+  // is properly linked. We therefore fetch pages (with their page tokens) first,
+  // then re-query each page individually with its page token.
   let pageWithInstagram: MetaPageAccount | undefined;
   let nextUrl: string | undefined =
-    `${META_GRAPH_BASE}/me/accounts?fields=id,name,access_token,instagram_business_account`;
+    `${META_GRAPH_BASE}/me/accounts?fields=id,name,access_token`;
   let totalPages = 0;
   let totalPagesChecked = 0;
   const MAX_PAGE_FETCHES = 10; // safety cap: 10 × 25 = 250 pages
 
-  while (nextUrl && totalPagesChecked < MAX_PAGE_FETCHES) {
+  outer: while (nextUrl && totalPagesChecked < MAX_PAGE_FETCHES) {
     const pagesRes: Response = await fetch(nextUrl, {
       headers: { Authorization: `Bearer ${longLivedTokens.access_token}` },
     });
@@ -184,11 +190,32 @@ export async function GET(request: NextRequest) {
     totalPages += pagesData.data.length;
     totalPagesChecked++;
 
-    pageWithInstagram = pagesData.data.find(
-      (page) => page.instagram_business_account?.id
-    );
-
-    if (pageWithInstagram) break;
+    // Use each page's own access token to query instagram_business_account.
+    // This is required because Meta only returns this field reliably when
+    // the request is authenticated with a page-scoped token.
+    for (const page of pagesData.data) {
+      const igFieldRes = await fetch(
+        `${META_GRAPH_BASE}/${page.id}?fields=instagram_business_account`,
+        { headers: { Authorization: `Bearer ${page.access_token}` } }
+      );
+      if (!igFieldRes.ok) {
+        console.warn(
+          `[instagram/callback] instagram_business_account fetch failed for page ${page.id}:`,
+          await igFieldRes.text()
+        );
+        continue;
+      }
+      const igFieldData = (await igFieldRes.json()) as {
+        instagram_business_account?: { id: string };
+      };
+      if (igFieldData.instagram_business_account?.id) {
+        pageWithInstagram = {
+          ...page,
+          instagram_business_account: igFieldData.instagram_business_account,
+        };
+        break outer;
+      }
+    }
 
     nextUrl = pagesData.paging?.next;
   }
