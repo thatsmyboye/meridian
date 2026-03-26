@@ -150,6 +150,15 @@ export const syncLinkedInPosts = inngest.createFunction(
         });
 
         if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            const body = await res.text();
+            console.error(
+              `[sync-linkedin-posts] Auth error (${res.status}) for platform ${connected_platform_id}: ${body}`
+            );
+            // Return a sentinel instead of throwing — auth errors are not
+            // retryable. The outer handler will mark the platform reauth_required.
+            return { reauthRequired: true as const, upserted: 0, hasMore: false, nextStart: start };
+          }
           throw new Error(
             `LinkedIn Posts API failed (${res.status}): ${await res.text()}`
           );
@@ -205,6 +214,20 @@ export const syncLinkedInPosts = inngest.createFunction(
           nextStart,
         };
       });
+
+      if ("reauthRequired" in result && result.reauthRequired) {
+        const supabase = getSupabaseAdmin();
+        const { error: reauthErr } = await supabase
+          .from("connected_platforms")
+          .update({ status: "reauth_required" })
+          .eq("id", connected_platform_id);
+        if (reauthErr) {
+          console.error(
+            `[sync-linkedin-posts] Failed to set reauth_required for platform ${connected_platform_id}: ${reauthErr.message}`
+          );
+        }
+        return { creator_id, connected_platform_id, reauthRequired: true };
+      }
 
       totalUpserted += result.upserted;
       hasMore = result.hasMore;
