@@ -150,14 +150,24 @@ export const syncLinkedInPosts = inngest.createFunction(
         });
 
         if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
+          if (res.status === 401) {
             const body = await res.text();
             console.error(
-              `[sync-linkedin-posts] Auth error (${res.status}) for platform ${connected_platform_id}: ${body}`
+              `[sync-linkedin-posts] Token invalid/expired (401) for platform ${connected_platform_id}: ${body}`
             );
-            // Return a sentinel instead of throwing — auth errors are not
-            // retryable. The outer handler will mark the platform reauth_required.
+            // Token is expired or revoked — user must reconnect.
             return { reauthRequired: true as const, upserted: 0, hasMore: false, nextStart: start };
+          }
+          if (res.status === 403) {
+            const body = await res.text();
+            // 403 means the token lacks the r_member_social scope.
+            // Reconnecting with the current LinkedIn app config won't help —
+            // r_member_social must be enabled in the LinkedIn Developer Portal first.
+            console.warn(
+              `[sync-linkedin-posts] Insufficient scope (403) for platform ${connected_platform_id}. ` +
+              `Ensure r_member_social is enabled for this LinkedIn app. Response: ${body}`
+            );
+            return { scopeError: true as const, upserted: 0, hasMore: false, nextStart: start };
           }
           throw new Error(
             `LinkedIn Posts API failed (${res.status}): ${await res.text()}`
@@ -227,6 +237,22 @@ export const syncLinkedInPosts = inngest.createFunction(
           );
         }
         return { creator_id, connected_platform_id, reauthRequired: true };
+      }
+
+      if ("scopeError" in result && result.scopeError) {
+        // The token lacks r_member_social. Stamp last_synced_at so the UI
+        // spinner clears and the platform stays in "active" state. Reconnecting
+        // won't fix this — the LinkedIn Developer App needs r_member_social
+        // enabled in the LinkedIn Developer Portal first.
+        await step.run("mark-synced", async () => {
+          const supabase = getSupabaseAdmin();
+          const { error } = await supabase
+            .from("connected_platforms")
+            .update({ last_synced_at: new Date().toISOString(), last_sync_count: 0 })
+            .eq("id", connected_platform_id);
+          if (error) throw new Error(`mark-synced failed: ${error.message}`);
+        });
+        return { creator_id, connected_platform_id, scopeError: true };
       }
 
       totalUpserted += result.upserted;
