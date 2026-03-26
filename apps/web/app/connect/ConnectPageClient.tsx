@@ -19,6 +19,9 @@ export interface ConnectedPlatformRow {
 /** Platforms that have a dedicated content sync function. */
 const SYNCABLE_PLATFORMS = new Set(["youtube", "instagram", "beehiiv", "substack", "linkedin"]);
 
+/** Platforms temporarily hidden from the UI (code/sync intact). */
+const HIDDEN_PLATFORMS = new Set(["twitter"]);
+
 interface ConnectPageClientProps {
   creatorId: string;
   initialRows: ConnectedPlatformRow[];
@@ -440,7 +443,7 @@ export default function ConnectPageClient({
 
       {/* Platform cards */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {Object.entries(PLATFORMS).map(([key, cfg]) => {
+        {Object.entries(PLATFORMS).filter(([key]) => !HIDDEN_PLATFORMS.has(key)).map(([key, cfg]) => {
           const conn = byPlatform[key] ?? null;
           const status = conn?.status ?? "disconnected";
           const isConnected = status !== "disconnected";

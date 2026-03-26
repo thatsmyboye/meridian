@@ -19,14 +19,12 @@ const ALL_PLATFORMS: { value: string; label: string }[] = [
   { value: "youtube", label: "YouTube" },
   { value: "instagram", label: "Instagram" },
   { value: "tiktok", label: "TikTok" },
-  { value: "twitter", label: "Twitter / X" },
   { value: "linkedin", label: "LinkedIn" },
   { value: "podcast", label: "Podcast" },
   { value: "other", label: "Other" },
 ];
 
 const DERIVATIVE_FORMATS: { value: string; label: string }[] = [
-  { value: "twitter_thread", label: "Twitter / X Thread" },
   { value: "linkedin_post", label: "LinkedIn Post" },
   { value: "instagram_caption", label: "Instagram Caption" },
   { value: "newsletter_blurb", label: "Newsletter Blurb" },
