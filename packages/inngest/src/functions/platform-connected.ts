@@ -54,10 +54,17 @@ export const handlePlatformConnected = inngest.createFunction(
       });
     }
 
-    // Platforms without a dedicated content sync function (twitter, tiktok)
-    // never have last_synced_at set, causing the /connect page spinner to spin
-    // forever. Stamp it here so the UI resolves correctly.
-    if (platform === "twitter" || platform === "tiktok") {
+    if (platform === "tiktok") {
+      await step.sendEvent("request-tiktok-sync", {
+        name: "content/sync.requested",
+        data: { creator_id, connected_platform_id, platform },
+      });
+    }
+
+    // Platforms without a dedicated content sync function (twitter) never have
+    // last_synced_at set, causing the /connect page spinner to spin forever.
+    // Stamp it here so the UI resolves correctly.
+    if (platform === "twitter") {
       await step.run("mark-synced", async () => {
         const supabase = getSupabaseAdmin();
         const { error } = await supabase
