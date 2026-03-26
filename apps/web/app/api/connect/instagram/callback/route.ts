@@ -227,39 +227,79 @@ export async function GET(request: NextRequest) {
       : "No linked Instagram Business Account found."
   );
 
-  if (!pageWithInstagram?.instagram_business_account?.id) {
-    if (totalPages === 0) {
-      // /me/accounts returned no pages — the user likely did not grant Meridian
-      // access to any Facebook Pages during the Meta OAuth consent screen.
+  // ── 5b. Resolve Instagram profile from one of two methods ────────────────
+  //
+  // Method 1 (classic): Facebook Pages path — succeeded when pageWithInstagram
+  //   was set above. Fetch the username via the IG Business Account ID.
+  //
+  // Method 2 (fallback): Direct Instagram Accounts API — used when /me/accounts
+  //   returned zero pages. Meta's newer Instagram-first OAuth consent flow lets
+  //   users select Instagram accounts directly; the resulting User Access Token
+  //   may not carry page tokens (if the Facebook user doesn't admin any Pages),
+  //   but does expose /me/instagram_accounts for accounts granted during consent.
+ 
+  let igProfile: InstagramUserResponse | undefined;
+ 
+  if (pageWithInstagram?.instagram_business_account?.id) {
+    // Method 1 succeeded — fetch username via the IG Business Account ID.
+    const igUserId = pageWithInstagram.instagram_business_account.id;
+    const igProfileRes = await fetch(
+      `${META_GRAPH_BASE}/${igUserId}?fields=id,username`,
+      { headers: { Authorization: `Bearer ${longLivedTokens.access_token}` } }
+    );
+ 
+    if (!igProfileRes.ok) {
+      console.error(
+        "[instagram/callback] Instagram profile fetch failed:",
+        await igProfileRes.text()
+      );
       return NextResponse.redirect(
-        `${siteUrl}/connect?error=no_facebook_pages_granted`
+        `${siteUrl}/connect?error=instagram_account_fetch_failed`
       );
     }
-    // Pages were found but none had an Instagram Business/Creator Account linked.
-    return NextResponse.redirect(
-      `${siteUrl}/connect?error=no_instagram_business_account`
+      igProfile = await igProfileRes.json() as InstagramUserResponse;
+  } else if (totalPages === 0) {
+    // Method 2 — /me/accounts returned nothing. Try the direct Instagram
+    // accounts endpoint, which is populated by the new Instagram-first OAuth
+    // consent flow even when the Facebook user doesn't admin any Pages.
+    console.info(
+      "[instagram/callback] /me/accounts returned 0 pages; trying /me/instagram_accounts fallback."
     );
+       const igDirectRes = await fetch(
+      `${META_GRAPH_BASE}/me/instagram_accounts?fields=id,username`,
+      { headers: { Authorization: `Bearer ${longLivedTokens.access_token}` } }
+    );
+    
+    if (igDirectRes.ok) {
+      const igDirectData = await igDirectRes.json();
+      const firstAccount = igDirectData.data?.[0];
+      if (firstAccount?.id) {
+        igProfile = firstAccount as InstagramUserResponse;
+        console.info(
+          `[instagram/callback] Found Instagram account via /me/instagram_accounts: ${igProfile.username} (${igProfile.id})`
+        );
+      } else {
+        console.warn(
+          "[instagram/callback] /me/instagram_accounts returned no accounts.",
+          JSON.stringify(igDirectData)
+        );
+      }
+    } else {
+      console.warn(
+        "[instagram/callback] /me/instagram_accounts fallback failed:",
+        await igDirectRes.text()
+      );
+    }
   }
 
-  const igUserId = pageWithInstagram.instagram_business_account.id;
-
-  // ── 5b. Fetch Instagram username ─────────────────────────────────────────
-  const igProfileRes = await fetch(
-    `${META_GRAPH_BASE}/${igUserId}?fields=id,username`,
-    { headers: { Authorization: `Bearer ${longLivedTokens.access_token}` } }
-  );
-
-  if (!igProfileRes.ok) {
-    console.error(
-      "[instagram/callback] Instagram profile fetch failed:",
-      await igProfileRes.text()
-    );
-    return NextResponse.redirect(
-      `${siteUrl}/connect?error=instagram_account_fetch_failed`
-    );
+  if (!igProfile) {
+    // Both methods failed — emit the most specific error available.
+    const errorCode =
+      totalPages === 0
+        ? "no_facebook_pages_granted"
+        : "no_instagram_business_account";
+    return NextResponse.redirect(`${siteUrl}/connect?error=${errorCode}`);
   }
-
-  const igProfile: InstagramUserResponse = await igProfileRes.json();
 
   // ── 6. Look up the creator row ───────────────────────────────────────────
   const { data: creator, error: creatorErr } = await supabase
