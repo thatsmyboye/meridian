@@ -20,10 +20,11 @@ import { getCreatorSubscription, checkPlatformLimit } from "@/lib/subscription";
  */
 
 const LINKEDIN_SCOPES = [
-  "openid",       // OpenID Connect – identity token
-  "profile",      // Access name, headline, photo
-  "email",        // Access email address
+  "openid",          // OpenID Connect – identity token
+  "profile",         // Access name, headline, photo
+  "email",           // Access email address
   "w_member_social", // Create, modify, and delete posts
+  "r_member_social", // Read member posts (required for Posts REST API)
 ].join(" ");
 
 export async function GET(request: Request) {

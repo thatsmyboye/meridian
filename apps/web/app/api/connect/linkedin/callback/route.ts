@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
         access_token_enc: accessTokenEnc,
         refresh_token_enc: null,
         token_expires_at: tokenExpiresAt,
-        scopes: ["openid", "profile", "email", "w_member_social"],
+        scopes: ["openid", "profile", "email", "w_member_social", "r_member_social"],
         status: "active",
       },
       { onConflict: "creator_id,platform" }
