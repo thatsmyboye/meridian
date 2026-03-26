@@ -15,7 +15,7 @@ import {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Platform = "youtube" | "instagram" | "tiktok" | "beehiiv";
+type Platform = "youtube" | "instagram" | "tiktok" | "beehiiv" | "linkedin";
 
 type Period = "7d" | "30d" | "90d";
 
@@ -67,6 +67,7 @@ const ENGAGEMENT_BASELINES: Record<Platform, number> = {
   instagram: 2.0,
   tiktok: 6.0,
   beehiiv: 30.0, // open rate proxy
+  linkedin: 2.0,
 };
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -74,6 +75,7 @@ const PLATFORM_LABELS: Record<string, string> = {
   instagram: "Instagram",
   tiktok: "TikTok",
   beehiiv: "Beehiiv",
+  linkedin: "LinkedIn",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

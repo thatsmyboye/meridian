@@ -20,6 +20,7 @@ export const PLATFORM_COLORS: Record<string, string> = {
   instagram: "#7c3aed",
   beehiiv: "#f97316",
   tiktok: "#111827",
+  linkedin: "#0a66c2",
 };
 
 /** Platform badge styles (background + foreground) for pill labels. */
@@ -28,4 +29,5 @@ export const PLATFORM_BADGE: Record<string, { bg: string; color: string }> = {
   instagram: { bg: "#ede9fe", color: "#7c3aed" },
   beehiiv: { bg: "#ffedd5", color: "#f97316" },
   tiktok: { bg: "#f3f4f6", color: "#111827" },
+  linkedin: { bg: "#dbeafe", color: "#0a66c2" },
 };

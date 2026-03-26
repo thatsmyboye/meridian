@@ -27,11 +27,13 @@ import { getCreatorSubscription, checkPlatformLimit } from "@/lib/subscription";
 const SANDBOX_SCOPES = [
   "user.info.basic",     // Access display name and avatar
   "user.info.profile",   // Access profile URL
+  "video.list",          // Read the user's uploaded videos
 ];
 
 const PRODUCTION_SCOPES = [
   "user.info.basic",     // Access display name and avatar
   "user.info.profile",   // Access profile URL
+  "video.list",          // Read the user's uploaded videos
   "video.publish",       // Upload and publish videos on behalf of user (requires approval)
   "video.upload",        // Upload video files (requires approval)
 ];
