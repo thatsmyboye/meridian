@@ -56,6 +56,17 @@ interface InstagramUserResponse {
   username: string;
 }
 
+interface MetaDebugTokenResponse {
+  data: {
+    is_valid: boolean;
+    user_id?: string;
+    granular_scopes?: Array<{
+      scope: string;
+      target_ids?: string[];
+    }>;
+  };
+}
+ 
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
@@ -248,15 +259,64 @@ export async function GET(request: NextRequest) {
       { headers: { Authorization: `Bearer ${longLivedTokens.access_token}` } }
     );
  
-    if (!igProfileRes.ok) {
-      console.error(
-        "[instagram/callback] Instagram profile fetch failed:",
-        await igProfileRes.text()
+      // Method 3: Extract Instagram account ID from token debug_token granular_scopes.
+    // In Meta's new Instagram-first OAuth flow, the Instagram account IDs selected
+    // during consent are recorded as target_ids for instagram_basic in the token
+    // metadata. This works even when the Facebook user has no Page admin role
+    // (Method 1 empty) and the account is not linked to the personal FB profile
+    // (Method 2 empty).
+    if (!igProfile) {
+      console.info(
+        "[instagram/callback] Trying debug_token granular_scopes (Method 3)."
       );
-      return NextResponse.redirect(
-        `${siteUrl}/connect?error=instagram_account_fetch_failed`
+ 
+      const appAccessToken = `${process.env.META_APP_ID}|${process.env.META_APP_SECRET}`;
+      const debugParams = new URLSearchParams({
+        input_token: longLivedTokens.access_token,
+        access_token: appAccessToken,
+      });
+ 
+      const debugRes = await fetch(
+        `${META_GRAPH_BASE}/debug_token?${debugParams.toString()}`
       );
+ 
+      if (debugRes.ok) {
+        const debugData: MetaDebugTokenResponse = await debugRes.json();
+        const granularScopes = debugData.data?.granular_scopes ?? [];
+        const igScope = granularScopes.find((s) => s.scope === "instagram_basic");
+        const igId = igScope?.target_ids?.[0];
+ 
+        if (igId) {
+          console.info(
+            `[instagram/callback] debug_token yielded IG account ID: ${igId}`
+          );
+          const igProfileRes = await fetch(
+            `${META_GRAPH_BASE}/${igId}?fields=id,username`,
+            { headers: { Authorization: `Bearer ${longLivedTokens.access_token}` } }
+          );
+          if (igProfileRes.ok) {
+            igProfile = (await igProfileRes.json()) as InstagramUserResponse;
+          } else {
+            console.warn(
+              "[instagram/callback] Profile fetch from debug_token ID failed:",
+              await igProfileRes.text()
+            );
+          }
+        } else {
+          console.warn(
+            "[instagram/callback] debug_token granular_scopes has no instagram_basic target_ids.",
+            JSON.stringify(granularScopes)
+          );
+        }
+      } else {
+        console.warn(
+          "[instagram/callback] debug_token call failed:",
+          await debugRes.text()
+        );
+      }
     }
+    }
+  
       igProfile = await igProfileRes.json() as InstagramUserResponse;
   } else if (totalPages === 0) {
     // Method 2 — /me/accounts returned nothing. Try the direct Instagram
