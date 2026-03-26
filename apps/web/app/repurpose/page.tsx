@@ -36,6 +36,7 @@ const FORMAT_LABELS: Record<string, string> = {
   instagram_caption: "Instagram Caption",
   newsletter_blurb: "Newsletter Blurb",
   tiktok_script: "TikTok Script",
+  podcast_show_notes: "Podcast Show Notes",
 };
 
 function formatDate(iso: string): string {
@@ -50,7 +51,7 @@ function formatDate(iso: string): string {
 function formatsList(formats: string[]): string {
   if (!formats || formats.length === 0) return "All formats";
   return formats
-    .map((f) => FORMAT_LABELS[f] ?? f)
+    .map((f) => FORMAT_LABELS[f] ?? f.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))
     .join(", ");
 }
 

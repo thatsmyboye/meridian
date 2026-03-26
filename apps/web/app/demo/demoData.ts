@@ -380,52 +380,6 @@ export interface DemoDerivative {
 
 export const DEMO_DERIVATIVES: DemoDerivative[] = [
   {
-    format: "twitter_thread",
-    label: "Twitter / X Thread",
-    platform: "twitter",
-    charCount: 1_120,
-    status: "approved",
-    content: `🧵 I built a SaaS in 48 hours. Here's everything I learned — the good, the bad, and the ugly (1/8)
-
-2/ The stack I used:
-• Next.js 15 (App Router)
-• Supabase for auth + database
-• Stripe for payments
-• Vercel for hosting
-
-All of it bootstrapped to production in under 2 days.
-
-3/ What worked immediately:
-✅ Supabase Row-Level Security — zero back-end boilerplate for auth
-✅ Next.js Server Actions — no separate API layer needed
-✅ Vercel preview deployments — instant QA loop
-
-4/ What nearly killed me:
-❌ Stripe webhooks in local dev — ngrok + webhook CLI = lifesaver
-❌ Forgot to rate-limit the AI endpoint — $40 in OpenAI costs in 30 minutes 😅
-❌ Mobile layout — always build mobile-first
-
-5/ The 48-hour deadline forced two things I normally skip:
-→ Ruthless feature scoping
-→ Shipping an ugly MVP instead of a polished prototype
-
-Both were the right call.
-
-6/ Revenue after 1 week: $280 MRR from 7 paying users
-
-Not life-changing, but validation that the problem is real. That's all you need at this stage.
-
-7/ The biggest lesson:
-Most side projects die from over-engineering, not under-shipping.
-
-Constraints are a gift. Use them.
-
-8/ Full 30-min breakdown (with code) is on YouTube 👇
-[link]
-
-If you found this useful, retweet the first tweet — it helps more builders find it 🙏`,
-  },
-  {
     format: "linkedin_post",
     label: "LinkedIn Post",
     platform: "linkedin",

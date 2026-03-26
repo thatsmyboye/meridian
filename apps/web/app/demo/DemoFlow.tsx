@@ -384,7 +384,7 @@ function StepConnect({ onNext }: NavProps) {
   return (
     <DemoCard
       title="Step 2 — Connect platforms"
-      description="After sign-in, users land on the Connect Platforms page. They can link YouTube, Instagram, TikTok, Twitter/X, LinkedIn, and Beehiiv to import content and analytics."
+      description="After sign-in, users land on the Connect Platforms page. They can link YouTube, Instagram, TikTok, LinkedIn, and Beehiiv to import content and analytics."
     >
       <div
         style={{
@@ -411,7 +411,6 @@ function StepConnect({ onNext }: NavProps) {
           {[
             { id: "youtube", label: "YouTube", description: "Import videos and channel analytics", color: "#dc2626", connected: false, highlight: true },
             { id: "instagram", label: "Instagram", description: "Import posts and performance insights", color: "#7c3aed", connected: true, highlight: false },
-            { id: "twitter", label: "X (Twitter)", description: "Import tweets and engagement metrics", color: "#111827", connected: true, highlight: false },
             { id: "tiktok", label: "TikTok", description: "Import videos and performance analytics", color: "#010101", connected: false, highlight: false },
             { id: "linkedin", label: "LinkedIn", description: "Import posts and professional engagement data", color: "#0a66c2", connected: false, highlight: false },
             { id: "beehiiv", label: "Beehiiv", description: "Import newsletter posts and track open rates", color: "#f97316", connected: false, highlight: false },
@@ -840,7 +839,7 @@ function StepContentDetail({ content, onBack }: { content: DemoContentItem; onBa
 
   const derivativeChildren = [
     { id: "ig-001", title: "Next.js + Supabase SaaS setup (carousel)", platform: "instagram", publishedAt: daysAgo(7), views: 14_200, eng: 4.1 },
-    { id: "tw-001", title: "Twitter thread: SaaS in 48 hours", platform: "twitter", publishedAt: daysAgo(7), views: 8_400, eng: 3.2 },
+    { id: "li-001", title: "LinkedIn post: SaaS in 48 hours", platform: "linkedin", publishedAt: daysAgo(7), views: 8_400, eng: 3.2 },
   ];
 
   function daysAgo(d: number) {
@@ -945,7 +944,7 @@ function StepContentDetail({ content, onBack }: { content: DemoContentItem; onBa
       </div>
 
       <div style={{ marginTop: 24, padding: "14px 16px", background: "#eff6ff", borderRadius: 8, border: "1px solid #bfdbfe", fontSize: 13, color: "#1e40af" }}>
-        <strong>Next:</strong> Start a repurpose job to turn this YouTube video into Twitter threads, LinkedIn posts, Instagram captions, and more.
+        <strong>Next:</strong> Start a repurpose job to turn this YouTube video into LinkedIn posts, Instagram captions, and more.
       </div>
     </DemoCard>
   );
@@ -962,7 +961,7 @@ function StepRepurposeNew({ onNext }: { onNext: () => void }) {
   return (
     <DemoCard
       title="Step 6 — Start a repurpose job"
-      description="Users paste a YouTube URL or raw transcript. Meridian extracts the transcript using Whisper and generates derivative formats via Claude AI — Twitter threads, LinkedIn posts, Instagram captions, and more."
+      description="Users paste a YouTube URL or raw transcript. Meridian extracts the transcript using Whisper and generates derivative formats via Claude AI — LinkedIn posts, Instagram captions, newsletter blurbs, and more."
     >
       <div style={{ maxWidth: 640, margin: "0 auto" }}>
         {/* Source content card */}
@@ -989,10 +988,10 @@ function StepRepurposeNew({ onNext }: { onNext: () => void }) {
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Formats to generate</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {[
-              { key: "twitter_thread", label: "Twitter / X Thread", checked: true },
               { key: "linkedin_post", label: "LinkedIn Post", checked: true },
               { key: "instagram_caption", label: "Instagram Caption", checked: true },
               { key: "newsletter_blurb", label: "Newsletter Blurb", checked: true },
+              { key: "podcast_show_notes", label: "Podcast Show Notes", checked: true },
             ].map((f) => (
               <label key={f.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid #e5e7eb", borderRadius: 7, cursor: "pointer", background: f.checked ? "#eff6ff" : "#fff", borderColor: f.checked ? "#bfdbfe" : "#e5e7eb" }}>
                 <input type="checkbox" defaultChecked={f.checked} style={{ accentColor: "#2563eb" }} />
@@ -1029,10 +1028,11 @@ function StepRepurposeNew({ onNext }: { onNext: () => void }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <ProgressStep label="Fetching transcript via YouTube API" done={true} />
               <ProgressStep label="Extracting key themes and takeaways" done={true} />
-              <ProgressStep label="Generating Twitter thread with Claude AI" done={false} active={true} />
-              <ProgressStep label="Generating LinkedIn post" done={false} active={false} />
+              <ProgressStep label="Generating LinkedIn post with Claude AI" done={false} active={true} />
+              <ProgressStep label="Generating Instagram caption" done={false} active={false} />
               <ProgressStep label="Generating Instagram caption" done={false} active={false} />
               <ProgressStep label="Generating newsletter blurb" done={false} active={false} />
+              <ProgressStep label="Generating podcast show notes" done={false} active={false} />
             </div>
           </div>
         )}
@@ -1267,7 +1267,7 @@ function StepPublishCalendar({ derivatives }: { derivatives: DemoDerivative[] })
             { icon: "▶️", label: "YouTube API connection", detail: "youtube.readonly + yt-analytics.readonly" },
             { icon: "📊", label: "Analytics dashboard", detail: "Views, engagement, watch time by content" },
             { icon: "💡", label: "AI pattern insights", detail: "Day-of-week, length, frequency analysis" },
-            { icon: "✂️", label: "Content repurposing", detail: "Transcript → Twitter / LinkedIn / Instagram / Newsletter" },
+            { icon: "✂️", label: "Content repurposing", detail: "Transcript → LinkedIn / Instagram / Newsletter / Podcast" },
             { icon: "📅", label: "Scheduled publishing", detail: "Optimal-time suggestions from insight data" },
           ].map((item) => (
             <div key={item.label} style={{ display: "flex", gap: 10, padding: "8px 0" }}>

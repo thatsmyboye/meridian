@@ -14,6 +14,9 @@ interface PlatformConfig {
   description: string;
 }
 
+/** Platforms temporarily hidden from the UI (code/sync intact). */
+const HIDDEN_PLATFORMS = new Set(["twitter"]);
+
 const PLATFORMS: Record<string, PlatformConfig> = {
   youtube: {
     label: "YouTube",
@@ -317,7 +320,7 @@ export default function ConnectionsClient({
 
       {/* Platform cards */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {Object.entries(PLATFORMS).map(([key, cfg]) => {
+        {Object.entries(PLATFORMS).filter(([key]) => !HIDDEN_PLATFORMS.has(key)).map(([key, cfg]) => {
           const conn = byPlatform[key] ?? null;
           const status = conn?.status ?? "disconnected";
           const isConnected = status !== "disconnected";
