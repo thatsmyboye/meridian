@@ -250,7 +250,7 @@ export async function GET(request: NextRequest) {
   //   but does expose /me/instagram_accounts for accounts granted during consent.
  
   let igProfile: InstagramUserResponse | undefined;
- 
+
   if (pageWithInstagram?.instagram_business_account?.id) {
     // Method 1 succeeded — fetch username via the IG Business Account ID.
     const igUserId = pageWithInstagram.instagram_business_account.id;
@@ -258,8 +258,48 @@ export async function GET(request: NextRequest) {
       `${META_GRAPH_BASE}/${igUserId}?fields=id,username`,
       { headers: { Authorization: `Bearer ${longLivedTokens.access_token}` } }
     );
- 
-      // Method 3: Extract Instagram account ID from token debug_token granular_scopes.
+    if (igProfileRes.ok) {
+      igProfile = (await igProfileRes.json()) as InstagramUserResponse;
+    } else {
+      console.warn(
+        "[instagram/callback] Method 1 profile fetch failed:",
+        await igProfileRes.text()
+      );
+    }
+  } else if (totalPages === 0) {
+    // Method 2 — /me/accounts returned nothing. Try the direct Instagram
+    // accounts endpoint, which is populated by the new Instagram-first OAuth
+    // consent flow even when the Facebook user doesn't admin any Pages.
+    console.info(
+      "[instagram/callback] /me/accounts returned 0 pages; trying /me/instagram_accounts fallback."
+    );
+    const igDirectRes = await fetch(
+      `${META_GRAPH_BASE}/me/instagram_accounts?fields=id,username`,
+      { headers: { Authorization: `Bearer ${longLivedTokens.access_token}` } }
+    );
+
+    if (igDirectRes.ok) {
+      const igDirectData = await igDirectRes.json();
+      const firstAccount = igDirectData.data?.[0];
+      if (firstAccount?.id) {
+        igProfile = firstAccount as InstagramUserResponse;
+        console.info(
+          `[instagram/callback] Found Instagram account via /me/instagram_accounts: ${igProfile.username} (${igProfile.id})`
+        );
+      } else {
+        console.warn(
+          "[instagram/callback] /me/instagram_accounts returned no accounts.",
+          JSON.stringify(igDirectData)
+        );
+      }
+    } else {
+      console.warn(
+        "[instagram/callback] /me/instagram_accounts fallback failed:",
+        await igDirectRes.text()
+      );
+    }
+
+    // Method 3: Extract Instagram account ID from token debug_token granular_scopes.
     // In Meta's new Instagram-first OAuth flow, the Instagram account IDs selected
     // during consent are recorded as target_ids for instagram_basic in the token
     // metadata. This works even when the Facebook user has no Page admin role
@@ -269,23 +309,23 @@ export async function GET(request: NextRequest) {
       console.info(
         "[instagram/callback] Trying debug_token granular_scopes (Method 3)."
       );
- 
+
       const appAccessToken = `${process.env.META_APP_ID}|${process.env.META_APP_SECRET}`;
       const debugParams = new URLSearchParams({
         input_token: longLivedTokens.access_token,
         access_token: appAccessToken,
       });
- 
+
       const debugRes = await fetch(
         `${META_GRAPH_BASE}/debug_token?${debugParams.toString()}`
       );
- 
+
       if (debugRes.ok) {
         const debugData: MetaDebugTokenResponse = await debugRes.json();
         const granularScopes = debugData.data?.granular_scopes ?? [];
         const igScope = granularScopes.find((s) => s.scope === "instagram_basic");
         const igId = igScope?.target_ids?.[0];
- 
+
         if (igId) {
           console.info(
             `[instagram/callback] debug_token yielded IG account ID: ${igId}`
@@ -315,45 +355,10 @@ export async function GET(request: NextRequest) {
         );
       }
     }
-    }
-  
-      igProfile = await igProfileRes.json() as InstagramUserResponse;
-  } else if (totalPages === 0) {
-    // Method 2 — /me/accounts returned nothing. Try the direct Instagram
-    // accounts endpoint, which is populated by the new Instagram-first OAuth
-    // consent flow even when the Facebook user doesn't admin any Pages.
-    console.info(
-      "[instagram/callback] /me/accounts returned 0 pages; trying /me/instagram_accounts fallback."
-    );
-       const igDirectRes = await fetch(
-      `${META_GRAPH_BASE}/me/instagram_accounts?fields=id,username`,
-      { headers: { Authorization: `Bearer ${longLivedTokens.access_token}` } }
-    );
-    
-    if (igDirectRes.ok) {
-      const igDirectData = await igDirectRes.json();
-      const firstAccount = igDirectData.data?.[0];
-      if (firstAccount?.id) {
-        igProfile = firstAccount as InstagramUserResponse;
-        console.info(
-          `[instagram/callback] Found Instagram account via /me/instagram_accounts: ${igProfile.username} (${igProfile.id})`
-        );
-      } else {
-        console.warn(
-          "[instagram/callback] /me/instagram_accounts returned no accounts.",
-          JSON.stringify(igDirectData)
-        );
-      }
-    } else {
-      console.warn(
-        "[instagram/callback] /me/instagram_accounts fallback failed:",
-        await igDirectRes.text()
-      );
-    }
   }
 
   if (!igProfile) {
-    // Both methods failed — emit the most specific error available.
+    // All methods failed — emit the most specific error available.
     const errorCode =
       totalPages === 0
         ? "no_facebook_pages_granted"
