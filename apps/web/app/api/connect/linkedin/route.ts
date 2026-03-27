@@ -24,7 +24,9 @@ const LINKEDIN_SCOPES = [
   "profile",         // Access name, headline, photo
   "email",           // Access email address
   "w_member_social", // Create, modify, and delete posts
-  "r_member_social", // Read member posts (required for Posts REST API)
+  "r_member_social", // Read member posts (Posts REST API). NOTE: LinkedIn stopped approving
+                    // new r_member_social requests as of early 2026; post-sync will return
+                    // 403 for apps registered after that date.
 ].join(" ");
 
 export async function GET(request: Request) {
