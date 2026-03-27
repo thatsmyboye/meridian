@@ -15,7 +15,7 @@ interface PlatformConfig {
 }
 
 /** Platforms temporarily hidden from the UI (code/sync intact). */
-const HIDDEN_PLATFORMS = new Set(["twitter"]);
+const HIDDEN_PLATFORMS = new Set(["twitter", "linkedin"]);
 
 const PLATFORMS: Record<string, PlatformConfig> = {
   youtube: {
