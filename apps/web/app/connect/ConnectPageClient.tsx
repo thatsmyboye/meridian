@@ -99,7 +99,7 @@ const PLATFORMS: Record<string, PlatformConfig> = {
     color: "#0a66c2",
     connectHref: "/api/connect/linkedin",
     description: "Import posts and professional engagement data",
-    note: null,
+    note: "Post import may not be available — LinkedIn restricted the required permission for new apps in early 2026",
   },
 };
 

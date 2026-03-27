@@ -69,6 +69,10 @@ function millisToIso(ms: number | null | undefined): string | null {
  *
  * Note: The access token is decrypted outside of any step so that the
  * plaintext token is never serialised into Inngest step state.
+ *
+ * Known limitation: LinkedIn stopped accepting new r_member_social permission
+ * requests as of early 2026. Post-syncing will return a 403/scopeError for apps
+ * registered after that date. The w_member_social scope (publishing) is unaffected.
  */
 export const syncLinkedInPosts = inngest.createFunction(
   {
@@ -161,11 +165,11 @@ export const syncLinkedInPosts = inngest.createFunction(
           if (res.status === 403) {
             const body = await res.text();
             // 403 means the token lacks the r_member_social scope.
-            // Reconnecting with the current LinkedIn app config won't help —
-            // r_member_social must be enabled in the LinkedIn Developer Portal first.
+            // As of early 2026, LinkedIn no longer approves new r_member_social requests.
+            // Only apps registered before this change can sync posts; reconnecting will not fix this.
             console.warn(
               `[sync-linkedin-posts] Insufficient scope (403) for platform ${connected_platform_id}. ` +
-              `Ensure r_member_social is enabled for this LinkedIn app. Response: ${body}`
+              `The r_member_social permission is required but LinkedIn stopped approving new requests as of early 2026. Response: ${body}`
             );
             return { scopeError: true as const, upserted: 0, hasMore: false, nextStart: start };
           }
@@ -242,8 +246,8 @@ export const syncLinkedInPosts = inngest.createFunction(
       if ("scopeError" in result && result.scopeError) {
         // The token lacks r_member_social. Stamp last_synced_at so the UI
         // spinner clears and the platform stays in "active" state. Reconnecting
-        // won't fix this — the LinkedIn Developer App needs r_member_social
-        // enabled in the LinkedIn Developer Portal first.
+        // won't fix this — as of early 2026, LinkedIn no longer approves new
+        // r_member_social requests; only pre-existing apps can sync posts.
         await step.run("mark-synced", async () => {
           const supabase = getSupabaseAdmin();
           const { error } = await supabase
