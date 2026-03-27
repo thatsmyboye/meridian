@@ -380,41 +380,6 @@ export interface DemoDerivative {
 
 export const DEMO_DERIVATIVES: DemoDerivative[] = [
   {
-    format: "linkedin_post",
-    label: "LinkedIn Post",
-    platform: "linkedin",
-    charCount: 980,
-    status: "approved",
-    content: `I built a SaaS product in 48 hours this weekend. Here's the honest post-mortem.
-
-The goal wasn't to get rich. It was to test whether I could take an idea from zero to paying customers in a single weekend — and document everything along the way.
-
-Here's what I learned:
-
-**What actually worked:**
-→ Supabase made auth and the database trivially easy. RLS policies saved me from writing a whole permissions layer.
-→ Next.js Server Actions eliminated the need for a separate API. Less code, fewer bugs.
-→ Vercel preview deploys let me QA on mobile in real time.
-
-**What went wrong (so you don't repeat it):**
-→ I forgot to rate-limit my AI endpoint. $40 gone in 30 minutes.
-→ I designed desktop-first and had to redo half the UI for mobile.
-→ Stripe local testing is painful. Set up the Stripe CLI on day 1, not day 2.
-
-**The result:**
-7 paying customers. $280 MRR after 7 days.
-
-Not a moonshot — but enough to know the problem is real and people will pay to solve it.
-
-The constraint of 48 hours forced me to make decisions I'd normally agonize over for weeks. Every "we'll add that later" was actually "we'll never add that, and that's fine."
-
-Shipped > perfect.
-
-If you're sitting on a side project idea, this weekend is a great time to start. The full breakdown (with code walkthroughs) is on my YouTube channel.
-
-#buildinpublic #indiehacker #webdev #saas`,
-  },
-  {
     format: "instagram_caption",
     label: "Instagram Caption",
     platform: "instagram",
