@@ -206,6 +206,7 @@ export interface ConnectedPlatformRow {
   platform_username: string | null;
   status: string;
   last_synced_at: string | null;
+  sync_error: string | null;
 }
 
 interface Props {
@@ -254,6 +255,7 @@ export default function ConnectionsClient({
                     platform_username: updated.platform_username ?? r.platform_username,
                     status: updated.status,
                     last_synced_at: updated.last_synced_at,
+                    sync_error: updated.sync_error ?? null,
                   }
                 : r
             )
@@ -326,6 +328,7 @@ export default function ConnectionsClient({
           const isConnected = status !== "disconnected";
           const needsReauth = status === "reauth_required";
           const isSyncing = status === "active" && !conn?.last_synced_at;
+          const hasSyncError = !isSyncing && Boolean(conn?.sync_error);
           // Gray out platforms the user can't connect on their current tier
           const isLocked = atLimit && !isConnected;
 
@@ -405,6 +408,23 @@ export default function ConnectionsClient({
                       }}
                     />
                     Syncing content…
+                  </span>
+                ) : hasSyncError ? (
+                  <span
+                    role="status"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 13,
+                      color: "#b45309",
+                    }}
+                  >
+                    <span aria-hidden style={{ fontSize: 12 }}>⚠</span>
+                    Sync failed
+                    {conn?.last_synced_at && (
+                      <span style={{ color: "#9ca3af" }}>&middot; {formatRelativeTime(conn.last_synced_at)}</span>
+                    )}
                   </span>
                 ) : (
                   <span style={{ fontSize: 13, color: "#9ca3af" }}>
