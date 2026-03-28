@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createBrowserClient } from "@/lib/supabase/client";
 import DisconnectButton from "@/app/settings/connections/DisconnectButton";
 import UpgradeLimitModal from "@/app/UpgradeLimitModal";
@@ -14,6 +14,7 @@ export interface ConnectedPlatformRow {
   status: string;
   last_synced_at: string | null;
   last_sync_count: number | null;
+  sync_error: string | null;
 }
 
 /** Platforms that have a dedicated content sync function. */
@@ -277,6 +278,9 @@ export default function ConnectPageClient({
   // Tracks platforms currently undergoing a manually triggered refresh.
   const [refreshingPlatforms, setRefreshingPlatforms] = useState<Set<string>>(new Set());
   const [, startTransition] = useTransition();
+  // Safety-net timers: if no realtime UPDATE arrives within 90s, clear the
+  // manual refresh spinner so users are never left with a permanently stuck UI.
+  const refreshTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Subscribe to real-time updates so the sync spinner, last_synced_at, and
   // last_sync_count update without a page refresh.
@@ -306,17 +310,23 @@ export default function ConnectPageClient({
                     status: updated.status,
                     last_synced_at: updated.last_synced_at,
                     last_sync_count: updated.last_sync_count ?? r.last_sync_count,
+                    sync_error: updated.sync_error ?? null,
                   }
                 : r
             )
           );
-          // Clear the manual refresh spinner once the sync completes.
+          // Clear the manual refresh spinner and cancel its safety-net timer.
           setRefreshingPlatforms((prev) => {
             if (!prev.has(updated.platform)) return prev;
             const next = new Set(prev);
             next.delete(updated.platform);
             return next;
           });
+          const timer = refreshTimers.current.get(updated.platform);
+          if (timer !== undefined) {
+            clearTimeout(timer);
+            refreshTimers.current.delete(updated.platform);
+          }
         }
       )
       .subscribe();
@@ -326,8 +336,31 @@ export default function ConnectPageClient({
     };
   }, [creatorId]);
 
+  // Clear all safety-net timers on unmount.
+  useEffect(() => {
+    const timers = refreshTimers.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+    };
+  }, []);
+
   function handleRefresh(platform: string) {
     setRefreshingPlatforms((prev) => new Set(prev).add(platform));
+
+    // Safety net: if no realtime UPDATE fires within 90s (e.g. Inngest is
+    // down), clear the spinner so the user isn't stuck indefinitely.
+    const existing = refreshTimers.current.get(platform);
+    if (existing !== undefined) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      setRefreshingPlatforms((prev) => {
+        const next = new Set(prev);
+        next.delete(platform);
+        return next;
+      });
+      refreshTimers.current.delete(platform);
+    }, 90_000);
+    refreshTimers.current.set(platform, timer);
+
     startTransition(async () => {
       await requestPlatformSync(platform);
     });
@@ -451,6 +484,7 @@ export default function ConnectPageClient({
           const isSyncing =
             (status === "active" && !conn?.last_synced_at) ||
             refreshingPlatforms.has(key);
+          const hasSyncError = !isSyncing && Boolean(conn?.sync_error);
           const canRefresh = status === "active" && SYNCABLE_PLATFORMS.has(key) && !isSyncing;
           const isLocked = atLimit && !isConnected;
 
@@ -530,6 +564,41 @@ export default function ConnectPageClient({
                         }}
                       />
                       Syncing content…
+                    </span>
+                  ) : hasSyncError ? (
+                    <span
+                      role="status"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 13,
+                        color: "#b45309",
+                      }}
+                    >
+                      <span aria-hidden style={{ fontSize: 12 }}>⚠</span>
+                      Sync failed
+                      {conn?.last_synced_at && (
+                        <span style={{ color: "#9ca3af" }}>&middot; {formatRelativeTime(conn.last_synced_at)}</span>
+                      )}
+                      {SYNCABLE_PLATFORMS.has(key) && (
+                        <button
+                          onClick={() => handleRefresh(key)}
+                          style={{
+                            marginLeft: 4,
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            color: "#2563eb",
+                            fontWeight: 600,
+                            fontSize: 13,
+                            cursor: "pointer",
+                            textDecoration: "underline",
+                          }}
+                        >
+                          Retry
+                        </button>
+                      )}
                     </span>
                   ) : (
                     <span style={{ fontSize: 13, color: "#9ca3af" }}>

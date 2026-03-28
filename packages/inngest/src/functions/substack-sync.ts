@@ -127,6 +127,19 @@ export const syncSubstackPosts = inngest.createFunction(
     id: "sync-substack-posts",
     name: "Sync Substack Posts",
     retries: 3,
+    onFailure: async ({ event }) => {
+      // Stamp last_synced_at so the /connect page spinner always resolves,
+      // even when the sync job exhausts all retries without completing.
+      // Also record the error message so the UI can show a failure state.
+      const { connected_platform_id } = event.data.event.data;
+      await getSupabaseAdmin()
+        .from("connected_platforms")
+        .update({
+          last_synced_at: new Date().toISOString(),
+          sync_error: event.data.error.message,
+        })
+        .eq("id", connected_platform_id);
+    },
   },
   { event: "content/sync.requested", if: "event.data.platform == 'substack'" },
   async ({ event, step }) => {
@@ -187,7 +200,7 @@ export const syncSubstackPosts = inngest.createFunction(
         const supabase = getSupabaseAdmin();
         const { error } = await supabase
           .from("connected_platforms")
-          .update({ last_synced_at: new Date().toISOString(), last_sync_count: 0 })
+          .update({ last_synced_at: new Date().toISOString(), last_sync_count: 0, sync_error: null })
           .eq("id", connected_platform_id);
         if (error) throw new Error(`mark-synced failed: ${error.message}`);
       });
@@ -231,7 +244,7 @@ export const syncSubstackPosts = inngest.createFunction(
       const supabase = getSupabaseAdmin();
       const { error } = await supabase
         .from("connected_platforms")
-        .update({ last_synced_at: new Date().toISOString(), last_sync_count: totalUpserted })
+        .update({ last_synced_at: new Date().toISOString(), last_sync_count: totalUpserted, sync_error: null })
         .eq("id", connected_platform_id);
       if (error) throw new Error(`mark-synced failed: ${error.message}`);
     });
