@@ -129,10 +129,15 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
     // month a week belongs to as we traverse newest-first.
     const monthLabels: { weekIndex: number; label: string }[] = [];
     let lastMonth = -1;
+    let lastLabelWeekIndex = -Infinity;
+    const MIN_LABEL_GAP_WEEKS = 3; // ~48px at CELL_STEP=16, wider than any 3-char label
     for (let i = 0; i < displayWeeks.length; i++) {
       const m = new Date(displayWeeks[i][6].date + "T00:00:00").getMonth();
       if (m !== lastMonth) {
-        monthLabels.push({ weekIndex: i, label: MONTH_NAMES[m] });
+        if (i - lastLabelWeekIndex >= MIN_LABEL_GAP_WEEKS) {
+          monthLabels.push({ weekIndex: i, label: MONTH_NAMES[m] });
+          lastLabelWeekIndex = i;
+        }
         lastMonth = m;
       }
     }
