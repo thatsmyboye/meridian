@@ -225,9 +225,13 @@ export const syncPatreonPosts = inngest.createFunction(
     let pageIndex = 0;
 
     do {
-      const stepId = `sync-page-${cursor ?? "initial"}`;
+      const stepId: string = `sync-page-${cursor ?? "initial"}`;
 
-      const result = await step.run(stepId, async () => {
+      type StepResult =
+        | { reauthRequired: true; upserted: 0; nextCursor: null }
+        | { upserted: number; nextCursor: string | null };
+
+      const result: StepResult = await step.run(stepId, async (): Promise<StepResult> => {
         const supabase = getSupabaseAdmin();
 
         const url = new URL(
