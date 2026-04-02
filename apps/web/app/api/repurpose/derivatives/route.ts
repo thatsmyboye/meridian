@@ -219,7 +219,8 @@ export async function PUT(request: NextRequest) {
   };
 
   if (allReviewed) {
-    updates.status = "approved";
+    const anyRejected = updatedDerivatives.some((d) => d.status === "rejected");
+    updates.status = anyRejected ? "rejected" : "approved";
   }
 
   const { error: updateErr } = await supabase
@@ -256,9 +257,13 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  const finalJobStatus = allReviewed
+    ? (updatedDerivatives.some((d) => d.status === "rejected") ? "rejected" : "approved")
+    : "review";
+
   return NextResponse.json({
     derivatives: updatedDerivatives,
-    job_status: allReviewed ? "approved" : "review",
+    job_status: finalJobStatus,
   });
 }
 
