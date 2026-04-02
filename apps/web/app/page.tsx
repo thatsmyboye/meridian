@@ -322,6 +322,30 @@ export default async function Home() {
       <Suspense>
         <CreatorDashboard content={dashboardContent} />
       </Suspense>
+
+      <footer
+        style={{
+          marginTop: 48,
+          paddingTop: 16,
+          borderTop: "1px solid #e5e7eb",
+          display: "flex",
+          gap: 16,
+          justifyContent: "center",
+        }}
+      >
+        <Link
+          href="/privacy"
+          style={{ fontSize: 13, color: "#9ca3af", textDecoration: "none" }}
+        >
+          Privacy Policy
+        </Link>
+        <Link
+          href="/terms"
+          style={{ fontSize: 13, color: "#9ca3af", textDecoration: "none" }}
+        >
+          Terms of Service
+        </Link>
+      </footer>
     </main>
   );
 }

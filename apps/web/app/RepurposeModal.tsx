@@ -16,7 +16,6 @@ export interface RepurposeModalProps {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ALL_PLATFORMS: { value: string; label: string }[] = [
-  { value: "youtube", label: "YouTube" },
   { value: "instagram", label: "Instagram" },
   { value: "tiktok", label: "TikTok" },
   { value: "linkedin", label: "LinkedIn" },

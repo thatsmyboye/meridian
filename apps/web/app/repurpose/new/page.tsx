@@ -7,10 +7,9 @@ import { type FormEvent, useState } from "react";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ALL_PLATFORMS: { value: string; label: string }[] = [
-  { value: "linkedin", label: "LinkedIn" },
   { value: "instagram", label: "Instagram" },
   { value: "tiktok", label: "TikTok" },
-  { value: "youtube", label: "YouTube" },
+  { value: "linkedin", label: "LinkedIn" },
   { value: "podcast", label: "Podcast" },
   { value: "other", label: "Other" },
 ];
