@@ -21,6 +21,7 @@ const VALID_PLATFORMS = new Set([
   "linkedin",
   "podcast",
   "other",
+  "patreon",
 ]);
 
 /**

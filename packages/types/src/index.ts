@@ -30,7 +30,8 @@ export type Platform =
   | "beehiiv"
   | "tiktok"
   | "twitter"
-  | "linkedin";
+  | "linkedin"
+  | "patreon";
 
 export type ContentType = "video" | "short" | "newsletter" | "podcast";
 
@@ -166,7 +167,8 @@ export type DerivativeFormatKey =
   | "instagram_carousel"
   | "newsletter_blurb"
   | "tiktok_script"
-  | "podcast_show_notes";
+  | "podcast_show_notes"
+  | "patreon_post";
 
 /**
  * A single media item in an Instagram carousel post.

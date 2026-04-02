@@ -61,6 +61,13 @@ export const handlePlatformConnected = inngest.createFunction(
       });
     }
 
+    if (platform === "patreon") {
+      await step.sendEvent("request-patreon-sync", {
+        name: "content/sync.requested",
+        data: { creator_id, connected_platform_id, platform },
+      });
+    }
+
     // Platforms without a dedicated content sync function (twitter) never have
     // last_synced_at set, causing the /connect page spinner to spin forever.
     // Stamp it here so the UI resolves correctly.

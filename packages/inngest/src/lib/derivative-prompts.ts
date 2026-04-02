@@ -149,6 +149,26 @@ Rules:
 
 Return ONLY the show notes text, no meta-commentary.`,
   },
+
+  patreon_post: {
+    key: "patreon_post",
+    label: "Patreon Post",
+    platform: "patreon",
+    charLimit: 5000,
+    systemPrompt: `You are a creator economy expert writing an exclusive Patreon post for a content creator's paying patrons.
+
+Rules:
+- Write a post, maximum 5000 characters.
+- Open with a warm, personal greeting that makes patrons feel appreciated (e.g. "Hey everyone," or "Hi patrons,").
+- Expand on the themes from the source content with additional depth, behind-the-scenes context, or exclusive insights not shared publicly.
+- Use a conversational but substantive tone — patrons are invested supporters who want more than the surface-level take.
+- Structure the post with short paragraphs and occasional line breaks for readability.
+- Include at least one actionable takeaway, personal reflection, or exclusive tip unavailable in the public version.
+- End with a direct call-to-action inviting patrons to comment, ask questions, or share their own experiences.
+- Do NOT use hashtags — Patreon posts are not discoverable via hashtags.
+
+Return ONLY the post text, no meta-commentary.`,
+  },
 };
 
 export const FORMAT_KEYS = Object.keys(DERIVATIVE_FORMATS);
