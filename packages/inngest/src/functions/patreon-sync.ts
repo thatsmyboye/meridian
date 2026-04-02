@@ -24,7 +24,6 @@ interface PatreonPost {
     published_at: string | null;
     is_paid: boolean;
     url: string | null;
-    post_type: string | null;
     /** Embed data is present on some post types (video/audio). */
     embed_data?: Record<string, unknown> | null;
   };
@@ -239,7 +238,7 @@ export const syncPatreonPosts = inngest.createFunction(
         );
         url.searchParams.set(
           "fields[post]",
-          "title,content,published_at,is_paid,url,post_type,embed_data"
+          "title,content,published_at,is_paid,url,embed_data"
         );
         url.searchParams.set("page[count]", String(PAGE_SIZE));
         if (cursor) {
