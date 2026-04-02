@@ -18,7 +18,7 @@ export interface ConnectedPlatformRow {
 }
 
 /** Platforms that have a dedicated content sync function. */
-const SYNCABLE_PLATFORMS = new Set(["youtube", "instagram", "beehiiv", "substack", "tiktok"]);
+const SYNCABLE_PLATFORMS = new Set(["youtube", "instagram", "beehiiv", "substack", "tiktok", "patreon"]);
 
 /** Platforms temporarily hidden from the UI (code/sync intact). */
 const HIDDEN_PLATFORMS = new Set(["twitter", "linkedin"]);
@@ -95,6 +95,13 @@ const PLATFORMS: Record<string, PlatformConfig> = {
     description: "Import videos and performance analytics",
     note: null,
   },
+  patreon: {
+    label: "Patreon",
+    color: "#FF424D",
+    connectHref: "/api/connect/patreon",
+    description: "Import posts and patron content analytics",
+    note: null,
+  },
   linkedin: {
     label: "LinkedIn",
     color: "#0a66c2",
@@ -113,6 +120,7 @@ const SUCCESS_MESSAGES: Record<string, string> = {
   beehiiv: "Beehiiv connected successfully. Your newsletter posts will be imported shortly.",
   twitter: "X (Twitter) connected successfully. Your tweets will be imported shortly.",
   tiktok: "TikTok connected successfully. Your videos will be imported shortly.",
+  patreon: "Patreon connected successfully. Your posts will be imported shortly.",
   linkedin: "LinkedIn connected successfully. Your posts will be imported shortly.",
 };
 
@@ -191,6 +199,11 @@ function PlatformIcon({ id, color }: { id: string; color: string }) {
     tiktok: (
       <svg width="18" height="20" viewBox="0 0 448 512" fill="white" aria-hidden>
         <path d="M448 209.91a210.06 210.06 0 0 1-122.77-39.25V349.38A162.55 162.55 0 1 1 185 188.31V278.2a74.62 74.62 0 1 0 52.23 71.18V0l88 0a121.18 121.18 0 0 0 1.86 22.17A122.18 122.18 0 0 0 381 102.39a121.43 121.43 0 0 0 67 20.14z" />
+      </svg>
+    ),
+    patreon: (
+      <svg width="18" height="20" viewBox="0 0 436 476" fill="white" aria-hidden>
+        <path d="M267 0c-93.7 0-170 76.3-170 170s76.3 170 170 170 170-76.3 170-170S360.7 0 267 0zM0 476h66V0H0v476z" />
       </svg>
     ),
   };
