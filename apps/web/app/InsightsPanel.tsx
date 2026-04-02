@@ -385,6 +385,8 @@ function InsightCard({
 
 // ─── InsightsPanel ────────────────────────────────────────────────────────────
 
+type RunState = "idle" | "loading" | "success" | "error";
+
 export default function InsightsPanel({
   insights,
   content = [],
@@ -392,6 +394,26 @@ export default function InsightsPanel({
   canRunAnalysis,
   onRunAnalysis,
 }: InsightsPanelProps) {
+  const [runState, setRunState] = useState<RunState>("idle");
+  const [runError, setRunError] = useState<string | null>(null);
+
+  const handleRunAnalysis = async () => {
+    if (!onRunAnalysis || runState === "loading") return;
+    setRunState("loading");
+    setRunError(null);
+    try {
+      await onRunAnalysis();
+      setRunState("success");
+    } catch (err) {
+      setRunError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+      setRunState("error");
+    }
+  };
+
   // Check if content has less than 30 days of data
   const thresholdInfo = useMemo(
     () => calculateDataThreshold(content),
@@ -411,21 +433,157 @@ export default function InsightsPanel({
     );
   }
 
-  if (insights.length === 0) return null;
+  if (insights.length === 0) {
+    if (!canRunAnalysis || !onRunAnalysis) return null;
+
+    return (
+      <div style={{ marginBottom: 36 }}>
+        <div
+          style={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            background: "#fff",
+            padding: "28px 24px",
+            textAlign: "center",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              marginTop: 0,
+              marginBottom: 8,
+              color: "#111827",
+            }}
+          >
+            Pattern Insights
+          </h2>
+          <p
+            style={{
+              fontSize: 14,
+              color: "#6b7280",
+              margin: "0 0 20px 0",
+              lineHeight: 1.6,
+            }}
+          >
+            Run an analysis to discover what&apos;s working across your content.
+          </p>
+
+          {runState === "success" ? (
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#059669",
+                margin: 0,
+                padding: "10px 12px",
+                background: "#ecfdf5",
+                borderRadius: 6,
+              }}
+            >
+              ✓ Analysis started! Refresh in a moment to see your insights.
+            </p>
+          ) : (
+            <>
+              <button
+                onClick={handleRunAnalysis}
+                disabled={runState === "loading"}
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#fff",
+                  background: runState === "loading" ? "#93c5fd" : "#2563eb",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "10px 22px",
+                  cursor: runState === "loading" ? "not-allowed" : "pointer",
+                  transition: "background 0.2s",
+                }}
+              >
+                {runState === "loading" ? "Analyzing…" : "Analyze My Content"}
+              </button>
+              {runState === "error" && runError && (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "#dc2626",
+                    margin: "10px 0 0 0",
+                  }}
+                >
+                  {runError}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginBottom: 36 }}>
-      <h2
+      <div
         style={{
-          fontSize: 16,
-          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           marginBottom: 14,
-          marginTop: 0,
-          color: "#111827",
         }}
       >
-        Pattern Insights
-      </h2>
+        <h2
+          style={{
+            fontSize: 16,
+            fontWeight: 700,
+            margin: 0,
+            color: "#111827",
+          }}
+        >
+          Pattern Insights
+        </h2>
+        {canRunAnalysis && onRunAnalysis && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {runState === "success" ? (
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#059669",
+                  padding: "4px 10px",
+                  background: "#ecfdf5",
+                  borderRadius: 6,
+                }}
+              >
+                ✓ Analysis started!
+              </span>
+            ) : (
+              <>
+                <button
+                  onClick={handleRunAnalysis}
+                  disabled={runState === "loading"}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: runState === "loading" ? "#93c5fd" : "#2563eb",
+                    background: "transparent",
+                    border: "1px solid #bfdbfe",
+                    borderRadius: 6,
+                    padding: "4px 12px",
+                    cursor: runState === "loading" ? "not-allowed" : "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {runState === "loading" ? "Analyzing…" : "↻ Refresh"}
+                </button>
+                {runState === "error" && runError && (
+                  <span style={{ fontSize: 11, color: "#dc2626" }}>
+                    {runError}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
       <div
         style={{
           display: "grid",
