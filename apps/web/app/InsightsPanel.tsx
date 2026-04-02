@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { formatNumber, PLATFORM_BADGE } from "@/lib/formatters";
+import { formatNumber, PLATFORM_BADGE, PLATFORM_DISPLAY_NAME } from "@/lib/formatters";
 import DataThresholdIndicator from "./DataThresholdIndicator";
 import { calculateDataThreshold } from "@/lib/dataThreshold";
 import type { ContentItem } from "@/lib/dataThreshold";
@@ -42,10 +42,10 @@ interface InsightsPanelProps {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const INSIGHT_META: Record<string, { icon: string; label: string }> = {
-  day_of_week: { icon: "📅", label: "Publishing day" },
-  content_type: { icon: "🎬", label: "Content format" },
-  length_bucket: { icon: "⏱️", label: "Content length" },
-  posting_frequency: { icon: "📈", label: "Posting frequency" },
+  day_of_week: { icon: "📅", label: "Publishing Day" },
+  content_type: { icon: "🎬", label: "Content Format" },
+  length_bucket: { icon: "⏱️", label: "Content Length" },
+  posting_frequency: { icon: "📈", label: "Posting Frequency" },
 };
 
 const CONFIDENCE_BADGE: Record<string, { bg: string; color: string }> = {
@@ -343,7 +343,7 @@ function InsightCard({
                                 color: badge.color,
                               }}
                             >
-                              {item.platform}
+                              {PLATFORM_DISPLAY_NAME[item.platform] ?? item.platform}
                             </span>
                           )}
                           <span style={{ fontSize: 11, color: "#9ca3af" }}>
@@ -396,6 +396,7 @@ export default function InsightsPanel({
 }: InsightsPanelProps) {
   const [runState, setRunState] = useState<RunState>("idle");
   const [runError, setRunError] = useState<string | null>(null);
+  const [sectionCollapsed, setSectionCollapsed] = useState(false);
 
   const handleRunAnalysis = async () => {
     if (!onRunAnalysis || runState === "loading") return;
@@ -527,20 +528,44 @@ export default function InsightsPanel({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: 14,
+          marginBottom: sectionCollapsed ? 0 : 14,
         }}
       >
-        <h2
+        <button
+          onClick={() => setSectionCollapsed((v) => !v)}
           style={{
-            fontSize: 16,
-            fontWeight: 700,
-            margin: 0,
-            color: "#111827",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
           }}
         >
-          Pattern Insights
-        </h2>
-        {canRunAnalysis && onRunAnalysis && (
+          <span
+            style={{
+              display: "inline-block",
+              transition: "transform 0.2s",
+              transform: sectionCollapsed ? "rotate(0deg)" : "rotate(90deg)",
+              fontSize: 10,
+              color: "#9ca3af",
+            }}
+          >
+            ▶
+          </span>
+          <h2
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              margin: 0,
+              color: "#111827",
+            }}
+          >
+            Pattern Insights
+          </h2>
+        </button>
+        {!sectionCollapsed && canRunAnalysis && onRunAnalysis && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {runState === "success" ? (
               <span
@@ -584,22 +609,24 @@ export default function InsightsPanel({
           </div>
         )}
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-          gap: 14,
-        }}
-      >
-        {insights.map((insight, i) => (
-          <InsightCard
-            key={insight.id}
-            insight={insight}
-            animationDelay={i * 80}
-            onDismiss={onDismissInsight}
-          />
-        ))}
-      </div>
+      {!sectionCollapsed && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+            gap: 14,
+          }}
+        >
+          {insights.map((insight, i) => (
+            <InsightCard
+              key={insight.id}
+              insight={insight}
+              animationDelay={i * 80}
+              onDismiss={onDismissInsight}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
