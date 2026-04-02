@@ -7,11 +7,12 @@ import { type FormEvent, useState } from "react";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ALL_PLATFORMS: { value: string; label: string }[] = [
+  { value: "youtube", label: "YouTube" },
   { value: "instagram", label: "Instagram" },
+  { value: "beehiiv", label: "Beehiiv" },
+  { value: "substack", label: "Substack" },
   { value: "tiktok", label: "TikTok" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "podcast", label: "Podcast" },
-  { value: "other", label: "Other" },
+  { value: "patreon", label: "Patreon" },
 ];
 
 const DERIVATIVE_FORMATS: { value: string; label: string }[] = [
