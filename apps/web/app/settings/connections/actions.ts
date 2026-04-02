@@ -13,6 +13,7 @@ const VALID_PLATFORMS = new Set([
   "tiktok",
   "twitter",
   "linkedin",
+  "patreon",
 ]);
 
 /** Platforms that have a dedicated content sync Inngest function. */
@@ -23,6 +24,7 @@ const SYNCABLE_PLATFORMS = new Set([
   "substack",
   "tiktok",
   "linkedin",
+  "patreon",
 ]);
 
 /**
