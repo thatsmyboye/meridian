@@ -382,12 +382,28 @@ export default function ConnectPageClient({
   const byPlatform = Object.fromEntries(rows.map((r) => [r.platform, r]));
   const atLimit = activePlatformCount >= platformLimit;
 
+  const visiblePlatforms = Object.entries(PLATFORMS).filter(([key]) => !HIDDEN_PLATFORMS.has(key));
+  const isOddCount = visiblePlatforms.length % 2 !== 0;
+
   return (
-    <main style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px 64px" }}>
-      {/* Keyframe for sync spinner */}
+    <main style={{ maxWidth: 780, margin: "0 auto", padding: "32px 24px 64px" }}>
+      {/* Keyframe for sync spinner + responsive grid */}
       <style
         dangerouslySetInnerHTML={{
-          __html: `@keyframes meridian-spin { to { transform: rotate(360deg); } }`,
+          __html: `
+            @keyframes meridian-spin { to { transform: rotate(360deg); } }
+            @media (max-width: 640px) {
+              .meridian-platform-grid {
+                grid-template-columns: 1fr !important;
+              }
+              .meridian-platform-grid-last-odd {
+                grid-column: auto !important;
+                max-width: none !important;
+                width: auto !important;
+                margin: 0 !important;
+              }
+            }
+          `,
         }}
       />
 
@@ -488,8 +504,12 @@ export default function ConnectPageClient({
       )}
 
       {/* Platform cards */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {Object.entries(PLATFORMS).filter(([key]) => !HIDDEN_PLATFORMS.has(key)).map(([key, cfg]) => {
+      <div
+        className="meridian-platform-grid"
+        style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}
+      >
+        {visiblePlatforms.map(([key, cfg], index) => {
+          const isLastOdd = isOddCount && index === visiblePlatforms.length - 1;
           const conn = byPlatform[key] ?? null;
           const status = conn?.status ?? "disconnected";
           const isConnected = status !== "disconnected";
@@ -504,12 +524,14 @@ export default function ConnectPageClient({
           return (
             <div
               key={key}
+              className={isLastOdd ? "meridian-platform-grid-last-odd" : undefined}
               style={{
                 border: `1px solid ${needsReauth ? "#fcd34d" : "#e5e7eb"}`,
                 borderRadius: 12,
                 padding: 20,
                 background: needsReauth ? "#fffdf5" : "#fff",
                 opacity: isLocked ? 0.6 : 1,
+                ...(isLastOdd ? { gridColumn: "1 / -1", maxWidth: "calc(50% - 6px)", margin: "0 auto", width: "100%" } : {}),
               }}
             >
               {/* Top row: icon + name + status badge */}
