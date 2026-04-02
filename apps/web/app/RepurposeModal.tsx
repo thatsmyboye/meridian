@@ -18,19 +18,77 @@ export interface RepurposeModalProps {
 const ALL_PLATFORMS: { value: string; label: string }[] = [
   { value: "youtube", label: "YouTube" },
   { value: "instagram", label: "Instagram" },
+  { value: "beehiiv", label: "Beehiiv" },
+  { value: "substack", label: "Substack" },
   { value: "tiktok", label: "TikTok" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "podcast", label: "Podcast" },
-  { value: "other", label: "Other" },
+  { value: "patreon", label: "Patreon" },
 ];
 
 const DERIVATIVE_FORMATS: { value: string; label: string }[] = [
   { value: "linkedin_post", label: "LinkedIn Post" },
   { value: "instagram_caption", label: "Instagram Caption" },
+  { value: "instagram_carousel", label: "Instagram Carousel" },
   { value: "newsletter_blurb", label: "Newsletter Blurb" },
   { value: "tiktok_script", label: "TikTok Script" },
+  { value: "podcast_script", label: "Podcast Script" },
   { value: "podcast_show_notes", label: "Podcast Show Notes" },
+  { value: "patreon_post", label: "Patreon Post" },
 ];
+
+// ─── InfoTooltip ──────────────────────────────────────────────────────────────
+
+function InfoTooltip({ text }: { text: string }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <span
+      style={{ position: "relative", display: "inline-block", marginLeft: 6, verticalAlign: "middle" }}
+    >
+      <span
+        onMouseEnter={() => setVisible(true)}
+        onMouseLeave={() => setVisible(false)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 15,
+          height: 15,
+          borderRadius: "50%",
+          background: "#e5e7eb",
+          color: "#6b7280",
+          fontSize: 10,
+          fontWeight: 700,
+          cursor: "default",
+          lineHeight: 1,
+          userSelect: "none",
+        }}
+      >
+        ?
+      </span>
+      {visible && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 6px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#1f2937",
+            color: "#f9fafb",
+            fontSize: 12,
+            lineHeight: 1.5,
+            padding: "8px 10px",
+            borderRadius: 6,
+            width: 220,
+            zIndex: 10,
+            pointerEvents: "none",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+        >
+          {text}
+        </div>
+      )}
+    </span>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -202,6 +260,7 @@ export default function RepurposeModal({
             }}
           >
             Select target format
+            <InfoTooltip text="Choose the platform you want to repurpose your content for. The output will be tailored to fit that platform's style and audience." />
           </legend>
           <div
             style={{
@@ -259,6 +318,7 @@ export default function RepurposeModal({
             }}
           >
             Select derivative formats
+            <InfoTooltip text="Choose the specific content pieces to generate. Leave all unchecked to produce every available format for the target platform." />
             <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 4 }}>
               (optional — all if none selected)
             </span>

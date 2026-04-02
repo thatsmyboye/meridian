@@ -17,11 +17,12 @@ const VALID_PLATFORMS = new Set([
   "youtube",
   "instagram",
   "tiktok",
-  "twitter",
   "linkedin",
   "podcast",
   "other",
   "patreon",
+  "beehiiv",
+  "substack",
 ]);
 
 /**
