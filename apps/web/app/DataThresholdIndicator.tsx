@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   calculateDataThreshold,
   getInsightsReadinessMessage,
@@ -8,12 +9,20 @@ import {
 
 interface DataThresholdIndicatorProps {
   content: ContentItem[];
+  canRunAnalysis?: boolean;
+  onRunAnalysis?: () => Promise<void>;
 }
+
+type RunState = "idle" | "loading" | "success" | "error";
 
 export default function DataThresholdIndicator({
   content,
+  canRunAnalysis = false,
+  onRunAnalysis,
 }: DataThresholdIndicatorProps) {
   const thresholdInfo = calculateDataThreshold(content);
+  const [runState, setRunState] = useState<RunState>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (thresholdInfo.hasMinimumData) {
     return null;
@@ -27,6 +36,23 @@ export default function DataThresholdIndicator({
   );
 
   const message = getInsightsReadinessMessage(thresholdInfo);
+
+  const handleRunAnalysis = async () => {
+    if (!onRunAnalysis || runState === "loading") return;
+    setRunState("loading");
+    setErrorMessage(null);
+    try {
+      await onRunAnalysis();
+      setRunState("success");
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+      setRunState("error");
+    }
+  };
 
   return (
     <div style={{ marginBottom: 36 }}>
@@ -137,6 +163,85 @@ export default function DataThresholdIndicator({
             we estimate insights in approximately{" "}
             <strong>{thresholdInfo.estimatedDaysUntilInsights}</strong> days
           </p>
+        )}
+
+        {/* On-demand analysis CTA — visible when synced across ≥2 platforms */}
+        {canRunAnalysis && onRunAnalysis && runState !== "success" && (
+          <div
+            style={{
+              marginTop: 20,
+              borderTop: "1px solid #f3f4f6",
+              paddingTop: 16,
+            }}
+          >
+            <p
+              style={{
+                fontSize: 13,
+                color: "#6b7280",
+                margin: "0 0 10px 0",
+                textAlign: "center",
+              }}
+            >
+              You&apos;re synced across multiple platforms — get early insights now.
+            </p>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <button
+                onClick={handleRunAnalysis}
+                disabled={runState === "loading"}
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#fff",
+                  background: runState === "loading" ? "#93c5fd" : "#2563eb",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "10px 20px",
+                  cursor: runState === "loading" ? "not-allowed" : "pointer",
+                  transition: "background 0.2s",
+                }}
+              >
+                {runState === "loading" ? "Analyzing…" : "Run Analysis Now"}
+              </button>
+            </div>
+            {runState === "error" && errorMessage && (
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#dc2626",
+                  margin: "10px 0 0 0",
+                  textAlign: "center",
+                }}
+              >
+                {errorMessage}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Success state — replaces the CTA after the analysis is enqueued */}
+        {canRunAnalysis && onRunAnalysis && runState === "success" && (
+          <div
+            style={{
+              marginTop: 20,
+              borderTop: "1px solid #f3f4f6",
+              paddingTop: 16,
+            }}
+          >
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#059669",
+                margin: 0,
+                padding: "10px 12px",
+                background: "#ecfdf5",
+                borderRadius: 6,
+                textAlign: "center",
+              }}
+            >
+              ✓ Analysis started! Refresh the page in a moment to see your insights.
+            </p>
+          </div>
         )}
       </div>
     </div>

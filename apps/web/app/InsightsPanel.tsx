@@ -35,6 +35,8 @@ interface InsightsPanelProps {
   insights: DashboardInsight[];
   content?: ContentItem[];
   onDismissInsight?: (insightId: string) => Promise<void>;
+  canRunAnalysis?: boolean;
+  onRunAnalysis?: () => Promise<void>;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -387,6 +389,8 @@ export default function InsightsPanel({
   insights,
   content = [],
   onDismissInsight,
+  canRunAnalysis,
+  onRunAnalysis,
 }: InsightsPanelProps) {
   // Check if content has less than 30 days of data
   const thresholdInfo = useMemo(
@@ -394,9 +398,17 @@ export default function InsightsPanel({
     [content],
   );
 
-  // Show data threshold indicator if content exists but is less than 30 days old
-  if (content.length > 0 && !thresholdInfo.hasMinimumData) {
-    return <DataThresholdIndicator content={content} />;
+  // Only block insights display when the threshold hasn't been met AND there are
+  // no insights to show yet. If insights already exist (e.g. from a prior
+  // on-demand analysis), render them immediately regardless of the time gate.
+  if (content.length > 0 && !thresholdInfo.hasMinimumData && insights.length === 0) {
+    return (
+      <DataThresholdIndicator
+        content={content}
+        canRunAnalysis={canRunAnalysis}
+        onRunAnalysis={onRunAnalysis}
+      />
+    );
   }
 
   if (insights.length === 0) return null;
