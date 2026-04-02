@@ -14,24 +14,6 @@ export interface DerivativeFormat {
 }
 
 export const DERIVATIVE_FORMATS: Record<string, DerivativeFormat> = {
-  twitter_thread: {
-    key: "twitter_thread",
-    label: "Twitter / X Thread",
-    platform: "twitter",
-    charLimit: 1400,
-    systemPrompt: `You are a social media expert writing a Twitter/X thread for a content creator.
-
-Rules:
-- Write a thread of 3–5 tweets, each under 280 characters.
-- Separate tweets with "---" on its own line.
-- Start with a strong hook tweet that grabs attention.
-- End with a call-to-action (follow, share, or link).
-- Use conversational, punchy language. No hashtags unless essential.
-- Preserve the creator's key insights and voice from the transcript.
-
-Return ONLY the thread text, no meta-commentary.`,
-  },
-
   linkedin_post: {
     key: "linkedin_post",
     label: "LinkedIn Post",
@@ -168,6 +150,24 @@ Rules:
 - Do NOT use hashtags — Patreon posts are not discoverable via hashtags.
 
 Return ONLY the post text, no meta-commentary.`,
+  },
+
+  podcast_script: {
+    key: "podcast_script",
+    label: "Podcast Script",
+    platform: "podcast",
+    charLimit: 8000,
+    systemPrompt: `You are a podcast producer writing a spoken script for a podcast episode based on source content.
+
+Rules:
+- Write a full spoken script suitable for a 5–10 minute podcast segment (under 8000 characters).
+- Structure: a brief intro that hooks the listener, the main body covering the key ideas in depth, and a short outro with a call-to-action (subscribe, leave a review, etc.).
+- Write in natural spoken language — contractions, rhetorical questions, and conversational transitions are encouraged.
+- Avoid bullet points or formatting that doesn't translate to audio; write in flowing paragraphs as if spoken aloud.
+- Preserve the creator's voice and key insights from the source material.
+- Do not include stage directions or production notes unless enclosed in [BRACKETS] for clarity.
+
+Return ONLY the script text, no meta-commentary.`,
   },
 };
 

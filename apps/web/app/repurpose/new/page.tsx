@@ -73,10 +73,12 @@ const ALL_PLATFORMS: { value: string; label: string }[] = [
 const DERIVATIVE_FORMATS: { value: string; label: string }[] = [
   { value: "linkedin_post", label: "LinkedIn Post" },
   { value: "instagram_caption", label: "Instagram Caption" },
+  { value: "instagram_carousel", label: "Instagram Carousel" },
   { value: "newsletter_blurb", label: "Newsletter Blurb" },
   { value: "tiktok_script", label: "TikTok Script" },
   { value: "podcast_script", label: "Podcast Script" },
   { value: "podcast_show_notes", label: "Podcast Show Notes" },
+  { value: "patreon_post", label: "Patreon Post" },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
