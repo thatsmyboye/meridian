@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { formatNumber, PLATFORM_COLORS } from "@/lib/formatters";
+import { formatNumber, PLATFORM_COLORS, PLATFORM_DISPLAY_NAME } from "@/lib/formatters";
 import {
   BarChart,
   Bar,
@@ -297,7 +297,7 @@ export default function CreatorDashboard({ content }: DashboardProps) {
           value={best ? truncate(best.title, 32) : "—"}
           sub={
             best
-              ? `${formatNumber(best.totalViews)} views · ${best.platform}`
+              ? `${formatNumber(best.totalViews)} views · ${PLATFORM_DISPLAY_NAME[best.platform] ?? best.platform}`
               : undefined
           }
         />
@@ -306,7 +306,7 @@ export default function CreatorDashboard({ content }: DashboardProps) {
           value={worst ? truncate(worst.title, 32) : "—"}
           sub={
             worst
-              ? `${formatNumber(worst.totalViews)} views · ${worst.platform}`
+              ? `${formatNumber(worst.totalViews)} views · ${PLATFORM_DISPLAY_NAME[worst.platform] ?? worst.platform}`
               : undefined
           }
         />

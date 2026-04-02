@@ -31,3 +31,15 @@ export const PLATFORM_BADGE: Record<string, { bg: string; color: string }> = {
   tiktok: { bg: "#f3f4f6", color: "#111827" },
   linkedin: { bg: "#dbeafe", color: "#0a66c2" },
 };
+
+/** Proper display names for platforms (preserves brand capitalization). */
+export const PLATFORM_DISPLAY_NAME: Record<string, string> = {
+  youtube: "YouTube",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  linkedin: "LinkedIn",
+  beehiiv: "Beehiiv",
+  substack: "Substack",
+  patreon: "Patreon",
+  twitter: "Twitter",
+};

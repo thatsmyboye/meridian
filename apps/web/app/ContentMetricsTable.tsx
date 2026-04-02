@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { formatNumber, formatDate, PLATFORM_BADGE } from "@/lib/formatters";
+import { formatNumber, formatDate, PLATFORM_BADGE, PLATFORM_DISPLAY_NAME } from "@/lib/formatters";
 import RepurposeModal from "./RepurposeModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -281,7 +281,7 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
           <option value="all">All platforms</option>
           {availablePlatforms.map((p) => (
             <option key={p} value={p}>
-              {p.charAt(0).toUpperCase() + p.slice(1)}
+              {PLATFORM_DISPLAY_NAME[p] ?? p.charAt(0).toUpperCase() + p.slice(1)}
             </option>
           ))}
         </select>
@@ -476,10 +476,9 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
                           padding: "2px 8px",
                           fontSize: 12,
                           fontWeight: 600,
-                          textTransform: "capitalize",
                         }}
                       >
-                        {row.platform}
+                        {PLATFORM_DISPLAY_NAME[row.platform] ?? row.platform.charAt(0).toUpperCase() + row.platform.slice(1)}
                       </span>
                     </td>
 

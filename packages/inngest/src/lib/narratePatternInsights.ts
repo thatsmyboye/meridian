@@ -35,7 +35,7 @@ export function confidenceLabel(score: number): ConfidenceLabel {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are a creator analytics coach. Given statistical patterns, write 2–3 sentence insight narratives.
+const SYSTEM_PROMPT = `You are a creator analytics coach. Given statistical patterns, write 2–3 sentence insight narratives in American English.
 
 Always respond with a single JSON object — no markdown, no prose outside it — in this exact shape:
 {"narrative":"<2-3 sentence actionable insight>","confidence_label":"<Strong|Moderate|Emerging>"}`;
