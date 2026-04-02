@@ -135,3 +135,68 @@
   background: #f3f4f6;
   color: #111827;
 }
+
+/* ─── Mobile: two-row layout ────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .inner {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 16px 0;
+    column-gap: 0;
+    row-gap: 0;
+  }
+
+  /* Row 1: logo (grows to fill remaining space) + actions pinned to the right */
+  .logo {
+    flex: 1;
+    font-size: 15px;
+    gap: 6px;
+  }
+
+  .logoBadge {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Row 2: nav spans full width below the logo/actions row */
+  .nav {
+    order: 3;
+    width: 100%;
+    padding: 4px 0 6px;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+
+  .navLink {
+    padding: 5px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Username badge is redundant on mobile — hide it to save space */
+  .userStatus {
+    display: none;
+  }
+
+  .actions {
+    gap: 0;
+  }
+
+  .actionLink {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  .signOutButton {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}

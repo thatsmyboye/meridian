@@ -30,6 +30,7 @@ export default async function Home() {
   let dashboardContent: DashboardProps["content"] = [];
   let dashboardInsights: DashboardInsight[] = [];
   let creatorId: string | null = null;
+  let canRunAnalysis = false;
   let initialNotifications: {
     id: string;
     type: "published" | "failed_publish";
@@ -97,6 +98,12 @@ export default async function Home() {
         .eq("creator_id", creator.id)
         .gte("published_at", cutoff)
         .order("published_at", { ascending: false });
+
+      // Determine on-demand analysis eligibility: ≥2 distinct platforms with content.
+      const syncedPlatforms = new Set(
+        (contentItems ?? []).map((item) => item.platform as string),
+      );
+      canRunAnalysis = syncedPlatforms.size >= 2;
 
       // Fetch pattern insights in parallel with snapshot data
       const [snapshotsResult, insightsResult] = await Promise.all([
@@ -309,6 +316,7 @@ export default async function Home() {
       <InsightsPanelClient
         insights={dashboardInsights}
         content={dashboardContent.map(({ publishedAt }) => ({ publishedAt }))}
+        canRunAnalysis={canRunAnalysis}
       />
 
       <Suspense>
