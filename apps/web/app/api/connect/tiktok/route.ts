@@ -42,8 +42,13 @@ const isSandbox = process.env.TIKTOK_SANDBOX === "true";
 const TIKTOK_SCOPES = (isSandbox ? SANDBOX_SCOPES : PRODUCTION_SCOPES).join(",");
 
 export async function GET(request: Request) {
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  // Use only the origin so that a NEXT_PUBLIC_SITE_URL value that accidentally
+  // includes a path (e.g. "https://meridian.banton-digital.com/app") never
+  // produces a redirect_uri with an extra path segment that mismatches the
+  // URI registered in the TikTok Developer Portal.
+  const siteUrl = new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin
+  ).origin;
 
   const supabase = await createServerClient();
   const {

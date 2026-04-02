@@ -52,8 +52,11 @@ interface TikTokUserInfoResponse {
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  // Strip any path from the site URL so the redirect_uri exactly matches
+  // what is registered in the TikTok Developer Portal (origin only).
+  const siteUrl = new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin
+  ).origin;
 
   const code = searchParams.get("code");
   const state = searchParams.get("state");

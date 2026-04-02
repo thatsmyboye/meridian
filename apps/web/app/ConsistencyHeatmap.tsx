@@ -90,7 +90,9 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
   }, [content]);
 
   // Build the 52-week grid (columns = weeks, rows = 0..6 = Sun..Sat)
-  const { weeks, monthLabels } = useMemo(() => {
+  // weeks    – chronological order (oldest first), used for streak/stats
+  // displayWeeks – reversed (most recent first/left), used for rendering
+  const { weeks, displayWeeks, monthLabels } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = toLocalDateString(today);
@@ -101,8 +103,6 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
     startDate.setDate(startDate.getDate() - dow);
 
     const weeks: DayData[][] = [];
-    const monthLabels: { weekIndex: number; label: string }[] = [];
-    let lastMonth = -1;
 
     const cursor = new Date(startDate);
     while (cursor <= today) {
@@ -118,16 +118,26 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
         });
         cursor.setDate(cursor.getDate() + 1);
       }
-      // Record a month label at the first week whose first day is in a new month
-      const firstDay = new Date(week[0].date + "T00:00:00");
-      const m = firstDay.getMonth();
-      if (m !== lastMonth) {
-        monthLabels.push({ weekIndex: weeks.length, label: MONTH_NAMES[m] });
-        lastMonth = m;
-      }
       weeks.push(week);
     }
-    return { weeks, monthLabels };
+
+    // Reverse for display: most recent week on the left, older weeks trail off right
+    const displayWeeks = [...weeks].reverse();
+
+    // Build month labels for the reversed display order (newest → oldest).
+    // Use the latest day of each week (Saturday, index 6) to determine which
+    // month a week belongs to as we traverse newest-first.
+    const monthLabels: { weekIndex: number; label: string }[] = [];
+    let lastMonth = -1;
+    for (let i = 0; i < displayWeeks.length; i++) {
+      const m = new Date(displayWeeks[i][6].date + "T00:00:00").getMonth();
+      if (m !== lastMonth) {
+        monthLabels.push({ weekIndex: i, label: MONTH_NAMES[m] });
+        lastMonth = m;
+      }
+    }
+
+    return { weeks, displayWeeks, monthLabels };
   }, [dayMap]);
 
   const totalPublished = useMemo(() => content.length, [content]);
@@ -152,7 +162,7 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
     return best;
   }, [weeks]);
 
-  const gridWidth = weeks.length * CELL_STEP;
+  const gridWidth = displayWeeks.length * CELL_STEP;
 
   return (
     <div>
@@ -184,7 +194,7 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
       </div>
 
       {/* ── Calendar grid ── */}
-      <div style={{ overflowX: "auto" }}>
+      <div style={{ overflowX: "hidden" }}>
         <div style={{ display: "inline-block", position: "relative" }}>
           {/* Month labels */}
           <div
@@ -241,7 +251,7 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
 
             {/* Week columns */}
             <div style={{ display: "flex", gap: CELL_GAP }}>
-              {weeks.map((week, wi) => (
+              {displayWeeks.map((week, wi) => (
                 <div
                   key={wi}
                   style={{ display: "flex", flexDirection: "column", gap: CELL_GAP }}

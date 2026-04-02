@@ -18,7 +18,7 @@ export interface ConnectedPlatformRow {
 }
 
 /** Platforms that have a dedicated content sync function. */
-const SYNCABLE_PLATFORMS = new Set(["youtube", "instagram", "beehiiv", "substack"]);
+const SYNCABLE_PLATFORMS = new Set(["youtube", "instagram", "beehiiv", "substack", "tiktok"]);
 
 /** Platforms temporarily hidden from the UI (code/sync intact). */
 const HIDDEN_PLATFORMS = new Set(["twitter", "linkedin"]);
