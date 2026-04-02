@@ -28,6 +28,8 @@ import {
   tiktokTokenRefreshCron,
   expireTrialsCron,
   backfillSnapshots,
+  syncPatreonPosts,
+  patreonTokenRefreshCron,
 } from "@meridian/inngest";
 
 /**
@@ -73,5 +75,7 @@ export const { GET, POST, PUT } = serve({
     tiktokTokenRefreshCron,
     expireTrialsCron,
     backfillSnapshots,
+    syncPatreonPosts,
+    patreonTokenRefreshCron,
   ],
 });

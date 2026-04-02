@@ -61,3 +61,5 @@ export { tiktokTokenRefreshCron } from "./functions/tiktok-token-refresh-cron";
 export { syncTikTokVideos } from "./functions/tiktok-sync";
 export { expireTrialsCron } from "./functions/expire-trials-cron";
 export { backfillSnapshots } from "./functions/backfill-snapshots";
+export { syncPatreonPosts } from "./functions/patreon-sync";
+export { patreonTokenRefreshCron } from "./functions/patreon-token-refresh-cron";

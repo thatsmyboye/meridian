@@ -656,6 +656,93 @@ export async function publishToBeehiiv(
   };
 }
 
+// ─── Patreon API v2 ───────────────────────────────────────────────────────────
+
+const PATREON_API_BASE = "https://www.patreon.com/api/oauth2/v2";
+
+/**
+ * Creates and publishes a patron-exclusive post to Patreon via API v2.
+ *
+ * Requires:
+ *   - campaign_id in platform.metadata (populated at OAuth connect time).
+ *   - Valid access token with w:campaigns.posts scope.
+ *
+ * The post is published immediately as a patron-only post (is_paid: true).
+ * Creators can visit their Patreon dashboard to adjust visibility tiers
+ * or scheduling after the fact.
+ */
+export async function publishToPatreon(
+  platform: PlatformRow,
+  content: string
+): Promise<PublishResult> {
+  const accessToken = decryptToken(platform.access_token_enc);
+  const campaignId = platform.metadata?.campaign_id as string | undefined;
+
+  if (!campaignId) {
+    throw new Error(
+      "Patreon: missing campaign_id in platform metadata. " +
+        "Reconnect the Patreon account to populate the campaign ID."
+    );
+  }
+
+  // Extract a title from the first non-empty line of the content (max 100 chars).
+  const firstLine =
+    content
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.length > 0) ?? "New Post";
+  const title = firstLine.slice(0, 100);
+
+  // Patreon API v2 uses JSON:API format for creating posts.
+  const body = {
+    data: {
+      type: "post",
+      attributes: {
+        title,
+        // Wrap plain text in a minimal HTML structure for Patreon's editor.
+        content: content
+          .split("\n")
+          .map((line) => (line.trim() ? `<p>${line}</p>` : ""))
+          .join(""),
+        is_paid: true, // Patron-only by default
+        is_public: false,
+      },
+      relationships: {
+        campaign: {
+          data: { type: "campaign", id: campaignId },
+        },
+      },
+    },
+  };
+
+  const res = await fetch(`${PATREON_API_BASE}/posts`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/vnd.api+json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(
+      `Patreon API error ${res.status} creating post: ${err}`
+    );
+  }
+
+  const data = (await res.json()) as {
+    data?: { id?: string; attributes?: { url?: string } };
+  };
+  const postId = data.data?.id ?? "unknown";
+  const url = data.data?.attributes?.url;
+
+  return {
+    external_id: postId,
+    ...(url ? { url } : {}),
+  };
+}
+
 // ─── Platform dispatch ────────────────────────────────────────────────────────
 
 /**
@@ -688,6 +775,8 @@ export async function publishDerivative(
       return publishToTikTok(platformRow, content);
     case "other": // newsletter_blurb maps to "other" → Beehiiv
       return publishToBeehiiv(platformRow, content);
+    case "patreon":
+      return publishToPatreon(platformRow, content);
     default:
       throw new Error(
         `No publisher configured for platform: ${platformName}`
