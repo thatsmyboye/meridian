@@ -79,3 +79,28 @@ describe("hasSufficientPlatforms — on-demand analysis eligibility", () => {
     expect(hasSufficientPlatforms(["youtube", "YouTube"])).toBe(true);
   });
 });
+
+// ─── TikTok sync failure does not grant eligibility ───────────────────────────
+//
+// When a TikTok sync fails, the onFailure handler stamps last_synced_at and
+// sync_error on connected_platforms, but writes NO rows to content_items.
+// The eligibility check reads content_items — so the creator must NOT be
+// considered eligible for on-demand analysis if TikTok content is absent.
+
+describe("hasSufficientPlatforms — TikTok sync failure scenarios", () => {
+  it("returns false when only the non-TikTok platform synced successfully", () => {
+    // Simulates: youtube sync OK (content in content_items), tiktok sync failed
+    // (onFailure stamped connected_platforms but wrote no content_items rows).
+    expect(hasSufficientPlatforms(["youtube"])).toBe(false);
+  });
+
+  it("returns true once TikTok sync succeeds and content_items are populated", () => {
+    // Simulates: youtube sync OK, tiktok sync now OK — both have content rows.
+    expect(hasSufficientPlatforms(["youtube", "tiktok"])).toBe(true);
+  });
+
+  it("returns false when TikTok is the only platform and its sync failed", () => {
+    // Simulates: only tiktok connected, sync failed — content_items is empty.
+    expect(hasSufficientPlatforms([])).toBe(false);
+  });
+});

@@ -6,7 +6,7 @@ import { getSupabaseAdmin } from "../lib/supabaseAdmin";
  *
  * For platforms with a content sync function, immediately enqueues a full
  * content sync so that content_items are populated as soon as the creator
- * connects. For platforms without a sync function (twitter, tiktok), stamps
+ * connects. For platforms without a sync function (twitter), stamps
  * last_synced_at directly so the /connect page spinner resolves immediately.
  */
 export const handlePlatformConnected = inngest.createFunction(
