@@ -97,7 +97,22 @@ body {
 }
  
 /* ─── Repurpose queue ──────────────────────────────────────────────────────── */
- 
+
 .repurpose-job-row:hover {
   background: #f9fafb;
+}
+
+/* ─── Content metrics table ────────────────────────────────────────────────── */
+
+.content-table-wrapper {
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .content-table-wrapper {
+    overflow-x: auto;
+  }
+  .col-engagement {
+    display: none;
+  }
 }
