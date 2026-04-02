@@ -26,6 +26,7 @@ const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }>
   processing: { bg: "#dbeafe", color: "#1e40af", label: "Processing" },
   review: { bg: "#e0e7ff", color: "#3730a3", label: "Ready for Review" },
   approved: { bg: "#d1fae5", color: "#065f46", label: "Approved" },
+  rejected: { bg: "#fee2e2", color: "#991b1b", label: "Rejected" },
   completed: { bg: "#d1fae5", color: "#065f46", label: "Completed" },
   failed: { bg: "#fee2e2", color: "#991b1b", label: "Failed" },
 };
