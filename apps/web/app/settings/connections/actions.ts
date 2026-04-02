@@ -21,6 +21,7 @@ const SYNCABLE_PLATFORMS = new Set([
   "instagram",
   "beehiiv",
   "substack",
+  "tiktok",
   "linkedin",
 ]);
 
