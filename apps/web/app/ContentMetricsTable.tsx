@@ -26,14 +26,9 @@ type SortKey =
   | "platform"
   | "publishedAt"
   | "totalViews"
-  | "engagementRate"
-  | "watchTimeMinutes";
+  | "engagementRate";
 
 type SortDir = "asc" | "desc";
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const VIDEO_PLATFORMS = new Set(["youtube", "tiktok"]);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -45,14 +40,6 @@ function csvEscape(value: string | number | null): string {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
-}
-
-function formatWatchTime(minutes: number | null): string {
-  if (minutes == null) return "—";
-  if (minutes < 60) return `${Math.round(minutes)}m`;
-  const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -77,11 +64,6 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
 
   const availablePlatforms = useMemo(
     () => [...new Set(rows.map((r) => r.platform))].sort(),
-    [rows],
-  );
-
-  const hasVideoContent = useMemo(
-    () => rows.some((r) => VIDEO_PLATFORMS.has(r.platform)),
     [rows],
   );
 
@@ -137,10 +119,6 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
           av = a.engagementRate;
           bv = b.engagementRate;
           break;
-        case "watchTimeMinutes":
-          av = a.watchTimeMinutes ?? -1;
-          bv = b.watchTimeMinutes ?? -1;
-          break;
         default:
           av = a.publishedAt;
           bv = b.publishedAt;
@@ -162,9 +140,6 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
     { key: "publishedAt", label: "Published", align: "left" },
     { key: "totalViews", label: "Views", align: "right" },
     { key: "engagementRate", label: "Engagement", align: "right" },
-    ...(hasVideoContent
-      ? ([{ key: "watchTimeMinutes", label: "Watch time", align: "right" }] as const)
-      : []),
   ];
 
   // +1 for the non-sortable Actions column
@@ -180,9 +155,6 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
         row.totalViews,
         row.engagementRate,
       ];
-      if (hasVideoContent) {
-        cells.push(VIDEO_PLATFORMS.has(row.platform) ? row.watchTimeMinutes : null);
-      }
       return cells.map(csvEscape).join(",");
     });
 
@@ -358,13 +330,14 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
       )}
 
       {/* ── Table ── */}
-      <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+      <div className="content-table-wrapper" style={{ borderRadius: 8, border: "1px solid #e5e7eb" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
             <tr style={{ background: "#f9fafb" }}>
               {columns.map(({ key, label, align }) => (
                 <th
                   key={key}
+                  className={key === "engagementRate" ? "col-engagement" : undefined}
                   onClick={() => handleHeaderClick(key)}
                   style={{
                     padding: "10px 14px",
@@ -439,7 +412,7 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
                       style={{
                         padding: "12px 14px",
                         color: "#111827",
-                        maxWidth: 300,
+                        maxWidth: 200,
                       }}
                     >
                       <Link
@@ -508,6 +481,7 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
 
                     {/* Engagement rate */}
                     <td
+                      className="col-engagement"
                       style={{
                         padding: "12px 14px",
                         textAlign: "right",
@@ -519,22 +493,6 @@ export default function ContentMetricsTable({ rows }: ContentMetricsTableProps) 
                         ? `${row.engagementRate.toFixed(2)}%`
                         : "—"}
                     </td>
-
-                    {/* Watch time (video platforms only) */}
-                    {hasVideoContent && (
-                      <td
-                        style={{
-                          padding: "12px 14px",
-                          textAlign: "right",
-                          fontVariantNumeric: "tabular-nums",
-                          color: "#6b7280",
-                        }}
-                      >
-                        {VIDEO_PLATFORMS.has(row.platform)
-                          ? formatWatchTime(row.watchTimeMinutes)
-                          : "—"}
-                      </td>
-                    )}
 
                     {/* Repurpose action */}
                     <td style={{ padding: "8px 14px 8px 8px", whiteSpace: "nowrap" }}>
