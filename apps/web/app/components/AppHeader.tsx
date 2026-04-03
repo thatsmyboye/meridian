@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
   { href: "/repurpose", label: "Repurpose" },
   { href: "/connect", label: "Connect" },
-  { href: "/platforms", label: "Platforms" },
+  { href: "/platforms", label: "Compare" },
 ];
 
 function isActive(pathname: string, href: string) {

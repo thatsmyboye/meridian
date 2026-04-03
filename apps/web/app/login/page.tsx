@@ -32,7 +32,8 @@ function LoginForm() {
   const router = useRouter();
   const supabase = createBrowserClient();
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  type Mode = "signin" | "signup" | "forgot";
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -128,6 +129,25 @@ function LoginForm() {
     }
   }
 
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setLocalError(null);
+    setSuccessMessage(null);
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      });
+      if (error) {
+        setLocalError(error.message);
+        return;
+      }
+      setSuccessMessage("Check your email for a password reset link.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <main
       style={{
@@ -218,7 +238,11 @@ function LoginForm() {
               textAlign: "center",
             }}
           >
-            {mode === "signin" ? "Sign in to your account" : "Create your account"}
+            {mode === "signin"
+              ? "Sign in to your account"
+              : mode === "signup"
+                ? "Create your account"
+                : "Reset your password"}
           </h2>
           <p
             style={{
@@ -333,80 +357,163 @@ function LoginForm() {
             <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
           </div>
 
-          {/* Email / password form */}
-          <form onSubmit={handleEmailAuth} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: "100%",
-                padding: "11px 14px",
-                borderRadius: 10,
-                border: "1.5px solid #e5e7eb",
-                fontSize: 15,
-                color: "#111827",
-                background: "#fff",
-                outline: "none",
-                boxSizing: "border-box",
-                transition: "border-color 0.15s ease",
-              }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "#2563eb"; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              style={{
-                width: "100%",
-                padding: "11px 14px",
-                borderRadius: 10,
-                border: "1.5px solid #e5e7eb",
-                fontSize: 15,
-                color: "#111827",
-                background: "#fff",
-                outline: "none",
-                boxSizing: "border-box",
-                transition: "border-color 0.15s ease",
-              }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "#2563eb"; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
-            />
-            <button
-              type="submit"
-              disabled={isLoading}
-              style={{
-                width: "100%",
-                padding: "12px 20px",
-                borderRadius: 10,
-                border: "none",
-                background: isLoading ? "#93c5fd" : "linear-gradient(135deg, #2563eb, #7c3aed)",
-                color: "#fff",
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: isLoading ? "not-allowed" : "pointer",
-                transition: "opacity 0.15s ease",
-              }}
-              onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.opacity = "0.9"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
-            >
-              {isLoading
-                ? "Please wait…"
-                : mode === "signin"
-                  ? "Sign in with Email"
-                  : "Create account"}
-            </button>
-          </form>
+          {/* Forgot password form */}
+          {mode === "forgot" ? (
+            <form onSubmit={handleForgotPassword} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <input
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{
+                  width: "100%",
+                  padding: "11px 14px",
+                  borderRadius: 10,
+                  border: "1.5px solid #e5e7eb",
+                  fontSize: 15,
+                  color: "#111827",
+                  background: "#fff",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  transition: "border-color 0.15s ease",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#2563eb"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
+              />
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  width: "100%",
+                  padding: "12px 20px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: isLoading ? "#93c5fd" : "linear-gradient(135deg, #2563eb, #7c3aed)",
+                  color: "#fff",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: isLoading ? "not-allowed" : "pointer",
+                  transition: "opacity 0.15s ease",
+                }}
+                onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.opacity = "0.9"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+              >
+                {isLoading ? "Please wait…" : "Send reset link"}
+              </button>
+            </form>
+          ) : (
+            /* Email / password form */
+            <form onSubmit={handleEmailAuth} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <input
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{
+                  width: "100%",
+                  padding: "11px 14px",
+                  borderRadius: 10,
+                  border: "1.5px solid #e5e7eb",
+                  fontSize: 15,
+                  color: "#111827",
+                  background: "#fff",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  transition: "border-color 0.15s ease",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#2563eb"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                style={{
+                  width: "100%",
+                  padding: "11px 14px",
+                  borderRadius: 10,
+                  border: "1.5px solid #e5e7eb",
+                  fontSize: 15,
+                  color: "#111827",
+                  background: "#fff",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  transition: "border-color 0.15s ease",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#2563eb"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
+              />
+              {/* Forgot password link — only in signin mode */}
+              {mode === "signin" && (
+                <div style={{ textAlign: "right", marginTop: -4 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setMode("forgot"); setLocalError(null); setSuccessMessage(null); }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      color: "#6b7280",
+                      fontSize: 13,
+                      cursor: "pointer",
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  width: "100%",
+                  padding: "12px 20px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: isLoading ? "#93c5fd" : "linear-gradient(135deg, #2563eb, #7c3aed)",
+                  color: "#fff",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: isLoading ? "not-allowed" : "pointer",
+                  transition: "opacity 0.15s ease",
+                }}
+                onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.opacity = "0.9"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+              >
+                {isLoading
+                  ? "Please wait…"
+                  : mode === "signin"
+                    ? "Sign in with Email"
+                    : "Create account"}
+              </button>
+            </form>
+          )}
 
           {/* Mode toggle */}
           <p style={{ fontSize: 14, color: "#6b7280", textAlign: "center", marginTop: 16, marginBottom: 0 }}>
-            {mode === "signin" ? (
+            {mode === "forgot" ? (
+              <button
+                onClick={() => { setMode("signin"); setLocalError(null); setSuccessMessage(null); }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  color: "#2563eb",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                ← Back to sign in
+              </button>
+            ) : mode === "signin" ? (
               <>
                 Don&apos;t have an account?{" "}
                 <button
