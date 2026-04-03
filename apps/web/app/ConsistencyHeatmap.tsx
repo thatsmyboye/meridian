@@ -193,7 +193,7 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
         <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>
           Publishing consistency
         </h2>
-        <span style={{ fontSize: 13, color: "#6b7280" }}>Past year</span>
+        <span style={{ fontSize: 13, color: "#6b7280" }}>Recent content publishing</span>
       </div>
 
       {/* ── Summary strip ── */}
