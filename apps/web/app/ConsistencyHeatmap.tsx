@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PLATFORM_COLORS } from "@/lib/formatters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -169,6 +169,17 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
 
   const gridWidth = displayWeeks.length * CELL_STEP;
 
+  // Scroll the heatmap to the right end so the most recent weeks (today) are
+  // always visible. overflowX: "hidden" prevents user scrolling but still
+  // allows programmatic scrollLeft updates.
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollLeft =
+        scrollContainerRef.current.scrollWidth;
+    }
+  }, [displayWeeks]);
+
   return (
     <div>
       <div
@@ -199,7 +210,7 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
       </div>
 
       {/* ── Calendar grid ── */}
-      <div style={{ overflowX: "hidden" }}>
+      <div ref={scrollContainerRef} style={{ overflowX: "hidden" }}>
         <div style={{ display: "inline-block", position: "relative" }}>
           {/* Month labels */}
           <div
