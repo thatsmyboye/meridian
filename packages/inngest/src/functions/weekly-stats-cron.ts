@@ -25,6 +25,16 @@ const LENGTH_BUCKET_LABELS: Record<string, string> = {
   newsletter: "newsletter",
 };
 
+const PLATFORM_DISPLAY_NAMES: Record<string, string> = {
+  youtube: "YouTube",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  beehiiv: "Beehiiv",
+  linkedin: "LinkedIn",
+  twitter: "X (Twitter)",
+  substack: "Substack",
+};
+
 // ─── Internal types ───────────────────────────────────────────────────────────
 
 interface SnapshotRow {
@@ -408,7 +418,7 @@ export const computeCreatorPatterns = inngest.createFunction(
 
           results.push({
             insight_type: "content_type",
-            summary: `${best.content_type} content leads with ${(best.mean_engagement * 100).toFixed(1)}% avg engagement across ${best.sample_count} posts.`,
+            summary: `${PLATFORM_DISPLAY_NAMES[best.content_type] ?? best.content_type} content leads with ${(best.mean_engagement * 100).toFixed(1)}% avg engagement across ${best.sample_count} posts.`,
             evidence_json: {
               analysis_type: "content_type",
               total_posts_analysed: enriched.length,
@@ -460,7 +470,7 @@ export const computeCreatorPatterns = inngest.createFunction(
 
           results.push({
             insight_type: "length_bucket",
-            summary: `${best.label} content achieves the highest engagement at ${(best.mean_engagement * 100).toFixed(1)}% avg across ${best.sample_count} posts.`,
+            summary: `${best.label.charAt(0).toUpperCase() + best.label.slice(1)} content achieves the highest engagement at ${(best.mean_engagement * 100).toFixed(1)}% avg across ${best.sample_count} posts.`,
             evidence_json: {
               analysis_type: "length_bucket",
               total_posts_analysed: enriched.length,
