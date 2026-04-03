@@ -32,7 +32,6 @@ const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }>
 };
 
 const FORMAT_LABELS: Record<string, string> = {
-  twitter_thread: "Twitter Thread",
   linkedin_post: "LinkedIn Post",
   instagram_caption: "Instagram Caption",
   newsletter_blurb: "Newsletter Blurb",
@@ -139,26 +138,54 @@ export default async function RepurposeQueuePage() {
           </p>
         </div>
 
-        {/* New text import CTA */}
-        <Link
-          href="/repurpose/new"
+        {/* Header actions */}
+        <div
           style={{
-            display: "inline-flex",
+            display: "flex",
             alignItems: "center",
-            gap: 6,
-            padding: "9px 16px",
-            borderRadius: 8,
-            background: "#2563eb",
-            color: "#fff",
-            fontWeight: 600,
-            fontSize: 14,
-            textDecoration: "none",
+            gap: 8,
             flexShrink: 0,
             marginTop: 28,
           }}
         >
-          + Paste text
-        </Link>
+          <Link
+            href="/repurpose/calendar"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "9px 16px",
+              borderRadius: 8,
+              background: "#fff",
+              color: "#374151",
+              fontWeight: 600,
+              fontSize: 14,
+              textDecoration: "none",
+              border: "1px solid #e5e7eb",
+              whiteSpace: "nowrap",
+            }}
+          >
+            View calendar
+          </Link>
+          <Link
+            href="/repurpose/new"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "9px 16px",
+              borderRadius: 8,
+              background: "#2563eb",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 14,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            + Paste text
+          </Link>
+        </div>
       </div>
 
       {allJobs.length === 0 ? (

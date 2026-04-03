@@ -384,6 +384,7 @@ export default function ConnectPageClient({
 
   const visiblePlatforms = Object.entries(PLATFORMS).filter(([key]) => !HIDDEN_PLATFORMS.has(key));
   const isOddCount = visiblePlatforms.length % 2 !== 0;
+  const comingSoonPlatforms = Object.entries(PLATFORMS).filter(([key]) => HIDDEN_PLATFORMS.has(key));
 
   return (
     <main style={{ maxWidth: 780, margin: "0 auto", padding: "32px 24px 64px" }}>
@@ -434,7 +435,7 @@ export default function ConnectPageClient({
           <span>
             {atLimit
               ? `You've reached your Free plan limit (${activePlatformCount}/${platformLimit} platforms).`
-              : `Free plan: ${activePlatformCount}/${platformLimit} platform connected.`}
+              : `Free plan: ${activePlatformCount}/${platformLimit} platform${activePlatformCount !== 1 ? "s" : ""} connected.`}
           </span>
           {atLimit && (
             <button
@@ -670,22 +671,45 @@ export default function ConnectPageClient({
                   </button>
                 ) : (
                   <>
-                    <a
-                      href={cfg.connectHref}
-                      style={{
-                        display: "inline-block",
-                        background: isConnected ? "#f3f4f6" : cfg.color,
-                        color: isConnected ? "#374151" : "#fff",
-                        padding: "7px 16px",
-                        borderRadius: 6,
-                        textDecoration: "none",
-                        fontWeight: 600,
-                        fontSize: 13,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {needsReauth || isConnected ? "Reconnect" : "Connect"}
-                    </a>
+                    {/* Reconnect — only for reauth_required */}
+                    {needsReauth && (
+                      <a
+                        href={cfg.connectHref}
+                        style={{
+                          display: "inline-block",
+                          background: "#f3f4f6",
+                          color: "#374151",
+                          padding: "7px 16px",
+                          borderRadius: 6,
+                          textDecoration: "none",
+                          fontWeight: 600,
+                          fontSize: 13,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Reconnect
+                      </a>
+                    )}
+
+                    {/* Connect — only when fully disconnected */}
+                    {!isConnected && (
+                      <a
+                        href={cfg.connectHref}
+                        style={{
+                          display: "inline-block",
+                          background: cfg.color,
+                          color: "#fff",
+                          padding: "7px 16px",
+                          borderRadius: 6,
+                          textDecoration: "none",
+                          fontWeight: 600,
+                          fontSize: 13,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Connect
+                      </a>
+                    )}
 
                     {canRefresh && (
                       <button
@@ -727,6 +751,84 @@ export default function ConnectPageClient({
           );
         })}
       </div>
+
+      {/* Coming soon platforms */}
+      {comingSoonPlatforms.length > 0 && (
+        <div style={{ marginTop: 40 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: "#111827" }}>
+            Coming soon
+          </h2>
+          <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 16, marginTop: 0 }}>
+            These platforms are not yet available for connection.
+          </p>
+          <div
+            className="meridian-platform-grid"
+            style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}
+          >
+            {comingSoonPlatforms.map(([key, cfg]) => (
+              <div
+                key={key}
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 12,
+                  padding: 20,
+                  background: "#fafafa",
+                  opacity: 0.7,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                  <PlatformIcon id={key} color={cfg.color} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 700, fontSize: 16 }}>{cfg.label}</span>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "2px 10px",
+                          borderRadius: 99,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          background: "#f3f4f6",
+                          color: "#6b7280",
+                        }}
+                      >
+                        Coming soon
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 2 }}>
+                      {cfg.description}
+                    </div>
+                    {cfg.note && (
+                      <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
+                        {cfg.note}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    disabled
+                    style={{
+                      display: "inline-block",
+                      background: "#e5e7eb",
+                      color: "#9ca3af",
+                      padding: "7px 16px",
+                      borderRadius: 6,
+                      border: "none",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: "not-allowed",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Connect
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* YouTube API attribution — required by YouTube API Branding Guidelines */}
       <p

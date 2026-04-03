@@ -8,6 +8,7 @@ import type { DashboardInsight, InsightEvidenceItem } from "./InsightsPanel";
 import PublishNotificationBell from "./PublishNotificationBell";
 import UpgradedConfetti from "./UpgradedConfetti";
 import LandingPage from "./LandingPage";
+import OnboardingChecklist from "./OnboardingChecklist";
 
 /**
  * / — Meridian dashboard home
@@ -31,6 +32,9 @@ export default async function Home() {
   let dashboardInsights: DashboardInsight[] = [];
   let creatorId: string | null = null;
   let canRunAnalysis = false;
+  let hasPlatform = false;
+  let hasContent = false;
+  let hasRepurposeJob = false;
   let initialNotifications: {
     id: string;
     type: "published" | "failed_publish";
@@ -62,6 +66,21 @@ export default async function Home() {
         .eq("status", "reauth_required");
 
       reauthPlatforms = (platforms ?? []).map((p) => p.platform as string);
+
+      // Onboarding status checks (COUNT queries — minimal data transfer)
+      const [{ count: platformCount }, { count: repurposeJobCount }] = await Promise.all([
+        supabase
+          .from("connected_platforms")
+          .select("*", { count: "exact", head: true })
+          .eq("creator_id", creator.id)
+          .neq("status", "disconnected"),
+        supabase
+          .from("repurpose_jobs")
+          .select("*", { count: "exact", head: true })
+          .eq("creator_id", creator.id),
+      ]);
+      hasPlatform = (platformCount ?? 0) > 0;
+      hasRepurposeJob = (repurposeJobCount ?? 0) > 0;
 
       // Fetch the 20 most recent publish notifications for the bell
       const { data: notifRows } = await supabase
@@ -158,6 +177,7 @@ export default async function Home() {
             watchTimeMinutes: perf?.watchTimeMinutes ?? null,
           };
         });
+        hasContent = dashboardContent.length > 0;
 
         // Build enriched lookup for evidence derivation
         const enrichedContent = contentItems.map((item) => {
@@ -269,6 +289,14 @@ export default async function Home() {
             Reconnect YouTube
           </a>
         </div>
+      )}
+
+      {creatorId && (
+        <OnboardingChecklist
+          hasPlatform={hasPlatform}
+          hasContent={hasContent}
+          hasRepurposeJob={hasRepurposeJob}
+        />
       )}
 
       <div style={{ marginBottom: 32 }}>

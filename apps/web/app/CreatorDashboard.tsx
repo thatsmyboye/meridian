@@ -130,14 +130,6 @@ export default function CreatorDashboard({ content }: DashboardProps) {
     [filtered],
   );
 
-  const worst = useMemo(
-    () =>
-      filtered.length > 0
-        ? filtered.reduce((a, b) => (a.totalViews <= b.totalViews ? a : b))
-        : null,
-    [filtered],
-  );
-
   // Bar chart data — top 10 by views
   const chartData = useMemo(
     () =>
@@ -278,6 +270,10 @@ export default function CreatorDashboard({ content }: DashboardProps) {
         ))}
       </div>
 
+      <p style={{ fontSize: 12, color: "#9ca3af", marginTop: -20, marginBottom: 20 }}>
+        Applies to summary metrics and chart. Table shows all-time data.
+      </p>
+
       {/* ── Metric cards ── */}
       <div
         style={{
@@ -302,13 +298,9 @@ export default function CreatorDashboard({ content }: DashboardProps) {
           }
         />
         <MetricCard
-          label="Worst performing"
-          value={worst ? truncate(worst.title, 32) : "—"}
-          sub={
-            worst
-              ? `${formatNumber(worst.totalViews)} views · ${PLATFORM_DISPLAY_NAME[worst.platform] ?? worst.platform}`
-              : undefined
-          }
+          label="Posts published"
+          value={formatNumber(filtered.length)}
+          sub={`in the last ${period === "7d" ? "7" : period === "30d" ? "30" : "90"} days`}
         />
       </div>
 
