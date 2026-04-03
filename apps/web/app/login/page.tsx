@@ -252,7 +252,9 @@ function LoginForm() {
               textAlign: "center",
             }}
           >
-            Use Google or your email to get started
+            {mode === "forgot"
+              ? "Enter your email to receive a reset link."
+              : "Use Google or your email to get started"}
           </p>
 
           {errorMessage && (

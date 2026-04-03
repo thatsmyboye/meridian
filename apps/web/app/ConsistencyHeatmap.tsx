@@ -121,12 +121,12 @@ export default function ConsistencyHeatmap({ content }: ConsistencyHeatmapProps)
       weeks.push(week);
     }
 
-    // Reverse for display: most recent week on the left, older weeks trail off right
-    const displayWeeks = [...weeks].reverse();
+    // Display in chronological order: oldest week on the left, most recent on the right
+    const displayWeeks = weeks;
 
-    // Build month labels for the reversed display order (newest → oldest).
+    // Build month labels in chronological order (oldest → newest).
     // Use the latest day of each week (Saturday, index 6) to determine which
-    // month a week belongs to as we traverse newest-first.
+    // month a week belongs to as we traverse oldest-first.
     const monthLabels: { weekIndex: number; label: string }[] = [];
     let lastMonth = -1;
     let lastLabelWeekIndex = -Infinity;

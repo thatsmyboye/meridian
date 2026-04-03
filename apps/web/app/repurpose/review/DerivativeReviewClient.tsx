@@ -88,6 +88,7 @@ export default function DerivativeReviewClient({
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState<Record<string, boolean>>({});
   const [scheduling, setScheduling] = useState<Record<string, boolean>>({});
+  const [actionError, setActionError] = useState<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Polling for regeneration updates
@@ -207,6 +208,7 @@ export default function DerivativeReviewClient({
   }
 
   async function handleSchedule(formatKey: string, scheduledAt: string) {
+    setActionError(null);
     setScheduling((prev) => ({ ...prev, [formatKey]: true }));
     try {
       const res = await fetch("/api/repurpose/schedule", {
@@ -220,19 +222,20 @@ export default function DerivativeReviewClient({
       });
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error ?? "Failed to schedule");
+        setActionError(err.error ?? "Failed to schedule");
         return;
       }
       const data = await res.json();
       setDerivatives(data.derivatives);
     } catch {
-      alert("Failed to schedule");
+      setActionError("Failed to schedule");
     } finally {
       setScheduling((prev) => ({ ...prev, [formatKey]: false }));
     }
   }
 
   async function handleCancelSchedule(formatKey: string) {
+    setActionError(null);
     setScheduling((prev) => ({ ...prev, [formatKey]: true }));
     try {
       const res = await fetch("/api/repurpose/schedule", {
@@ -242,19 +245,20 @@ export default function DerivativeReviewClient({
       });
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error ?? "Failed to cancel schedule");
+        setActionError(err.error ?? "Failed to cancel schedule");
         return;
       }
       const data = await res.json();
       setDerivatives(data.derivatives);
     } catch {
-      alert("Failed to cancel schedule");
+      setActionError("Failed to cancel schedule");
     } finally {
       setScheduling((prev) => ({ ...prev, [formatKey]: false }));
     }
   }
 
   async function handleReschedule(formatKey: string, newScheduledAt: string) {
+    setActionError(null);
     setScheduling((prev) => ({ ...prev, [formatKey]: true }));
     try {
       const res = await fetch("/api/repurpose/schedule", {
@@ -268,13 +272,13 @@ export default function DerivativeReviewClient({
       });
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error ?? "Failed to reschedule");
+        setActionError(err.error ?? "Failed to reschedule");
         return;
       }
       const data = await res.json();
       setDerivatives(data.derivatives);
     } catch {
-      alert("Failed to reschedule");
+      setActionError("Failed to reschedule");
     } finally {
       setScheduling((prev) => ({ ...prev, [formatKey]: false }));
     }
@@ -329,7 +333,7 @@ export default function DerivativeReviewClient({
                 color: "#111827",
               }}
             >
-              Review Derivatives
+              Review &amp; Publish
             </h1>
             <p
               style={{
@@ -384,14 +388,11 @@ export default function DerivativeReviewClient({
       </div>
 
       {/* Side-by-side layout */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 24,
-          alignItems: "start",
-        }}
-      >
+      <style>{`
+        .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+        @media (max-width: 900px) { .review-grid { grid-template-columns: 1fr; } }
+      `}</style>
+      <div className="review-grid">
         {/* Left panel: source content */}
         <div
           style={{
@@ -524,6 +525,23 @@ export default function DerivativeReviewClient({
                 handleReschedule(activeDerivative.format, newScheduledAt)
               }
             />
+          )}
+
+          {actionError && (
+            <p
+              role="alert"
+              style={{
+                margin: "8px 0 0",
+                fontSize: 13,
+                color: "#b91c1c",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: 6,
+                padding: "8px 12px",
+              }}
+            >
+              {actionError}
+            </p>
           )}
 
           {derivatives.length === 0 && (
