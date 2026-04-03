@@ -42,8 +42,8 @@ export default function OnboardingChecklist({
       complete: hasPlatform,
     },
     {
-      label: "Import your content",
-      href: "/connect",
+      label: hasPlatform && !hasContent ? "Sync your content (syncing…)" : "Sync your content",
+      href: "/dashboard",
       complete: hasContent,
     },
     {

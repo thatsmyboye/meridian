@@ -139,9 +139,15 @@ export default function CreatorDashboard({ content }: DashboardProps) {
         .map((c) => ({
           name: truncate(c.title, 24),
           views: c.totalViews,
+          platform: c.platform,
           fill: PLATFORM_COLORS[c.platform] ?? "#6b7280",
         })),
     [filtered],
+  );
+
+  const chartPlatforms = useMemo(
+    () => [...new Set(chartData.map((d) => d.platform))],
+    [chartData],
   );
 
   // ── Empty state ──
@@ -220,19 +226,6 @@ export default function CreatorDashboard({ content }: DashboardProps) {
 
   return (
     <div>
-      {/* ── Consistency heatmap ── */}
-      <div
-        style={{
-          border: "1px solid #e5e7eb",
-          borderRadius: 10,
-          padding: "20px 22px",
-          background: "#fff",
-          marginBottom: 36,
-        }}
-      >
-        <ConsistencyHeatmap content={typeFiltered} />
-      </div>
-
       {/* ── Content type filter ── */}
       <div style={{ marginBottom: 20 }}>
         <ContentTypeFilter
@@ -342,6 +335,28 @@ export default function CreatorDashboard({ content }: DashboardProps) {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          {chartPlatforms.length > 1 && (
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 12 }}>
+              {chartPlatforms.map((p) => (
+                <span
+                  key={p}
+                  style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6b7280" }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 2,
+                      background: PLATFORM_COLORS[p] ?? "#6b7280",
+                      display: "inline-block",
+                      flexShrink: 0,
+                    }}
+                  />
+                  {PLATFORM_DISPLAY_NAME[p] ?? p}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -353,8 +368,22 @@ export default function CreatorDashboard({ content }: DashboardProps) {
         </p>
       )}
 
+      {/* ── Consistency heatmap ── */}
+      <div
+        style={{
+          border: "1px solid #e5e7eb",
+          borderRadius: 10,
+          padding: "20px 22px",
+          background: "#fff",
+          marginTop: 36,
+          marginBottom: 36,
+        }}
+      >
+        <ConsistencyHeatmap content={typeFiltered} />
+      </div>
+
       {/* ── Content metrics table ── */}
-      <div style={{ marginTop: 48 }}>
+      <div>
         <ContentMetricsTable rows={typeFiltered} />
       </div>
     </div>
