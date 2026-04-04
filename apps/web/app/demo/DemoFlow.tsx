@@ -52,17 +52,24 @@ const PLATFORM_BADGE: Record<string, { bg: string; color: string }> = {
   youtube: { bg: "#fee2e2", color: "#dc2626" },
   instagram: { bg: "#ede9fe", color: "#7c3aed" },
   beehiiv: { bg: "#ffedd5", color: "#f97316" },
+  substack: { bg: "#fff7ed", color: "#FF6719" },
   tiktok: { bg: "#f3f4f6", color: "#111827" },
+  patreon: { bg: "#fff1f2", color: "#FF424D" },
   twitter: { bg: "#e0f2fe", color: "#0284c7" },
+  linkedin: { bg: "#e0f0ff", color: "#0a66c2" },
   newsletter: { bg: "#f0fdf4", color: "#16a34a" },
 };
 
 const PLATFORM_COLORS: Record<string, string> = {
   youtube: "#dc2626",
   instagram: "#7c3aed",
-  twitter: "#1d9bf0",
-  newsletter: "#16a34a",
+  beehiiv: "#f97316",
+  substack: "#FF6719",
   tiktok: "#111827",
+  patreon: "#FF424D",
+  twitter: "#1d9bf0",
+  linkedin: "#0a66c2",
+  newsletter: "#16a34a",
 };
 
 function formatNumber(n: number): string {
@@ -382,7 +389,7 @@ function StepConnect({ onNext }: NavProps) {
   return (
     <DemoCard
       title="Step 2 — Connect platforms"
-      description="After sign-in, users land on the Connect Platforms page. They can link YouTube, Instagram, TikTok, and Beehiiv to import content and analytics."
+      description="After sign-in, users land on the Connect Platforms page. They can link YouTube, Instagram, TikTok, Beehiiv, Substack, and Patreon to import content and analytics."
     >
       <div
         style={{
@@ -401,7 +408,7 @@ function StepConnect({ onNext }: NavProps) {
           </p>
           {/* Tier banner */}
           <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "10px 14px", marginBottom: 20, fontSize: 13, color: "#0c4a6e" }}>
-            Creator plan: 2 of 3 platforms connected.
+            Creator plan: 2 of 6 platforms connected.
           </div>
         </div>
 
@@ -409,8 +416,10 @@ function StepConnect({ onNext }: NavProps) {
           {[
             { id: "youtube", label: "YouTube", description: "Import videos and channel analytics", color: "#dc2626", connected: false, highlight: true },
             { id: "instagram", label: "Instagram", description: "Import posts and performance insights", color: "#7c3aed", connected: true, highlight: false },
+            { id: "substack", label: "Substack", description: "Import newsletter posts from your public RSS feed", color: "#FF6719", connected: false, highlight: false },
+            { id: "beehiiv", label: "Beehiiv", description: "Import newsletter posts and track open rates & clicks", color: "#f97316", connected: false, highlight: false },
             { id: "tiktok", label: "TikTok", description: "Import videos and performance analytics", color: "#010101", connected: false, highlight: false },
-            { id: "beehiiv", label: "Beehiiv", description: "Import newsletter posts and track open rates", color: "#f97316", connected: false, highlight: false },
+            { id: "patreon", label: "Patreon", description: "Import posts and patron content analytics", color: "#FF424D", connected: false, highlight: false },
           ].map((p) => (
             <div
               key={p.id}
@@ -951,13 +960,34 @@ function StepContentDetail({ content, onBack }: { content: DemoContentItem; onBa
 function StepRepurposeNew({ onNext }: { onNext: () => void }) {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState("instagram");
 
   const source = DEMO_CONTENT[4]; // "I Built a SaaS in 48 Hours"
+
+  const TARGET_PLATFORMS = [
+    { value: "youtube", label: "YouTube" },
+    { value: "instagram", label: "Instagram" },
+    { value: "beehiiv", label: "Beehiiv" },
+    { value: "substack", label: "Substack" },
+    { value: "tiktok", label: "TikTok" },
+    { value: "patreon", label: "Patreon" },
+  ];
+
+  const ALL_FORMATS = [
+    { key: "linkedin_post", label: "LinkedIn Post", checked: true },
+    { key: "instagram_caption", label: "Instagram Caption", checked: true },
+    { key: "instagram_carousel", label: "Instagram Carousel", checked: false },
+    { key: "newsletter_blurb", label: "Newsletter Blurb", checked: true },
+    { key: "tiktok_script", label: "TikTok Script", checked: true },
+    { key: "podcast_script", label: "Podcast Script", checked: false },
+    { key: "podcast_show_notes", label: "Podcast Show Notes", checked: false },
+    { key: "patreon_post", label: "Patreon Post", checked: false },
+  ];
 
   return (
     <DemoCard
       title="Step 6 — Start a repurpose job"
-      description="Users paste a YouTube URL or raw transcript. Meridian extracts the transcript using Whisper and generates derivative formats via Claude AI — Instagram captions, newsletter blurbs, podcast show notes, and more."
+      description="From an imported content item, users select a target platform and derivative formats. Claude AI generates platform-tailored content — LinkedIn posts, Instagram captions, TikTok scripts, newsletter blurbs, and more."
     >
       <div style={{ maxWidth: 640, margin: "0 auto" }}>
         {/* Source content card */}
@@ -979,18 +1009,41 @@ function StepRepurposeNew({ onNext }: { onNext: () => void }) {
           </div>
         </div>
 
+        {/* Target platform selection */}
+        <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, background: "#fff", padding: "16px 18px", marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Target platform</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 8 }}>
+            {TARGET_PLATFORMS.map((p) => {
+              const isSelected = selectedPlatform === p.value;
+              return (
+                <label
+                  key={p.value}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: `1.5px solid ${isSelected ? "#2563eb" : "#e5e7eb"}`, borderRadius: 7, cursor: "pointer", background: isSelected ? "#eff6ff" : "#fff" }}
+                >
+                  <input
+                    type="radio"
+                    name="target_platform"
+                    value={p.value}
+                    checked={isSelected}
+                    onChange={() => setSelectedPlatform(p.value)}
+                    style={{ accentColor: "#2563eb" }}
+                  />
+                  <span style={{ fontSize: 13, fontWeight: isSelected ? 600 : 400, color: isSelected ? "#1d4ed8" : "#374151" }}>{p.label}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Format selection */}
         <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, background: "#fff", padding: "16px 18px", marginBottom: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Formats to generate</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Derivative formats</div>
+          <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>Optional — leave all unchecked to generate every format</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {[
-              { key: "instagram_caption", label: "Instagram Caption", checked: true },
-              { key: "newsletter_blurb", label: "Newsletter Blurb", checked: true },
-              { key: "podcast_show_notes", label: "Podcast Show Notes", checked: true },
-            ].map((f) => (
-              <label key={f.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid #e5e7eb", borderRadius: 7, cursor: "pointer", background: f.checked ? "#eff6ff" : "#fff", borderColor: f.checked ? "#bfdbfe" : "#e5e7eb" }}>
-                <input type="checkbox" defaultChecked={f.checked} style={{ accentColor: "#2563eb" }} />
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>{f.label}</span>
+            {ALL_FORMATS.map((f) => (
+              <label key={f.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid #e5e7eb", borderRadius: 7, cursor: "pointer", background: f.checked ? "#f5f3ff" : "#fff", borderColor: f.checked ? "#c4b5fd" : "#e5e7eb" }}>
+                <input type="checkbox" defaultChecked={f.checked} style={{ accentColor: "#7c3aed" }} />
+                <span style={{ fontSize: 13, fontWeight: f.checked ? 500 : 400, color: "#111827" }}>{f.label}</span>
               </label>
             ))}
           </div>
@@ -1014,19 +1067,19 @@ function StepRepurposeNew({ onNext }: { onNext: () => void }) {
           </button>
         ) : (
           <div style={{ width: "100%", padding: "12px 24px", borderRadius: 8, background: "#f0fdf4", border: "1px solid #86efac", color: "#15803d", fontWeight: 600, fontSize: 14, textAlign: "center" }}>
-            ✓ 3 derivatives generated — opening review…
+            ✓ 4 derivatives generated — opening review…
           </div>
         )}
 
         {generating && !done && (
           <div style={{ marginTop: 16, fontSize: 13, color: "#6b7280" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <ProgressStep label="Fetching transcript via YouTube API" done={true} />
+              <ProgressStep label="Extracting transcript from video" done={true} />
               <ProgressStep label="Extracting key themes and takeaways" done={true} />
-              <ProgressStep label="Generating Instagram caption" done={false} active={true} />
+              <ProgressStep label="Generating LinkedIn post" done={false} active={true} />
               <ProgressStep label="Generating Instagram caption" done={false} active={false} />
               <ProgressStep label="Generating newsletter blurb" done={false} active={false} />
-              <ProgressStep label="Generating podcast show notes" done={false} active={false} />
+              <ProgressStep label="Generating TikTok script" done={false} active={false} />
             </div>
           </div>
         )}
@@ -1261,7 +1314,7 @@ function StepPublishCalendar({ derivatives }: { derivatives: DemoDerivative[] })
             { icon: "▶️", label: "YouTube API connection", detail: "youtube.readonly + yt-analytics.readonly" },
             { icon: "📊", label: "Analytics dashboard", detail: "Views, engagement, watch time by content" },
             { icon: "💡", label: "AI pattern insights", detail: "Day-of-week, length, frequency analysis" },
-            { icon: "✂️", label: "Content repurposing", detail: "Transcript → Instagram / Newsletter / Podcast / TikTok" },
+            { icon: "✂️", label: "Content repurposing", detail: "Video or text → 8 derivative formats across 6 platforms" },
             { icon: "📅", label: "Scheduled publishing", detail: "Optimal-time suggestions from insight data" },
           ].map((item) => (
             <div key={item.label} style={{ display: "flex", gap: 10, padding: "8px 0" }}>

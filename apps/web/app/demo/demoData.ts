@@ -380,6 +380,36 @@ export interface DemoDerivative {
 
 export const DEMO_DERIVATIVES: DemoDerivative[] = [
   {
+    format: "linkedin_post",
+    label: "LinkedIn Post",
+    platform: "linkedin",
+    charCount: 820,
+    status: "pending",
+    content: `I built a SaaS in 48 hours. Here's what the data actually showed.
+
+Friday 8pm to Sunday 8pm. One rule: ship something with paying customers or it didn't count.
+
+Stack: Next.js 15 + Supabase + Stripe + Vercel. Nothing exotic. The constraint was the clock.
+
+Three things that worked:
+→ Supabase RLS eliminated the entire auth layer boilerplate
+→ Server Actions removed the need for a separate API
+→ Vercel previews gave instant mobile QA feedback
+
+Three things that almost derailed it:
+→ No rate limiting on the AI endpoint — lost $40 in 30 minutes to bots
+→ Designing desktop-first when most signups came from mobile
+→ Forgetting the Stripe CLI webhook listener until day two
+
+End result: 7 paying customers, $280 MRR, and a product roadmap I'd never have written without the forcing function.
+
+The 48-hour limit didn't constrain the product. It clarified it.
+
+Full architecture breakdown + post-mortem in the YouTube video (link in comments).
+
+#buildinpublic #saas #startups #webdevelopment #softwaredevelopment`,
+  },
+  {
     format: "instagram_caption",
     label: "Instagram Caption",
     platform: "instagram",
@@ -408,6 +438,29 @@ Constraints = clarity.
 Full 30-min deep dive on YouTube (link in bio) 🎥
 
 #buildinpublic #saas #nextjs #indiehacker #webdevelopment #coding #programming`,
+  },
+  {
+    format: "tiktok_script",
+    label: "TikTok Script",
+    platform: "tiktok",
+    charCount: 480,
+    status: "pending",
+    content: `[Hook — 0:00–0:03]
+I built a SaaS in 48 hours. Seven paying customers by Sunday night.
+
+[Problem — 0:03–0:10]
+Most developers spend months planning before they ship. I wanted to find out what happens when you remove that option entirely.
+
+[Story — 0:10–0:40]
+Friday 8pm: idea locked. Next.js, Supabase, Stripe. No overthinking the stack.
+Saturday morning: auth and payments working. The forced timeline made every decision obvious.
+Sunday afternoon: launched. First paying customer within two hours.
+
+[Lesson — 0:40–0:55]
+The 48-hour constraint didn't limit the product — it clarified it. Every feature I "didn't have time for" was probably a feature nobody needed.
+
+[CTA — 0:55–1:00]
+Full breakdown on YouTube. Link in bio. Would you try this?`,
   },
   {
     format: "newsletter_blurb",
