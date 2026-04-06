@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase/client";
@@ -176,24 +177,18 @@ function LoginForm() {
             marginBottom: 40,
           }}
         >
-          <div
+          <Image
+            src="/Meridian.jpg"
+            alt="Meridian logo"
+            width={56}
+            height={56}
             style={{
-              width: 56,
-              height: 56,
               borderRadius: 14,
-              background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              fontSize: 28,
-              fontWeight: 800,
               marginBottom: 16,
               boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)",
+              objectFit: "cover",
             }}
-          >
-            M
-          </div>
+          />
           <h1
             style={{
               fontSize: 28,
