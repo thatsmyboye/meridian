@@ -11,6 +11,7 @@ const PLATFORM_LABELS: Record<string, string> = {
   twitter: "X (Twitter)",
   tiktok: "TikTok",
   linkedin: "LinkedIn",
+  patreon: "Patreon",
 };
 
 const TIER_LABELS: Record<string, string> = {
