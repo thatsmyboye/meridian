@@ -6,9 +6,9 @@ import type { ContentDataPoint } from "./PlatformComparisonView";
  * /platforms — Cross-platform performance comparison
  *
  * Server component. Fetches the creator's content items and their latest
- * performance snapshots for the past 90 days, then hands normalised per-post
+ * performance snapshots for the past 90 days, then hands normalized per-post
  * data to the client component for interactive aggregation, filtering, and
- * visualisation (radar chart + platform cards).
+ * visualization (radar chart + platform cards).
  */
 export default async function PlatformsPage() {
   const supabase = await createServerClient();
