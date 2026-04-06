@@ -32,9 +32,8 @@ const PLATFORMS = [
   { name: "Instagram", color: "#7c3aed" },
   { name: "Beehiiv", color: "#f97316" },
   { name: "TikTok", color: "#010101" },
-  { name: "LinkedIn", color: "#0a66c2" },
-  { name: "Twitter / X", color: "#1d9bf0" },
   { name: "Substack", color: "#ff6719" },
+  { name: "Patreon", color: "#ff424d" },
 ];
 
 export default function LandingPage() {
@@ -188,8 +187,11 @@ export default function LandingPage() {
               display: "flex",
               gap: 10,
               justifyContent: "center",
+              alignItems: "center",
               marginTop: 32,
               flexWrap: "wrap",
+              maxWidth: 600,
+              margin: "32px auto 0",
             }}
           >
             {PLATFORMS.map((p) => (

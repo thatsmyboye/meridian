@@ -54,15 +54,21 @@ const PLATFORMS: Record<string, PlatformConfig> = {
     connectHref: "/api/connect/tiktok",
     description: "Generate scripts and draft TikTok video posts",
   },
+  patreon: {
+    label: "Patreon",
+    color: "#ff424d",
+    connectHref: "/api/connect/patreon",
+    description: "Sync posts and membership content from your Patreon page",
+  },
 };
 
 // ─── Platform icons ───────────────────────────────────────────────────────────
 // YouTube uses its official branded logo (required by YouTube API TOS).
-// All other platforms use a white icon centred on a brand-colour square.
+// All other platforms use a white icon centered on a brand-color square.
 
 function PlatformIcon({ id, color }: { id: string; color: string }) {
   if (id === "youtube") {
-    // Official YouTube logo — do not alter colours or proportions
+    // Official YouTube logo — do not alter colors or proportions
     return (
       <div
         style={{
@@ -90,6 +96,12 @@ function PlatformIcon({ id, color }: { id: string; color: string }) {
   }
 
   const icons: Record<string, React.ReactNode> = {
+    patreon: (
+      // Patreon "P" lettermark
+      <svg width="18" height="20" viewBox="0 0 24 24" fill="white" aria-hidden>
+        <path d="M14.5 2C10.916 2 8 4.916 8 8.5S10.916 15 14.5 15 21 12.084 21 8.5 18.084 2 14.5 2zM3 22h3.5V2H3v20z" />
+      </svg>
+    ),
     instagram: (
       // Camera outline
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>

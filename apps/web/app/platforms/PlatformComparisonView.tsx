@@ -15,7 +15,7 @@ import {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Platform = "youtube" | "instagram" | "tiktok" | "beehiiv" | "linkedin";
+type Platform = "youtube" | "instagram" | "tiktok" | "beehiiv" | "linkedin" | "substack" | "patreon" | "podcast";
 
 type Period = "7d" | "30d" | "90d";
 
@@ -58,7 +58,7 @@ interface PlatformAggregate {
 const PERIOD_DAYS: Record<Period, number> = { "7d": 7, "30d": 30, "90d": 90 };
 
 /**
- * Industry-average engagement rates per platform used as normalisation
+ * Industry-average engagement rates per platform used as normalization
  * baselines. A score of 100 means the creator is hitting the typical average;
  * scores above 100 indicate above-average performance for that platform.
  */
@@ -68,6 +68,9 @@ const ENGAGEMENT_BASELINES: Record<Platform, number> = {
   tiktok: 6.0,
   beehiiv: 30.0, // open rate proxy
   linkedin: 2.0,
+  substack: 35.0, // open rate proxy
+  patreon: 5.0,
+  podcast: 2.0,
 };
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -76,6 +79,9 @@ const PLATFORM_LABELS: Record<string, string> = {
   tiktok: "TikTok",
   beehiiv: "Beehiiv",
   linkedin: "LinkedIn",
+  substack: "Substack",
+  patreon: "Patreon",
+  podcast: "Podcast",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -263,7 +269,7 @@ export default function PlatformComparisonView({
                   marginTop: 0,
                 }}
               >
-                All axes normalised to 0–100 relative to your best-performing
+                All axes normalized to 0–100 relative to your best-performing
                 platform so you can compare shape, not just scale.
               </p>
               <div style={{ width: "100%", height: 420 }}>

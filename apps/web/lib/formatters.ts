@@ -14,13 +14,16 @@ export function formatDate(iso: string): string {
   });
 }
 
-/** Platform brand colours used across dashboard, charts, and detail pages. */
+/** Platform brand colors used across dashboard, charts, and detail pages. */
 export const PLATFORM_COLORS: Record<string, string> = {
   youtube: "#dc2626",
   instagram: "#7c3aed",
   beehiiv: "#f97316",
   tiktok: "#111827",
   linkedin: "#0a66c2",
+  substack: "#ff6719",
+  patreon: "#ff424d",
+  podcast: "#8b5cf6",
 };
 
 /** Platform badge styles (background + foreground) for pill labels. */
@@ -30,6 +33,9 @@ export const PLATFORM_BADGE: Record<string, { bg: string; color: string }> = {
   beehiiv: { bg: "#ffedd5", color: "#f97316" },
   tiktok: { bg: "#f3f4f6", color: "#111827" },
   linkedin: { bg: "#dbeafe", color: "#0a66c2" },
+  substack: { bg: "#fff0e8", color: "#ff6719" },
+  patreon: { bg: "#ffe4e5", color: "#ff424d" },
+  podcast: { bg: "#ede9fe", color: "#8b5cf6" },
 };
 
 /** Proper display names for platforms (preserves brand capitalization). */
