@@ -144,29 +144,32 @@ export const syncTikTokVideos = inngest.createFunction(
       const result = await step.run(stepId, async () => {
         const supabase = getSupabaseAdmin();
 
-        const res = await fetch("https://open.tiktokapis.com/v2/video/list/", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            fields: [
-              "id",
-              "title",
-              "cover_image_url",
-              "video_description",
-              "duration",
-              "create_time",
-              "like_count",
-              "comment_count",
-              "share_count",
-              "view_count",
-            ],
-            max_count: MAX_COUNT,
-            cursor: currentCursor,
-          }),
-        });
+        const fields = [
+          "id",
+          "title",
+          "cover_image_url",
+          "video_description",
+          "duration",
+          "create_time",
+          "like_count",
+          "comment_count",
+          "share_count",
+          "view_count",
+        ].join(",");
+        const res = await fetch(
+          `https://open.tiktokapis.com/v2/video/list/?fields=${fields}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              max_count: MAX_COUNT,
+              cursor: currentCursor,
+            }),
+          }
+        );
 
         if (!res.ok) {
           throw new Error(
