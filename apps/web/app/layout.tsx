@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import AppHeader from "./components/AppHeader";
 import { PostHogIdentifier } from "./components/PostHogIdentifier";
 import { PostHogPageView } from "./components/PostHogPageView";
@@ -60,6 +61,7 @@ export default async function RootLayout({
           <AppHeader isLoggedIn={!!user} userDisplay={userDisplay} />
           {children}
         </PostHogProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
