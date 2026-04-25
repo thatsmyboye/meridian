@@ -275,9 +275,41 @@ export const extractRepurposeTranscript = inngest.createFunction(
     if (!transcript) {
       transcript = await step.run("whisper-fallback", async () => {
         const mediaUrls: string[] = contentItem.media_urls ?? [];
-        const audioUrl = mediaUrls[0] ?? null;
+        const directAudioUrl = mediaUrls[0] ?? null;
 
-        if (!audioUrl) {
+        let audioRes: Response | null = null;
+
+        if (directAudioUrl) {
+          // Non-YouTube or YouTube with a known direct audio URL
+          audioRes = await fetch(directAudioUrl);
+          if (!audioRes.ok) {
+            console.warn(
+              `[transcript] Audio fetch failed (${audioRes.status}) for ${directAudioUrl}`
+            );
+            return null;
+          }
+        } else if (contentItem.platform === "youtube" && contentItem.external_id) {
+          // YouTube without a direct URL: download via fly-worker (yt-dlp)
+          const workerUrl = process.env.FLY_WORKER_URL;
+          if (!workerUrl) {
+            console.info(
+              `[transcript] FLY_WORKER_URL not set; skipping yt-dlp fallback for content_item ${contentItem.id}`
+            );
+            return null;
+          }
+          const endpoint = `${workerUrl.replace(/\/$/, "")}/audio`;
+          audioRes = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ videoId: contentItem.external_id }),
+          });
+          if (!audioRes.ok) {
+            console.warn(
+              `[transcript] fly-worker audio fetch failed (${audioRes.status}) for video ${contentItem.external_id}`
+            );
+            return null;
+          }
+        } else {
           console.info(
             `[transcript] No media_url available for Whisper fallback on content_item ${contentItem.id}`
           );
@@ -285,17 +317,9 @@ export const extractRepurposeTranscript = inngest.createFunction(
         }
 
         // Fetch the audio file and pass it to the Whisper API as a File object
-        const audioRes = await fetch(audioUrl);
-        if (!audioRes.ok) {
-          console.warn(
-            `[transcript] Audio fetch failed (${audioRes.status}) for ${audioUrl}`
-          );
-          return null;
-        }
-
         const audioBuffer = await audioRes.arrayBuffer();
-        // Infer a reasonable filename/MIME from the URL; Whisper is lenient
-        const ext = audioUrl.split("?")[0].split(".").pop()?.toLowerCase() ?? "mp4";
+        const sourceUrl = directAudioUrl ?? `youtube:${contentItem.external_id}`;
+        const ext = sourceUrl.split("?")[0].split(".").pop()?.toLowerCase() ?? "mp4";
         const audioFile = new File([audioBuffer], `audio.${ext}`, {
           type: ext === "mp3" ? "audio/mpeg" : "audio/mp4",
         });
