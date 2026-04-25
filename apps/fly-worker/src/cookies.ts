@@ -81,9 +81,30 @@ export function writeCookiesFile(): string | null {
     content = jsonCookiesToNetscape(parsed as JsonCookie[]);
   } else {
     // Assume Netscape text format; add the required header if it was stripped
-    content = decoded.startsWith(NETSCAPE_HEADER)
-      ? decoded + "\n"
-      : `${NETSCAPE_HEADER}\n${decoded}\n`;
+    const withHeader = decoded.startsWith(NETSCAPE_HEADER)
+      ? decoded
+      : `${NETSCAPE_HEADER}\n${decoded}`;
+
+    // Normalise line endings (Windows \r\n → \n) then validate each cookie line
+    // has the required 7 tab-separated fields so we fail fast with a clear message
+    // instead of letting yt-dlp emit a cryptic "invalid length N" warning.
+    const lines = withHeader.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const fields = trimmed.split("\t");
+      if (fields.length !== 7) {
+        throw new Error(
+          `YT_DLP_COOKIES_B64: decoded content is not a valid Netscape cookie file. ` +
+            `Each cookie line needs 7 tab-separated fields (domain, flag, path, secure, expiry, name, value) ` +
+            `but got ${fields.length} field(s) on line: "${trimmed.substring(0, 120)}". ` +
+            `Export cookies as a Netscape cookies.txt file (e.g. via a browser extension), ` +
+            `then base64-encode it: base64 -w 0 cookies.txt`
+        );
+      }
+    }
+
+    content = lines.join("\n") + "\n";
   }
 
   fs.writeFileSync(COOKIES_PATH, content, "utf-8");
